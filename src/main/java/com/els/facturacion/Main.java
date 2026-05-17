@@ -20,6 +20,7 @@ public class Main {
         SwingUtilities.invokeLater(() -> {
             VentanaFacturacion ventana = new VentanaFacturacion();
             ventana.setVisible(true);
+            
         });
     }
 }
