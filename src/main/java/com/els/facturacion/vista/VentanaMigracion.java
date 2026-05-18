@@ -68,9 +68,7 @@ public class VentanaMigracion extends JFrame {
         lblTipo.setForeground(COLOR_TEXTO);
 
         cmbTipoMigracion = new JComboBox<>(new String[]{
-            "Caja BRC - 2024",
-            "Caja BRC - 2025",
-            "Caja BRC - 2026",
+            "Caja BRC",
             "Gastos 2026",
             "Ordenes 2026 (Costos Fijos)",
             "Ordenes 2026 (Resumen)"
@@ -142,11 +140,19 @@ public class VentanaMigracion extends JFrame {
         JButton btnVerificar = crearBoton("VERIFICAR");
         btnVerificar.addActionListener(e -> btnVerificarAction());
 
+        JButton btnNuevoAnio = crearBoton("NUEVO AÑO");
+        btnNuevoAnio.addActionListener(e -> btnNuevoAnioAction());
+
+        JButton btnAgregarColumna = crearBoton("AGREGAR COLUMNA");
+        btnAgregarColumna.addActionListener(e -> btnAgregarColumnaAction());
+
         JButton btnCerrar = crearBoton("CERRAR");
         btnCerrar.addActionListener(e -> dispose());
 
         panelBotones.add(btnMigrar);
         panelBotones.add(btnVerificar);
+        panelBotones.add(btnNuevoAnio);
+        panelBotones.add(btnAgregarColumna);
         panelBotones.add(btnLimpiar);
         panelBotones.add(btnCerrar);
 
@@ -172,15 +178,7 @@ public class VentanaMigracion extends JFrame {
         cmbHoja.removeAllItems();
 
         switch (tipo) {
-            case "Caja BRC - 2024":
-                cmbHoja.addItem("2024");
-                txtRutaArchivo.setText(rutaCarpetaExcel + "\\Caja BRC.xlsx");
-                break;
-            case "Caja BRC - 2025":
-                cmbHoja.addItem("2025");
-                txtRutaArchivo.setText(rutaCarpetaExcel + "\\Caja BRC.xlsx");
-                break;
-            case "Caja BRC - 2026":
+            case "Caja BRC":
                 cmbHoja.addItem("2026");
                 txtRutaArchivo.setText(rutaCarpetaExcel + "\\Caja BRC.xlsx");
                 break;
@@ -231,6 +229,29 @@ public class VentanaMigracion extends JFrame {
         }
     }
 
+    private void btnNuevoAnioAction() {
+        String[] opciones = {"2027", "2028", "2029", "2030"};
+        String nuevoAnio = (String) JOptionPane.showInputDialog(
+            this,
+            "Seleccione el nuevo año a crear:",
+            "Nuevo Año",
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            opciones,
+            opciones[0]
+        );
+        
+        if (nuevoAnio != null) {
+            cmbHoja.addItem(nuevoAnio);
+            cmbHoja.setSelectedItem(nuevoAnio);
+            JOptionPane.showMessageDialog(this, "Año " + nuevoAnio + " agregado. Configure la migración para este año.", "Nuevo Año", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    private void btnAgregarColumnaAction() {
+        JOptionPane.showMessageDialog(this, "Función para agregar columnas del año en el Excel.\nEsta función permitirá crear una nueva hoja con los datos del año seleccionado.", "Agregar Columna", JOptionPane.INFORMATION_MESSAGE);
+    }
+
     private void btnMigrarAction() {
         String ruta = txtRutaArchivo.getText().trim();
         if (ruta.isEmpty()) {
@@ -255,17 +276,9 @@ public class VentanaMigracion extends JFrame {
             String anioSeleccionado = (String) cmbHoja.getSelectedItem();
 
             switch (tipo) {
-                case "Caja BRC - 2024":
-                    count = migracionController.migrarCajaBRC(ruta, "2024");
-                    mensaje = "movimientos de caja 2024";
-                    break;
-                case "Caja BRC - 2025":
-                    count = migracionController.migrarCajaBRC(ruta, "2025");
-                    mensaje = "movimientos de caja 2025";
-                    break;
-                case "Caja BRC - 2026":
-                    count = migracionController.migrarCajaBRC(ruta, "2026");
-                    mensaje = "movimientos de caja 2026";
+                case "Caja BRC":
+                    count = migracionController.migrarCajaBRC(ruta, anioSeleccionado);
+                    mensaje = "movimientos de caja " + anioSeleccionado;
                     break;
                 case "Gastos 2026":
                     count = migracionController.migrarGastos(ruta);

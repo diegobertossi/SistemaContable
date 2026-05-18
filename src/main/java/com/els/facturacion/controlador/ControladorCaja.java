@@ -36,6 +36,10 @@ public class ControladorCaja {
         return cajaDAO.eliminar(id);
     }
 
+    public boolean actualizarMovimiento(CajaMovimientoDTO movimiento) {
+        return cajaDAO.actualizar(movimiento);
+    }
+
     public CajaMovimientoDTO buscarMovimiento(int id) {
         return cajaDAO.buscarPorId(id);
     }

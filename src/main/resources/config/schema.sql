@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS comprobantes (
 -- Tabla: caja_movimientos
 CREATE TABLE IF NOT EXISTS caja_movimientos (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    fecha DATE NOT NULL,
+    fecha DATE NULL,
     tipo VARCHAR(20) NOT NULL,
     descripcion VARCHAR(300),
     monto DECIMAL(12,2) NOT NULL,

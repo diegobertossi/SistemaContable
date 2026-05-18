@@ -140,38 +140,99 @@ public class MigracionExcelController {
         int migrados = 0;
         List<CajaMovimientoDTO> movimientos = new ArrayList<>();
 
-        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+        System.out.println("Procesando hoja: " + sheet.getSheetName() + " con " + sheet.getLastRowNum() + " filas");
+
+        Row rowSaldos = sheet.getRow(1);
+        if (rowSaldos != null) {
+            BigDecimal saldoCuentaPatagonia = getMonto(rowSaldos.getCell(9));
+            BigDecimal saldoEfectivo = getMonto(rowSaldos.getCell(10));
+            BigDecimal dolares = getMonto(rowSaldos.getCell(11));
+            BigDecimal saldoEfectivoBanco = getMonto(rowSaldos.getCell(12));
+
+            System.out.println("=== SALDOS INICIALES DEL AÑO (Fila 2 - datos del año anterior) ===");
+            System.out.println("Saldo Cuenta Patagonia: " + saldoCuentaPatagonia);
+            System.out.println("Saldo Efectivo: " + saldoEfectivo);
+            System.out.println("Dólares: " + dolares);
+            System.out.println("Saldo Efectivo + Banco: " + saldoEfectivoBanco);
+            
+            if (saldoEfectivo != null && saldoEfectivo.compareTo(BigDecimal.ZERO) > 0) {
+                System.out.println("→ Estos saldos se usarán para calcular el saldo inicial del año");
+            }
+        }
+
+        for (int i = 2; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
             if (row == null) continue;
 
             try {
                 LocalDate fecha = getFecha(row.getCell(0));
-                String tipo = getTexto(row.getCell(1));
-                String descripcion = getTexto(row.getCell(2));
-                BigDecimal monto = getMonto(row.getCell(3));
+                String cliente = getTexto(row.getCell(1));
+                String formaPago = getTexto(row.getCell(2));
+                String els = getTexto(row.getCell(3));
+                String elsTexto = (els != null && !els.isEmpty()) ? " ELS " + els : "";
+                
+                BigDecimal cobroEfectivo = getMonto(row.getCell(4));
+                BigDecimal cobroCuentaPatagonia = getMonto(row.getCell(5));
+                BigDecimal pagoEfectivo = getMonto(row.getCell(6));
+                BigDecimal pagoCuentaPatagonia = getMonto(row.getCell(7));
 
-                if (fecha != null && tipo != null && monto != null && !tipo.isEmpty()) {
-                    String tipoLimpio = tipo.toLowerCase().trim();
-                    if (tipoLimpio.contains("cobro") || tipoLimpio.contains("entrada")) {
-                        tipoLimpio = "cobro";
-                    } else if (tipoLimpio.contains("pago") || tipoLimpio.contains("salida")) {
-                        tipoLimpio = "pago";
-                    } else {
-                        continue;
-                    }
-                    CajaMovimientoDTO mov = new CajaMovimientoDTO(fecha, tipoLimpio, descripcion, monto);
-                    movimientos.add(mov);
+                boolean tieneCobro = (cobroEfectivo != null && cobroEfectivo.compareTo(BigDecimal.ZERO) > 0) 
+                                   || (cobroCuentaPatagonia != null && cobroCuentaPatagonia.compareTo(BigDecimal.ZERO) > 0);
+                boolean tienePago = (pagoEfectivo != null && pagoEfectivo.compareTo(BigDecimal.ZERO) > 0) 
+                                 || (pagoCuentaPatagonia != null && pagoCuentaPatagonia.compareTo(BigDecimal.ZERO) > 0);
+
+                if (!tieneCobro && !tienePago) {
+                    continue;
                 }
+
+                String descripcion = cliente;
+                if (formaPago != null && !formaPago.isEmpty()) {
+                    descripcion = cliente + " - " + formaPago;
+                }
+
+                if (tieneCobro) {
+                    BigDecimal montoCobro = BigDecimal.ZERO;
+                    if (cobroEfectivo != null && cobroEfectivo.compareTo(BigDecimal.ZERO) > 0) {
+                        montoCobro = montoCobro.add(cobroEfectivo);
+                    }
+                    if (cobroCuentaPatagonia != null && cobroCuentaPatagonia.compareTo(BigDecimal.ZERO) > 0) {
+                        montoCobro = montoCobro.add(cobroCuentaPatagonia);
+                    }
+                    
+                    CajaMovimientoDTO mov = new CajaMovimientoDTO(fecha, "cobro", descripcion + elsTexto, montoCobro);
+                    movimientos.add(mov);
+                    String fechaMostrar = fecha != null ? fecha.toString() : "(sin fecha)";
+                    System.out.println("Cobro: " + fechaMostrar + " - " + descripcion + elsTexto + " - $" + montoCobro);
+                }
+
+                if (tienePago) {
+                    BigDecimal montoPago = BigDecimal.ZERO;
+                    if (pagoEfectivo != null && pagoEfectivo.compareTo(BigDecimal.ZERO) > 0) {
+                        montoPago = montoPago.add(pagoEfectivo);
+                    }
+                    if (pagoCuentaPatagonia != null && pagoCuentaPatagonia.compareTo(BigDecimal.ZERO) > 0) {
+                        montoPago = montoPago.add(pagoCuentaPatagonia);
+                    }
+                    
+                    CajaMovimientoDTO mov = new CajaMovimientoDTO(fecha, "pago", descripcion + elsTexto, montoPago);
+                    movimientos.add(mov);
+                    String fechaMostrar = fecha != null ? fecha.toString() : "(sin fecha)";
+                    System.out.println("Pago: " + fechaMostrar + " - " + descripcion + elsTexto + " - $" + montoPago);
+                }
+
             } catch (Exception e) {
                 System.err.println("Error en fila " + i + ": " + e.getMessage());
             }
         }
+
+        System.out.println("Total movimientos a migrar: " + movimientos.size());
 
         for (CajaMovimientoDTO mov : movimientos) {
             int id = cajaDAO.insertar(mov);
             if (id > 0) migrados++;
         }
 
+        System.out.println("✓ Migrados " + migrados + " movimientos de caja");
         return migrados;
     }
 
@@ -263,6 +324,10 @@ public class MigracionExcelController {
 
     private LocalDate getFecha(Cell cell) {
         if (cell == null) return null;
+        
+        if (cell.getCellType() == org.apache.poi.ss.usermodel.CellType.BLANK) {
+            return null;
+        }
 
         switch (cell.getCellType()) {
             case NUMERIC:
@@ -277,6 +342,7 @@ public class MigracionExcelController {
                 }
             case STRING:
                 String texto = cell.getStringCellValue().trim();
+                if (texto.isEmpty()) return null;
                 try {
                     return LocalDate.parse(texto);
                 } catch (Exception e) {

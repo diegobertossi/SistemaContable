@@ -23,7 +23,11 @@ public class CajaMovimientoDAO {
                 + "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
-            ps.setDate(1, java.sql.Date.valueOf(movimiento.getFecha()));
+            if (movimiento.getFecha() != null) {
+                ps.setDate(1, java.sql.Date.valueOf(movimiento.getFecha()));
+            } else {
+                ps.setNull(1, java.sql.Types.DATE);
+            }
             ps.setString(2, movimiento.getTipo());
             ps.setString(3, movimiento.getDescripcion());
             ps.setBigDecimal(4, movimiento.getMonto());
@@ -108,7 +112,7 @@ public class CajaMovimientoDAO {
     }
 
     public List<CajaMovimientoDTO> buscarPorFecha(LocalDate desde, LocalDate hasta) {
-        String sql = "SELECT * FROM caja_movimientos WHERE fecha BETWEEN ? AND ? ORDER BY fecha DESC";
+        String sql = "SELECT * FROM caja_movimientos WHERE (fecha BETWEEN ? AND ?) OR fecha IS NULL ORDER BY fecha DESC, id DESC";
         List<CajaMovimientoDTO> lista = new ArrayList<>();
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
