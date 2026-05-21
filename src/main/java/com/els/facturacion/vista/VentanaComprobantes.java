@@ -14,10 +14,12 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
+import java.awt.Desktop;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.io.File;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -188,10 +190,43 @@ public class VentanaComprobantes extends javax.swing.JFrame {
                 "Generar PDF", JOptionPane.YES_NO_OPTION);
 
             if (opcion == JOptionPane.YES_OPTION) {
-                JOptionPane.showMessageDialog(this, "Funcionalidad de generacion de PDF en desarrollo", "Informacion", JOptionPane.INFORMATION_MESSAGE);
+                String ruta = controlador.regenerarPDF(comp);
+                if (ruta != null) {
+                    JOptionPane.showMessageDialog(this, "PDF generado: " + ruta, "Exito", JOptionPane.INFORMATION_MESSAGE);
+                    abrirPDF(ruta);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Error al generar PDF", "Error", JOptionPane.ERROR_MESSAGE);
+                }
             }
         } else {
-            JOptionPane.showMessageDialog(this, "PDF: " + comp.getRutaPdf(), "Ver PDF", JOptionPane.INFORMATION_MESSAGE);
+            File pdfFile = new File(comp.getRutaPdf());
+            if (pdfFile.exists()) {
+                abrirPDF(comp.getRutaPdf());
+            } else {
+                int opcion = JOptionPane.showConfirmDialog(this,
+                    "El archivo PDF no existe en la ruta indicada. Desea regenerarlo?",
+                    "PDF no encontrado", JOptionPane.YES_NO_OPTION);
+                if (opcion == JOptionPane.YES_OPTION) {
+                    String ruta = controlador.regenerarPDF(comp);
+                    if (ruta != null) {
+                        JOptionPane.showMessageDialog(this, "PDF generado: " + ruta, "Exito", JOptionPane.INFORMATION_MESSAGE);
+                        abrirPDF(ruta);
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Error al generar PDF", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        }
+    }
+
+    private void abrirPDF(String ruta) {
+        try {
+            File pdfFile = new File(ruta);
+            if (pdfFile.exists() && Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().open(pdfFile);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error al abrir PDF: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 

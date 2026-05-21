@@ -5,23 +5,32 @@ import com.els.facturacion.dao.ComprobanteDAO;
 import com.els.facturacion.dao.CuitDAO;
 import com.els.facturacion.modelo.ComprobanteDTO;
 import com.els.facturacion.modelo.CuitConfigDTO;
+import com.els.facturacion.modelo.ItemFacturaDTO;
 import com.els.facturacion.modelo.RespuestaCAE;
+import com.els.facturacion.pdf.GestorPDF;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 public class ControladorFacturacion {
 
     private CuitDAO cuitDAO;
     private ComprobanteDAO comprobanteDAO;
     private ServicioWSFEv1 servicioWSFEv1;
+    private boolean modoPrueba;
 
     public ControladorFacturacion() {
         this.cuitDAO = new CuitDAO();
         this.comprobanteDAO = new ComprobanteDAO();
         this.servicioWSFEv1 = new ServicioWSFEv1();
+        this.modoPrueba = false;
     }
 
     public RespuestaCAE emitirFactura(ComprobanteDTO comprobante) {
+        return emitirFactura(comprobante, null);
+    }
+
+    public RespuestaCAE emitirFactura(ComprobanteDTO comprobante, List<ItemFacturaDTO> items) {
         try {
             CuitConfigDTO cuit = cuitDAO.buscarPorCuit(comprobante.getCuitEmisor());
             if (cuit == null) {
@@ -55,11 +64,21 @@ public class ControladorFacturacion {
                 comprobante.setImporteTotal(total);
             }
 
-            RespuestaCAE respuesta = servicioWSFEv1.emitirComprobante(
-                comprobante,
-                cuit.getRutaCertificado(),
-                cuit.getPasswordCert()
-            );
+            RespuestaCAE respuesta;
+            if (modoPrueba) {
+                respuesta = new RespuestaCAE(
+                    String.format("%011d", comprobante.hashCode() % 100000000000L),
+                    LocalDate.now().plusDays(15),
+                    comprobante.getNumero()
+                );
+                respuesta.setMensaje("MODO PRUEBA - CAE ficticio generado");
+            } else {
+                respuesta = servicioWSFEv1.emitirComprobante(
+                    comprobante,
+                    cuit.getRutaCertificado(),
+                    cuit.getPasswordCert()
+                );
+            }
 
             if (respuesta.isExitosa()) {
                 comprobante.setCae(respuesta.getCae());
@@ -71,7 +90,14 @@ public class ControladorFacturacion {
                 int id = comprobanteDAO.insertar(comprobante);
                 if (id > 0) {
                     comprobante.setId(id);
-                    System.out.println("✓ Comprobante guardado en BD con ID: " + id);
+                    System.out.println("Comprobante guardado en BD con ID: " + id);
+
+                    String rutaPDF = new GestorPDF().generarFactura(comprobante, cuit, items);
+                    if (rutaPDF != null) {
+                        comprobante.setRutaPdf(rutaPDF);
+                        comprobanteDAO.actualizar(comprobante);
+                        System.out.println("PDF generado: " + rutaPDF);
+                    }
                 } else {
                     respuesta.setError("Error al guardar comprobante en base de datos");
                 }
@@ -126,5 +152,28 @@ public class ControladorFacturacion {
 
     public void setEntorno(String entorno) {
         servicioWSFEv1.setEntorno(entorno);
+    }
+
+    public String regenerarPDF(ComprobanteDTO comprobante) {
+        return regenerarPDF(comprobante, null);
+    }
+
+    public String regenerarPDF(ComprobanteDTO comprobante, List<ItemFacturaDTO> items) {
+        CuitConfigDTO cuit = cuitDAO.buscarPorCuit(comprobante.getCuitEmisor());
+        if (cuit == null) return null;
+        String rutaPDF = new GestorPDF().generarFactura(comprobante, cuit, items);
+        if (rutaPDF != null) {
+            comprobante.setRutaPdf(rutaPDF);
+            comprobanteDAO.actualizar(comprobante);
+        }
+        return rutaPDF;
+    }
+
+    public void setModoPrueba(boolean modoPrueba) {
+        this.modoPrueba = modoPrueba;
+    }
+
+    public boolean isModoPrueba() {
+        return modoPrueba;
     }
 }

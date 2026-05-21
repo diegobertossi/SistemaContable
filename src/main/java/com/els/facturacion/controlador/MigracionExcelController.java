@@ -167,8 +167,14 @@ public class MigracionExcelController {
             try {
                 LocalDate fecha = getFecha(row.getCell(0));
                 String cliente = getTexto(row.getCell(1));
-                String formaPago = getTexto(row.getCell(2));
+                String formaPagoCompleta = getTexto(row.getCell(2));
                 String els = getTexto(row.getCell(3));
+                
+                String formaPago = formaPagoCompleta;
+                if (formaPagoCompleta != null) {
+                    formaPago = formaPagoCompleta.replaceAll("\\s*ELS\\s*\\d+$", "").trim();
+                }
+                
                 String elsTexto = (els != null && !els.isEmpty()) ? " ELS " + els : "";
                 
                 BigDecimal cobroEfectivo = getMonto(row.getCell(4));

@@ -9,6 +9,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
@@ -21,9 +22,12 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class VentanaCaja extends javax.swing.JFrame {
 
@@ -39,8 +43,23 @@ public class VentanaCaja extends javax.swing.JFrame {
     private DefaultTableModel modeloTabla;
     private JComboBox<Integer> cmbAnio;
     private JLabel lblSaldo;
+    private JLabel lblSubCobroEfectivo;
+    private JLabel lblSubCobroPatagonia;
+    private JLabel lblSubPagoEfectivo;
+    private JLabel lblSubPagoPatagonia;
+    private JLabel lblSubCompraDolares;
+    private JLabel lblSaldoTotal;
     private DateTimeFormatter fechaFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private DecimalFormat formatoMoneda = new DecimalFormat("#,##0.00");
     private JTextField txtELS;
+    private JTextField txtCobroEfectivo;
+    private JTextField txtCobroPatagonia;
+    private JTextField txtPagoEfectivo;
+    private JTextField txtPagoPatagonia;
+    private JTextField txtDolares;
+    private JTextField txtCotizacion;
+    private JTextField txtPesosGastados;
+    private JComboBox<String> cmbFormaPago;
 
     public VentanaCaja() {
         controlador = new ControladorCaja();
@@ -90,7 +109,8 @@ public class VentanaCaja extends javax.swing.JFrame {
             actualizarSaldo();
         });
 
-        JButton btnNuevoAnio = crearBoton("NUEVO AÑO");
+        JButton btnNuevoAnio = new JButton("NUEVO AÑO");
+        estilizarBoton(btnNuevoAnio);
         btnNuevoAnio.addActionListener(e -> btnNuevoAnioAction());
 
         panelAnio.add(lblFiltrarAnio);
@@ -117,31 +137,99 @@ public class VentanaCaja extends javax.swing.JFrame {
         for (int i = 0; i < columnas.length; i++) {
             tabla.getColumnModel().getColumn(i).setPreferredWidth(100);
         }
+        
+        tabla.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int row = tabla.getSelectedRow();
+                    int col = tabla.getSelectedColumn();
+                    if (row >= 0 && col >= 0 && col != 1 && col != 8 && col != 9) {
+                        editarCelda(row, col);
+                    }
+                }
+            }
+        });
+        
         JScrollPane scrollPane = new JScrollPane(tabla);
         scrollPane.setPreferredSize(new java.awt.Dimension(1000, 250));
 
+        JPanel panelSubtotales = new JPanel(new GridBagLayout());
+        panelSubtotales.setBackground(COLOR_FONDO);
+
+        JLabel lblSubTitulo = new JLabel("SUBTOTALES");
+        lblSubTitulo.setFont(new Font("Cambria", Font.BOLD, 12));
+        lblSubTitulo.setForeground(COLOR_TITULO);
+        GridBagConstraints gbcSubTitulo = new GridBagConstraints();
+        gbcSubTitulo.gridx = 0; gbcSubTitulo.gridy = 0; gbcSubTitulo.gridwidth = 10;
+        gbcSubTitulo.insets = new Insets(5, 10, 5, 10);
+        gbcSubTitulo.fill = GridBagConstraints.HORIZONTAL;
+        panelSubtotales.add(lblSubTitulo, gbcSubTitulo);
+
+        lblSubCobroEfectivo = new JLabel("Cobro Efectivo: $ 0,00");
+        lblSubCobroEfectivo.setFont(FUENTE_BOTON);
+        lblSubCobroEfectivo.setForeground(COLOR_TEXTO);
+        GridBagConstraints gbcSubCobroEf = new GridBagConstraints();
+        gbcSubCobroEf.gridwidth = 1; gbcSubCobroEf.gridx = 0; gbcSubCobroEf.gridy = 1;
+        gbcSubCobroEf.insets = new Insets(5, 10, 5, 10);
+        gbcSubCobroEf.fill = GridBagConstraints.HORIZONTAL;
+        panelSubtotales.add(lblSubCobroEfectivo, gbcSubCobroEf);
+
+        lblSubCobroPatagonia = new JLabel("Cobro Patagonia: $ 0,00");
+        lblSubCobroPatagonia.setFont(FUENTE_BOTON);
+        lblSubCobroPatagonia.setForeground(COLOR_TEXTO);
+        GridBagConstraints gbcSubCobroPat = new GridBagConstraints();
+        gbcSubCobroPat.gridx = 1; gbcSubCobroPat.gridy = 1;
+        gbcSubCobroPat.insets = new Insets(5, 10, 5, 10);
+        gbcSubCobroPat.fill = GridBagConstraints.HORIZONTAL;
+        panelSubtotales.add(lblSubCobroPatagonia, gbcSubCobroPat);
+
+        lblSubPagoEfectivo = new JLabel("Pago Efectivo: $ 0,00");
+        lblSubPagoEfectivo.setFont(FUENTE_BOTON);
+        lblSubPagoEfectivo.setForeground(COLOR_TEXTO);
+        GridBagConstraints gbcSubPagoEf = new GridBagConstraints();
+        gbcSubPagoEf.gridx = 2; gbcSubPagoEf.gridy = 1;
+        gbcSubPagoEf.insets = new Insets(5, 10, 5, 10);
+        gbcSubPagoEf.fill = GridBagConstraints.HORIZONTAL;
+        panelSubtotales.add(lblSubPagoEfectivo, gbcSubPagoEf);
+
+        lblSubPagoPatagonia = new JLabel("Pago Patagonia: $ 0,00");
+        lblSubPagoPatagonia.setFont(FUENTE_BOTON);
+        lblSubPagoPatagonia.setForeground(COLOR_TEXTO);
+        GridBagConstraints gbcSubPagoPat = new GridBagConstraints();
+        gbcSubPagoPat.gridx = 3; gbcSubPagoPat.gridy = 1;
+        gbcSubPagoPat.insets = new Insets(5, 10, 5, 10);
+        gbcSubPagoPat.fill = GridBagConstraints.HORIZONTAL;
+        panelSubtotales.add(lblSubPagoPatagonia, gbcSubPagoPat);
+
+        lblSubCompraDolares = new JLabel("Compra Dólares: $ 0,00");
+        lblSubCompraDolares.setFont(FUENTE_BOTON);
+        lblSubCompraDolares.setForeground(COLOR_TEXTO);
+        GridBagConstraints gbcSubCompraDol = new GridBagConstraints();
+        gbcSubCompraDol.gridx = 4; gbcSubCompraDol.gridy = 1;
+        gbcSubCompraDol.insets = new Insets(5, 10, 5, 10);
+        gbcSubCompraDol.fill = GridBagConstraints.HORIZONTAL;
+        panelSubtotales.add(lblSubCompraDolares, gbcSubCompraDol);
+
+        lblSaldoTotal = new JLabel("SALDO: $ 0,00");
+        lblSaldoTotal.setFont(new Font("Cambria", Font.BOLD, 14));
+        lblSaldoTotal.setForeground(COLOR_TITULO);
+        GridBagConstraints gbcSubSaldoTotal = new GridBagConstraints();
+        gbcSubSaldoTotal.gridx = 8; gbcSubSaldoTotal.gridy = 1;
+        gbcSubSaldoTotal.insets = new Insets(5, 10, 5, 10);
+        gbcSubSaldoTotal.fill = GridBagConstraints.HORIZONTAL;
+        panelSubtotales.add(lblSaldoTotal, gbcSubSaldoTotal);
+
         JPanel panelFormulario = new JPanel(new GridBagLayout());
         panelFormulario.setBackground(COLOR_FONDO);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 8, 5, 8);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
 
         JLabel lblFecha = new JLabel("Fecha:");
         lblFecha.setFont(FUENTE_BOTON);
         lblFecha.setForeground(COLOR_TEXTO);
 
-        JCheckBox chkCompraDolares = new JCheckBox("Compra Dólares");
-        chkCompraDolares.setFont(FUENTE_BOTON);
-        chkCompraDolares.setForeground(COLOR_TEXTO);
-        chkCompraDolares.setBackground(COLOR_FONDO);
-
-        JLabel lblCliente = new JLabel("Cliente/Nota:");
+        JLabel lblCliente = new JLabel("Cliente:");
         lblCliente.setFont(FUENTE_BOTON);
         lblCliente.setForeground(COLOR_TEXTO);
-
-        JLabel lblMovimiento = new JLabel("Movimiento:");
-        lblMovimiento.setFont(FUENTE_BOTON);
-        lblMovimiento.setForeground(COLOR_TEXTO);
 
         JLabel lblFormaPago = new JLabel("Forma Pago:");
         lblFormaPago.setFont(FUENTE_BOTON);
@@ -151,60 +239,92 @@ public class VentanaCaja extends javax.swing.JFrame {
         lblELS.setFont(FUENTE_BOTON);
         lblELS.setForeground(COLOR_TEXTO);
 
+        JLabel lblCobroEfec = new JLabel("Cobro Efectivo:");
+        lblCobroEfec.setFont(FUENTE_BOTON);
+        lblCobroEfec.setForeground(COLOR_TEXTO);
+
+        JLabel lblCobroPat = new JLabel("Cobro Patagonia:");
+        lblCobroPat.setFont(FUENTE_BOTON);
+        lblCobroPat.setForeground(COLOR_TEXTO);
+
+        JLabel lblPagoEfec = new JLabel("Pago Efectivo:");
+        lblPagoEfec.setFont(FUENTE_BOTON);
+        lblPagoEfec.setForeground(COLOR_TEXTO);
+
+        JLabel lblPagoPat = new JLabel("Pago Patagonia:");
+        lblPagoPat.setFont(FUENTE_BOTON);
+        lblPagoPat.setForeground(COLOR_TEXTO);
+
+        JLabel lblCompraDol = new JLabel("Compra Dólares:");
+        lblCompraDol.setFont(FUENTE_BOTON);
+        lblCompraDol.setForeground(COLOR_TEXTO);
+
+        JCheckBox chkCompraDolares = new JCheckBox("Activo");
+        chkCompraDolares.setFont(FUENTE_BOTON);
+        chkCompraDolares.setForeground(COLOR_TEXTO);
+        chkCompraDolares.setBackground(COLOR_FONDO);
+
         JTextField txtFecha = new JTextField(10);
         txtFecha.setFont(new Font("Cambria", Font.PLAIN, 11));
         txtFecha.setText(LocalDate.now().format(fechaFormatter));
 
-        JTextField txtDolares = new JTextField(8);
-        txtDolares.setFont(new Font("Cambria", Font.PLAIN, 11));
-        txtDolares.setEnabled(false);
-
-        JTextField txtCotizacion = new JTextField(8);
-        txtCotizacion.setFont(new Font("Cambria", Font.PLAIN, 11));
-        txtCotizacion.setEnabled(false);
-
-        JTextField txtPesosGastados = new JTextField(10);
-        txtPesosGastados.setFont(new Font("Cambria", Font.PLAIN, 11));
-        txtPesosGastados.setEnabled(false);
-        txtPesosGastados.setEditable(false);
-
-        JTextField txtCliente = new JTextField(18);
+        JTextField txtCliente = new JTextField(15);
         txtCliente.setFont(new Font("Cambria", Font.PLAIN, 11));
 
-        JComboBox<String> cmbMovimiento = new JComboBox<>(new String[]{"Cobro", "Pago"});
-        cmbMovimiento.setFont(FUENTE_BOTON);
-
-        JComboBox<String> cmbFormaPago = new JComboBox<>(new String[]{
+        cmbFormaPago = new JComboBox<>(new String[]{
             "Efectivo", "Transferencia", "Transferencia+Efectivo", "Débito", "Otra"
         });
         cmbFormaPago.setFont(FUENTE_BOTON);
 
-        JTextField txtEfectivo = new JTextField(8);
-        txtEfectivo.setFont(new Font("Cambria", Font.PLAIN, 11));
-
-        JLabel lblELS1 = new JLabel("N° ELS:");
-        lblELS1.setFont(FUENTE_BOTON);
-        lblELS1.setForeground(COLOR_TEXTO);
-
         txtELS = new JTextField(8);
         txtELS.setFont(new Font("Cambria", Font.PLAIN, 11));
+
+        txtCobroEfectivo = new JTextField(10);
+        txtCobroEfectivo.setFont(new Font("Cambria", Font.PLAIN, 11));
+
+        txtCobroPatagonia = new JTextField(10);
+        txtCobroPatagonia.setFont(new Font("Cambria", Font.PLAIN, 11));
+
+        txtPagoEfectivo = new JTextField(10);
+        txtPagoEfectivo.setFont(new Font("Cambria", Font.PLAIN, 11));
+
+        txtPagoPatagonia = new JTextField(10);
+        txtPagoPatagonia.setFont(new Font("Cambria", Font.PLAIN, 11));
+
+        txtDolares = new JTextField(8);
+        txtDolares.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtDolares.setEnabled(false);
+
+        txtCotizacion = new JTextField(8);
+        txtCotizacion.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtCotizacion.setEnabled(false);
+
+        txtPesosGastados = new JTextField(10);
+        txtPesosGastados.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtPesosGastados.setEnabled(false);
+        txtPesosGastados.setEditable(false);
 
         chkCompraDolares.addActionListener(e -> {
             boolean enabled = chkCompraDolares.isSelected();
             txtDolares.setEnabled(enabled);
             txtCotizacion.setEnabled(enabled);
-            cmbFormaPago.setEnabled(true);
+            cmbFormaPago.setEnabled(!enabled);
             txtCliente.setEnabled(!enabled);
-            cmbMovimiento.setEnabled(!enabled);
-            txtEfectivo.setEnabled(!enabled);
+            txtCobroEfectivo.setEnabled(!enabled);
+            txtCobroPatagonia.setEnabled(!enabled);
+            txtPagoEfectivo.setEnabled(!enabled);
+            txtPagoPatagonia.setEnabled(!enabled);
             txtELS.setEnabled(!enabled);
             
             if (enabled) {
-                txtEfectivo.setText("");
+                txtCobroEfectivo.setText("");
+                txtCobroPatagonia.setText("");
+                txtPagoEfectivo.setText("");
+                txtPagoPatagonia.setText("");
                 txtCliente.setText("");
-                cmbMovimiento.setSelectedIndex(0);
                 cmbFormaPago.setSelectedIndex(0);
                 txtELS.setText("");
+                txtFecha.setText(LocalDate.now().format(fechaFormatter));
             }
         });
 
@@ -231,149 +351,349 @@ public class VentanaCaja extends javax.swing.JFrame {
         JPanel panelBotones = new JPanel();
         panelBotones.setBackground(COLOR_FONDO);
 
-        JButton btnAgregar = crearBoton("AGREGAR");
+        JButton btnAgregar = new JButton("AGREGAR");
+        estilizarBoton(btnAgregar);
         btnAgregar.addActionListener(e -> {
             try {
-                LocalDate fecha = LocalDate.parse(txtFecha.getText().trim(), fechaFormatter);
+                LocalDate fecha = null;
+                if (!txtFecha.getText().trim().isEmpty()) {
+                    fecha = LocalDate.parse(txtFecha.getText().trim(), fechaFormatter);
+                }
                 String cliente = txtCliente.getText().trim();
                 String formaPago = (String) cmbFormaPago.getSelectedItem();
-                String movimiento = (String) cmbMovimiento.getSelectedItem();
                 String numeroELS = txtELS.getText().trim();
-                String elsTexto = numeroELS.isEmpty() ? "" : " - ELS " + numeroELS;
+                String elsTexto = numeroELS.isEmpty() ? "" : " ELS " + numeroELS;
 
-                if (chkCompraDolares.isSelected()) {
-                    BigDecimal dolares = new BigDecimal(txtDolares.getText().trim());
-                    BigDecimal cotizacion = new BigDecimal(txtCotizacion.getText().trim());
-                    BigDecimal pesos = dolares.multiply(cotizacion);
-                    
-                    String formaPagoDolar = (String) cmbFormaPago.getSelectedItem();
-                    String esEfectivoDolar = formaPagoDolar.equals("Efectivo") ? "EFECTIVO" : "BANCO";
-                    
-                    String descripcion = "COMPRA DÓLARES|" + dolares.toString() + "|" + cotizacion.toString() + "|" + esEfectivoDolar;
-                    int id = controlador.registrarMovimiento(fecha, "pago", descripcion, pesos);
-                    
-                    if (id > 0) {
-                        String tipoPago = formaPagoDolar.equals("Efectivo") ? "Efectivo" : formaPagoDolar;
-                        JOptionPane.showMessageDialog(this, "Compra de dólares registrada", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-                        txtDolares.setText("");
-                        txtCotizacion.setText("");
-                        txtPesosGastados.setText("");
-                        cargarMovimientosPorAnio();
-                        actualizarSaldo();
-                    }
-                } else {
-                    BigDecimal monto = BigDecimal.ZERO;
-                    boolean tieneDatos = false;
+                BigDecimal cobrosEfectivo = BigDecimal.ZERO;
+                BigDecimal cobrosPatagonia = BigDecimal.ZERO;
+                BigDecimal pagosEfectivo = BigDecimal.ZERO;
+                BigDecimal pagosPatagonia = BigDecimal.ZERO;
 
-                    if (!txtEfectivo.getText().trim().isEmpty()) {
-                        monto = new BigDecimal(txtEfectivo.getText().trim());
-                        tieneDatos = true;
-                    }
+                if (!txtCobroEfectivo.getText().trim().isEmpty()) {
+                    cobrosEfectivo = new BigDecimal(txtCobroEfectivo.getText().trim().replace(",", "."));
+                }
+                if (!txtCobroPatagonia.getText().trim().isEmpty()) {
+                    cobrosPatagonia = new BigDecimal(txtCobroPatagonia.getText().trim().replace(",", "."));
+                }
+                if (!txtPagoEfectivo.getText().trim().isEmpty()) {
+                    pagosEfectivo = new BigDecimal(txtPagoEfectivo.getText().trim().replace(",", "."));
+                }
+                if (!txtPagoPatagonia.getText().trim().isEmpty()) {
+                    pagosPatagonia = new BigDecimal(txtPagoPatagonia.getText().trim().replace(",", "."));
+                }
 
-                    if (!tieneDatos || cliente.isEmpty()) {
-                        JOptionPane.showMessageDialog(this, "Complete los datos requeridos", "Error", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
+                boolean tieneDatos = cobrosEfectivo.compareTo(BigDecimal.ZERO) > 0 || cobrosPatagonia.compareTo(BigDecimal.ZERO) > 0 
+                    || pagosEfectivo.compareTo(BigDecimal.ZERO) > 0 || pagosPatagonia.compareTo(BigDecimal.ZERO) > 0;
 
-                    String tipoMov = movimiento.equals("Cobro") ? "cobro" : "pago";
-                    boolean esEfectivo = formaPago.equals("Efectivo");
-                    String descripcion = esEfectivo 
-                        ? cliente + " - Efectivo" + elsTexto 
-                        : cliente + " - " + formaPago + elsTexto;
+                if (!tieneDatos) {
+                    JOptionPane.showMessageDialog(this, "Ingrese al menos un monto", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
 
-                    int id = controlador.registrarMovimiento(fecha, tipoMov, descripcion, monto);
-                    if (id > 0) {
-                        JOptionPane.showMessageDialog(this, "Movimiento registrado", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-                        txtCliente.setText("");
-                        txtEfectivo.setText("");
-                        txtFecha.setText(LocalDate.now().format(fechaFormatter));
-                        cargarMovimientosPorAnio();
-                        actualizarSaldo();
-                    }
+                int registros = 0;
+
+                if (cobrosEfectivo.compareTo(BigDecimal.ZERO) > 0) {
+                    String desc = cliente + " - Efectivo" + elsTexto;
+                    int id = controlador.registrarMovimiento(fecha, "cobro", desc, cobrosEfectivo);
+                    if (id > 0) registros++;
+                }
+                if (cobrosPatagonia.compareTo(BigDecimal.ZERO) > 0) {
+                    String desc = cliente + " - " + formaPago + elsTexto;
+                    int id = controlador.registrarMovimiento(fecha, "cobro", desc, cobrosPatagonia);
+                    if (id > 0) registros++;
+                }
+                if (pagosEfectivo.compareTo(BigDecimal.ZERO) > 0) {
+                    String desc = cliente + " - Efectivo" + elsTexto;
+                    int id = controlador.registrarMovimiento(fecha, "pago", desc, pagosEfectivo);
+                    if (id > 0) registros++;
+                }
+                if (pagosPatagonia.compareTo(BigDecimal.ZERO) > 0) {
+                    String desc = cliente + " - " + formaPago + elsTexto;
+                    int id = controlador.registrarMovimiento(fecha, "pago", desc, pagosPatagonia);
+                    if (id > 0) registros++;
+                }
+
+                if (registros > 0) {
+                    txtCliente.setText("");
+                    txtCobroEfectivo.setText("");
+                    txtCobroPatagonia.setText("");
+                    txtPagoEfectivo.setText("");
+                    txtPagoPatagonia.setText("");
+                    txtELS.setText("");
+                    txtDolares.setText("");
+                    txtCotizacion.setText("");
+                    txtPesosGastados.setText("");
+                    txtFecha.setText(LocalDate.now().format(fechaFormatter));
+                    cargarMovimientosPorAnio();
+                    actualizarSaldo();
                 }
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
 
-        JButton btnEliminar = crearBoton("ELIMINAR");
+        JButton btnEliminar = new JButton("ELIMINAR");
+        estilizarBoton(btnEliminar);
         btnEliminar.addActionListener(e -> btnEliminarAction());
 
-        JButton btnActualizar = crearBoton("ACTUALIZAR");
+        JButton btnActualizar = new JButton("ACTUALIZAR");
+        estilizarBoton(btnActualizar);
         btnActualizar.addActionListener(e -> {
             cargarMovimientosPorAnio();
             actualizarSaldo();
         });
 
-        JButton btnEditar = crearBoton("EDITAR");
-        btnEditar.addActionListener(e -> btnEditarAction());
-
         panelBotones.add(btnAgregar);
-        panelBotones.add(btnEditar);
         panelBotones.add(btnEliminar);
         panelBotones.add(btnActualizar);
 
-        gbc.gridx = 0; gbc.gridy = 0;
-        panelFormulario.add(lblFecha, gbc);
-        gbc.gridx = 1;
-        panelFormulario.add(txtFecha, gbc);
-        gbc.gridx = 2;
-        panelFormulario.add(chkCompraDolares, gbc);
-        gbc.gridx = 3;
-        panelFormulario.add(new JLabel("Dólares:"), gbc);
-        gbc.gridx = 4;
-        panelFormulario.add(txtDolares, gbc);
-        gbc.gridx = 5;
-        panelFormulario.add(new JLabel("Cotización:"), gbc);
-        gbc.gridx = 6;
-        panelFormulario.add(txtCotizacion, gbc);
-        gbc.gridx = 7;
-        panelFormulario.add(new JLabel("Pesos:"), gbc);
-        gbc.gridx = 8;
-        panelFormulario.add(txtPesosGastados, gbc);
+        GridBagConstraints gbcDatosMov = new GridBagConstraints();
+        gbcDatosMov.insets = new Insets(4, 6, 4, 6);
+        gbcDatosMov.fill = GridBagConstraints.HORIZONTAL;
+        gbcDatosMov.gridx = 0; gbcDatosMov.gridy = 0; gbcDatosMov.gridwidth = 8;
+        JLabel lblDatosMov = new JLabel("DATOS DEL MOVIMIENTO");
+        lblDatosMov.setFont(new Font("Cambria", Font.BOLD, 13));
+        lblDatosMov.setForeground(COLOR_TITULO);
+        panelFormulario.add(lblDatosMov, gbcDatosMov);
 
-        gbc.gridx = 0; gbc.gridy = 1;
-        panelFormulario.add(lblCliente, gbc);
-        gbc.gridx = 1;
-        gbc.gridwidth = 2;
-        panelFormulario.add(txtCliente, gbc);
-        gbc.gridwidth = 1;
-        gbc.gridx = 3;
-        panelFormulario.add(lblMovimiento, gbc);
-        gbc.gridx = 4;
-        panelFormulario.add(cmbMovimiento, gbc);
-        gbc.gridx = 5;
-        panelFormulario.add(lblFormaPago, gbc);
-        gbc.gridx = 6;
-        panelFormulario.add(cmbFormaPago, gbc);
+        GridBagConstraints gbcFecha = new GridBagConstraints();
+        gbcFecha.insets = new Insets(4, 6, 4, 6);
+        gbcFecha.fill = GridBagConstraints.HORIZONTAL;
+        gbcFecha.gridwidth = 1; gbcFecha.gridx = 0; gbcFecha.gridy = 1;
+        panelFormulario.add(lblFecha, gbcFecha);
 
-gbc.gridx = 0; gbc.gridy = 2;
-        panelFormulario.add(new JLabel("Monto:"), gbc);
-        gbc.gridx = 1;
-        panelFormulario.add(txtEfectivo, gbc);
-        gbc.gridx = 2;
-        panelFormulario.add(lblELS1, gbc);
-        gbc.gridx = 3;
-        panelFormulario.add(txtELS, gbc);
+        GridBagConstraints gbcTxtFecha = new GridBagConstraints();
+        gbcTxtFecha.insets = new Insets(4, 6, 4, 6);
+        gbcTxtFecha.fill = GridBagConstraints.HORIZONTAL;
+        gbcTxtFecha.gridx = 1; gbcTxtFecha.gridy = 1;
+        panelFormulario.add(txtFecha, gbcTxtFecha);
+
+        GridBagConstraints gbcCliente = new GridBagConstraints();
+        gbcCliente.insets = new Insets(4, 6, 4, 6);
+        gbcCliente.fill = GridBagConstraints.HORIZONTAL;
+        gbcCliente.gridx = 2; gbcCliente.gridy = 1;
+        panelFormulario.add(lblCliente, gbcCliente);
+
+        GridBagConstraints gbcTxtCliente = new GridBagConstraints();
+        gbcTxtCliente.insets = new Insets(4, 6, 4, 6);
+        gbcTxtCliente.fill = GridBagConstraints.HORIZONTAL;
+        gbcTxtCliente.gridx = 3; gbcTxtCliente.gridy = 1; gbcTxtCliente.gridwidth = 2;
+        panelFormulario.add(txtCliente, gbcTxtCliente);
+
+        GridBagConstraints gbcFormaPago = new GridBagConstraints();
+        gbcFormaPago.insets = new Insets(4, 6, 4, 6);
+        gbcFormaPago.fill = GridBagConstraints.HORIZONTAL;
+        gbcFormaPago.gridwidth = 1; gbcFormaPago.gridx = 5; gbcFormaPago.gridy = 1;
+        panelFormulario.add(lblFormaPago, gbcFormaPago);
+
+        GridBagConstraints gbcCmbFormaPago = new GridBagConstraints();
+        gbcCmbFormaPago.insets = new Insets(4, 6, 4, 6);
+        gbcCmbFormaPago.fill = GridBagConstraints.HORIZONTAL;
+        gbcCmbFormaPago.gridx = 6; gbcCmbFormaPago.gridy = 1;
+        panelFormulario.add(cmbFormaPago, gbcCmbFormaPago);
+
+        GridBagConstraints gbcELS = new GridBagConstraints();
+        gbcELS.insets = new Insets(4, 6, 4, 6);
+        gbcELS.fill = GridBagConstraints.HORIZONTAL;
+        gbcELS.gridx = 7; gbcELS.gridy = 1;
+        panelFormulario.add(lblELS, gbcELS);
+
+        GridBagConstraints gbcCobroEfec = new GridBagConstraints();
+        gbcCobroEfec.insets = new Insets(4, 6, 4, 6);
+        gbcCobroEfec.fill = GridBagConstraints.HORIZONTAL;
+        gbcCobroEfec.gridwidth = 1; gbcCobroEfec.gridx = 0; gbcCobroEfec.gridy = 2;
+        panelFormulario.add(lblCobroEfec, gbcCobroEfec);
+
+        GridBagConstraints gbcTxtCobroEfectivo = new GridBagConstraints();
+        gbcTxtCobroEfectivo.insets = new Insets(4, 6, 4, 6);
+        gbcTxtCobroEfectivo.fill = GridBagConstraints.HORIZONTAL;
+        gbcTxtCobroEfectivo.gridx = 1; gbcTxtCobroEfectivo.gridy = 2;
+        panelFormulario.add(txtCobroEfectivo, gbcTxtCobroEfectivo);
+
+        GridBagConstraints gbcCobroPat = new GridBagConstraints();
+        gbcCobroPat.insets = new Insets(4, 6, 4, 6);
+        gbcCobroPat.fill = GridBagConstraints.HORIZONTAL;
+        gbcCobroPat.gridx = 2; gbcCobroPat.gridy = 2;
+        panelFormulario.add(lblCobroPat, gbcCobroPat);
+
+        GridBagConstraints gbcTxtCobroPatagonia = new GridBagConstraints();
+        gbcTxtCobroPatagonia.insets = new Insets(4, 6, 4, 6);
+        gbcTxtCobroPatagonia.fill = GridBagConstraints.HORIZONTAL;
+        gbcTxtCobroPatagonia.gridx = 3; gbcTxtCobroPatagonia.gridy = 2;
+        panelFormulario.add(txtCobroPatagonia, gbcTxtCobroPatagonia);
+
+        GridBagConstraints gbcPagoEfec = new GridBagConstraints();
+        gbcPagoEfec.insets = new Insets(4, 6, 4, 6);
+        gbcPagoEfec.fill = GridBagConstraints.HORIZONTAL;
+        gbcPagoEfec.gridx = 4; gbcPagoEfec.gridy = 2;
+        panelFormulario.add(lblPagoEfec, gbcPagoEfec);
+
+        GridBagConstraints gbcTxtPagoEfectivo = new GridBagConstraints();
+        gbcTxtPagoEfectivo.insets = new Insets(4, 6, 4, 6);
+        gbcTxtPagoEfectivo.fill = GridBagConstraints.HORIZONTAL;
+        gbcTxtPagoEfectivo.gridx = 5; gbcTxtPagoEfectivo.gridy = 2;
+        panelFormulario.add(txtPagoEfectivo, gbcTxtPagoEfectivo);
+
+        GridBagConstraints gbcPagoPat = new GridBagConstraints();
+        gbcPagoPat.insets = new Insets(4, 6, 4, 6);
+        gbcPagoPat.fill = GridBagConstraints.HORIZONTAL;
+        gbcPagoPat.gridx = 6; gbcPagoPat.gridy = 2;
+        panelFormulario.add(lblPagoPat, gbcPagoPat);
+
+        GridBagConstraints gbcTxtPagoPatagonia = new GridBagConstraints();
+        gbcTxtPagoPatagonia.insets = new Insets(4, 6, 4, 6);
+        gbcTxtPagoPatagonia.fill = GridBagConstraints.HORIZONTAL;
+        gbcTxtPagoPatagonia.gridx = 7; gbcTxtPagoPatagonia.gridy = 2;
+        panelFormulario.add(txtPagoPatagonia, gbcTxtPagoPatagonia);
+
+        GridBagConstraints gbcSep1 = new GridBagConstraints();
+        gbcSep1.insets = new Insets(4, 6, 4, 6);
+        gbcSep1.fill = GridBagConstraints.HORIZONTAL;
+        gbcSep1.gridx = 0; gbcSep1.gridy = 3; gbcSep1.gridwidth = 8;
+        JSeparator sep1 = new JSeparator();
+        sep1.setForeground(COLOR_TEXTO);
+        panelFormulario.add(sep1, gbcSep1);
+
+        GridBagConstraints gbcChkCompraDolares = new GridBagConstraints();
+        gbcChkCompraDolares.insets = new Insets(4, 6, 4, 6);
+        gbcChkCompraDolares.fill = GridBagConstraints.HORIZONTAL;
+        gbcChkCompraDolares.gridwidth = 1; gbcChkCompraDolares.gridx = 0; gbcChkCompraDolares.gridy = 4;
+        panelFormulario.add(chkCompraDolares, gbcChkCompraDolares);
+
+        GridBagConstraints gbcLblDolares = new GridBagConstraints();
+        gbcLblDolares.insets = new Insets(4, 6, 4, 6);
+        gbcLblDolares.fill = GridBagConstraints.HORIZONTAL;
+        gbcLblDolares.gridx = 1; gbcLblDolares.gridy = 4;
+        panelFormulario.add(new JLabel("Dólares:"), gbcLblDolares);
+
+        GridBagConstraints gbcTxtDolares = new GridBagConstraints();
+        gbcTxtDolares.insets = new Insets(4, 6, 4, 6);
+        gbcTxtDolares.fill = GridBagConstraints.HORIZONTAL;
+        gbcTxtDolares.gridx = 2; gbcTxtDolares.gridy = 4;
+        panelFormulario.add(txtDolares, gbcTxtDolares);
+
+        GridBagConstraints gbcLblX = new GridBagConstraints();
+        gbcLblX.insets = new Insets(4, 6, 4, 6);
+        gbcLblX.fill = GridBagConstraints.HORIZONTAL;
+        gbcLblX.gridx = 3; gbcLblX.gridy = 4;
+        panelFormulario.add(new JLabel("x"), gbcLblX);
+
+        GridBagConstraints gbcLblCotizacion = new GridBagConstraints();
+        gbcLblCotizacion.insets = new Insets(4, 6, 4, 6);
+        gbcLblCotizacion.fill = GridBagConstraints.HORIZONTAL;
+        gbcLblCotizacion.gridx = 4; gbcLblCotizacion.gridy = 4;
+        panelFormulario.add(new JLabel("Cotización:"), gbcLblCotizacion);
+
+        GridBagConstraints gbcTxtCotizacion = new GridBagConstraints();
+        gbcTxtCotizacion.insets = new Insets(4, 6, 4, 6);
+        gbcTxtCotizacion.fill = GridBagConstraints.HORIZONTAL;
+        gbcTxtCotizacion.gridx = 5; gbcTxtCotizacion.gridy = 4;
+        panelFormulario.add(txtCotizacion, gbcTxtCotizacion);
+
+        GridBagConstraints gbcLblIgual = new GridBagConstraints();
+        gbcLblIgual.insets = new Insets(4, 6, 4, 6);
+        gbcLblIgual.fill = GridBagConstraints.HORIZONTAL;
+        gbcLblIgual.gridx = 6; gbcLblIgual.gridy = 4;
+        panelFormulario.add(new JLabel("="), gbcLblIgual);
+
+        GridBagConstraints gbcTxtPesosGastados = new GridBagConstraints();
+        gbcTxtPesosGastados.insets = new Insets(4, 6, 4, 6);
+        gbcTxtPesosGastados.fill = GridBagConstraints.HORIZONTAL;
+        gbcTxtPesosGastados.gridx = 7; gbcTxtPesosGastados.gridy = 4;
+        panelFormulario.add(txtPesosGastados, gbcTxtPesosGastados);
 
         JPanel panelSur = new JPanel(new BorderLayout());
         panelSur.setBackground(COLOR_FONDO);
         panelSur.add(panelFormulario, BorderLayout.CENTER);
         panelSur.add(panelBotones, BorderLayout.SOUTH);
 
+        JPanel panelCompletoSur = new JPanel(new BorderLayout());
+        panelCompletoSur.setBackground(COLOR_FONDO);
+        panelCompletoSur.add(panelSubtotales, BorderLayout.NORTH);
+        panelCompletoSur.add(panelSur, BorderLayout.CENTER);
+
         add(panelSuperior, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
-        add(panelSur, BorderLayout.SOUTH);
+        add(panelCompletoSur, BorderLayout.SOUTH);
     }
 
-    private JButton crearBoton(String texto) {
-        JButton btn = new JButton(texto);
+    private void estilizarBoton(JButton btn) {
         btn.setFont(FUENTE_BOTON);
         btn.setForeground(COLOR_TEXTO);
         btn.setBackground(COLOR_BOTON);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setFocusPainted(false);
-        return btn;
+    }
+
+    private String formatearMonto(BigDecimal monto) {
+        if (monto == null) return "";
+        return "$ " + formatoMoneda.format(monto);
+    }
+
+    private void editarCelda(int row, int col) {
+        Object valorActual = modeloTabla.getValueAt(row, col);
+        String valorStr = valorActual != null ? valorActual.toString().replace("$", "").replace(" ", "").trim() : "";
+
+        JTextField txtEdit = new JTextField(valorStr);
+        txtEdit.setFont(new Font("Cambria", Font.PLAIN, 11));
+
+        int result = JOptionPane.showConfirmDialog(this, txtEdit, "Editar valor", JOptionPane.OK_CANCEL_OPTION);
+
+        if (result == JOptionPane.OK_OPTION) {
+            String nuevoValor = txtEdit.getText().trim();
+            
+            String fecha = (String) modeloTabla.getValueAt(row, 0);
+            String tipo = (String) modeloTabla.getValueAt(row, 1);
+            String cliente = (String) modeloTabla.getValueAt(row, 2);
+            String formaPago = (String) modeloTabla.getValueAt(row, 3);
+            String els = (String) modeloTabla.getValueAt(row, 9);
+
+            List<CajaMovimientoDTO> lista = controlador.listarMovimientos();
+            for (CajaMovimientoDTO dto : lista) {
+                String desc = dto.getDescripcion() != null ? dto.getDescripcion() : "";
+                boolean fechaMatch = (dto.getFecha() != null && dto.getFecha().format(fechaFormatter).equals(fecha)) ||
+                                     (fecha.isEmpty() && dto.getFecha() == null);
+
+                if (fechaMatch && dto.getTipo().equalsIgnoreCase(tipo) && desc.contains(cliente)) {
+                    try {
+                        if (col >= 4 && col <= 7 || col == 8) {
+                            BigDecimal monto = new BigDecimal(nuevoValor.replace(",", "."));
+                            dto.setMonto(monto);
+                        } else if (col == 0) {
+                            if (!nuevoValor.isEmpty()) {
+                                dto.setFecha(LocalDate.parse(nuevoValor, fechaFormatter));
+                            }
+                        } else if (col == 2) {
+                            String nuevaDesc = nuevoValor + (formaPago != null && !formaPago.isEmpty() ? " - " + formaPago : "");
+                            if (els != null && !els.isEmpty()) {
+                                nuevaDesc += " ELS " + els;
+                            }
+                            dto.setDescripcion(nuevaDesc);
+                        } else if (col == 3) {
+                            String nuevaDesc = cliente + " - " + nuevoValor;
+                            if (els != null && !els.isEmpty()) {
+                                nuevaDesc += " ELS " + els;
+                            }
+                            dto.setDescripcion(nuevaDesc);
+                        } else if (col == 9) {
+                            String nuevaDesc = cliente + (formaPago != null && !formaPago.isEmpty() ? " - " + formaPago : "");
+                            if (!nuevoValor.isEmpty()) {
+                                nuevaDesc += " ELS " + nuevoValor;
+                            }
+                            dto.setDescripcion(nuevaDesc);
+                        }
+
+                        if (controlador.actualizarMovimiento(dto)) {
+                            cargarMovimientosPorAnio();
+                            actualizarSaldo();
+                        }
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(this, "Valor inválido: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                    break;
+                }
+            }
+        }
     }
 
     private void btnEliminarAction() {
@@ -409,117 +729,57 @@ gbc.gridx = 0; gbc.gridy = 2;
         }
     }
 
-    private void btnEditarAction() {
-        int selectedRow = tabla.getSelectedRow();
-        if (selectedRow < 0) {
-            JOptionPane.showMessageDialog(this, "Seleccione un movimiento para editar", "Advertencia", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        String fechaActual = (String) modeloTabla.getValueAt(selectedRow, 0);
-        String tipoActual = (String) modeloTabla.getValueAt(selectedRow, 1);
-        String clienteActual = (String) modeloTabla.getValueAt(selectedRow, 2);
-        String formaPagoActual = (String) modeloTabla.getValueAt(selectedRow, 3);
-        String montoActual = (String) modeloTabla.getValueAt(selectedRow, 4);
-        if (montoActual.isEmpty()) montoActual = (String) modeloTabla.getValueAt(selectedRow, 5);
-        if (montoActual.isEmpty()) montoActual = (String) modeloTabla.getValueAt(selectedRow, 6);
-        if (montoActual.isEmpty()) montoActual = (String) modeloTabla.getValueAt(selectedRow, 7);
-        String elsActual = (String) modeloTabla.getValueAt(selectedRow, 9);
-
-        JTextField txtFechaEdit = new JTextField(fechaActual, 10);
-        JTextField txtClienteEdit = new JTextField(clienteActual, 20);
-        JTextField txtFormaPagoEdit = new JTextField(formaPagoActual, 15);
-        JTextField txtMontoEdit = new JTextField(montoActual.replace("$", ""), 10);
-        JTextField txtELSEdit = new JTextField(elsActual != null ? elsActual : "", 8);
-
-        JPanel panelEdit = new JPanel(new GridBagLayout());
-        panelEdit.setBackground(COLOR_FONDO);
-        GridBagConstraints gbcEdit = new GridBagConstraints();
-        gbcEdit.insets = new Insets(5, 5, 5, 5);
-        gbcEdit.fill = GridBagConstraints.HORIZONTAL;
-
-        gbcEdit.gridx = 0; gbcEdit.gridy = 0;
-        panelEdit.add(new JLabel("Fecha:"), gbcEdit);
-        gbcEdit.gridx = 1;
-        panelEdit.add(txtFechaEdit, gbcEdit);
-
-        gbcEdit.gridx = 0; gbcEdit.gridy = 1;
-        panelEdit.add(new JLabel("Cliente:"), gbcEdit);
-        gbcEdit.gridx = 1;
-        panelEdit.add(txtClienteEdit, gbcEdit);
-
-        gbcEdit.gridx = 0; gbcEdit.gridy = 2;
-        panelEdit.add(new JLabel("Forma Pago:"), gbcEdit);
-        gbcEdit.gridx = 1;
-        panelEdit.add(txtFormaPagoEdit, gbcEdit);
-
-        gbcEdit.gridx = 0; gbcEdit.gridy = 3;
-        panelEdit.add(new JLabel("Monto:"), gbcEdit);
-        gbcEdit.gridx = 1;
-        panelEdit.add(txtMontoEdit, gbcEdit);
-
-        gbcEdit.gridx = 0; gbcEdit.gridy = 4;
-        panelEdit.add(new JLabel("ELS:"), gbcEdit);
-        gbcEdit.gridx = 1;
-        panelEdit.add(txtELSEdit, gbcEdit);
-
-        int result = JOptionPane.showConfirmDialog(this, panelEdit, "Editar Movimiento", JOptionPane.OK_CANCEL_OPTION);
-
-        if (result == JOptionPane.OK_OPTION) {
-            LocalDate fecha = null;
-            String nuevoCliente = "";
-            String nuevaFormaPago = "";
-            BigDecimal nuevoMonto = BigDecimal.ZERO;
-            String nuevoELS = "";
-            
-            try {
-                if (!txtFechaEdit.getText().trim().isEmpty()) {
-                    fecha = LocalDate.parse(txtFechaEdit.getText().trim(), fechaFormatter);
-                }
-                nuevoCliente = txtClienteEdit.getText().trim();
-                nuevaFormaPago = txtFormaPagoEdit.getText().trim();
-                nuevoMonto = new BigDecimal(txtMontoEdit.getText().trim());
-                nuevoELS = txtELSEdit.getText().trim();
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Error al parsear datos: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            
-            String elsTexto = nuevoELS.isEmpty() ? "" : " ELS " + nuevoELS;
-
-            List<CajaMovimientoDTO> lista = controlador.listarMovimientos();
-            for (CajaMovimientoDTO dto : lista) {
-                String desc = dto.getDescripcion() != null ? dto.getDescripcion() : "";
-                boolean fechaMatch = (fecha == null && dto.getFecha() == null) || 
-                    (fecha != null && dto.getFecha() != null && dto.getFecha().format(fechaFormatter).equals(fechaActual));
-
-                if (fechaMatch && dto.getTipo().equalsIgnoreCase(tipoActual) && desc.contains(clienteActual)) {
-                    String nuevaDesc = nuevoCliente;
-                    if (!nuevaFormaPago.isEmpty()) {
-                        nuevaDesc += " - " + nuevaFormaPago;
-                    }
-                    nuevaDesc += elsTexto;
-
-                    dto.setFecha(fecha);
-                    dto.setDescripcion(nuevaDesc);
-                    dto.setMonto(nuevoMonto);
-
-                    if (controlador.actualizarMovimiento(dto)) {
-                        JOptionPane.showMessageDialog(this, "Movimiento actualizado", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-                        cargarMovimientosPorAnio();
-                        actualizarSaldo();
-                    } else {
-                        JOptionPane.showMessageDialog(this, "Error al actualizar", "Error", JOptionPane.ERROR_MESSAGE);
-                    }
-                    break;
-                }
-            }
-        }
-    }
-
     private void actualizarSaldo() {
         BigDecimal saldo = controlador.getSaldoCaja();
-        lblSaldo.setText("Saldo: $" + saldo.toString());
+        lblSaldo.setText("Saldo: $" + formatearMonto(saldo));
+        
+        Integer anio = (Integer) cmbAnio.getSelectedItem();
+        if (anio == null) return;
+        
+        LocalDate desde = LocalDate.of(anio, 1, 1);
+        LocalDate hasta = LocalDate.of(anio, 12, 31);
+        List<CajaMovimientoDTO> lista = controlador.listarMovimientos(desde, hasta);
+        
+        BigDecimal subCobroEfec = BigDecimal.ZERO;
+        BigDecimal subCobroPat = BigDecimal.ZERO;
+        BigDecimal subPagoEfec = BigDecimal.ZERO;
+        BigDecimal subPagoPat = BigDecimal.ZERO;
+        BigDecimal subCompraDol = BigDecimal.ZERO;
+        
+        for (CajaMovimientoDTO dto : lista) {
+            String desc = dto.getDescripcion() != null ? dto.getDescripcion() : "";
+            BigDecimal monto = dto.getMonto() != null ? dto.getMonto() : BigDecimal.ZERO;
+            
+            boolean esCompraDolares = desc.contains("COMPRA DÓLARES|") || desc.contains("COMPRA DOLARES|");
+            
+            if (esCompraDolares) {
+                subCompraDol = subCompraDol.add(monto);
+            } else if ("cobro".equalsIgnoreCase(dto.getTipo())) {
+                if (desc.toLowerCase().contains("efectivo")) {
+                    subCobroEfec = subCobroEfec.add(monto);
+                } else {
+                    subCobroPat = subCobroPat.add(monto);
+                }
+            } else if ("pago".equalsIgnoreCase(dto.getTipo())) {
+                if (desc.toLowerCase().contains("efectivo")) {
+                    subPagoEfec = subPagoEfec.add(monto);
+                } else {
+                    subPagoPat = subPagoPat.add(monto);
+                }
+            }
+        }
+        
+        lblSubCobroEfectivo.setText("Cobro Efectivo: " + formatearMonto(subCobroEfec));
+        lblSubCobroPatagonia.setText("Cobro Patagonia: " + formatearMonto(subCobroPat));
+        lblSubPagoEfectivo.setText("Pago Efectivo: " + formatearMonto(subPagoEfec));
+        lblSubPagoPatagonia.setText("Pago Patagonia: " + formatearMonto(subPagoPat));
+        lblSubCompraDolares.setText("Compra Dólares: " + formatearMonto(subCompraDol));
+        
+        BigDecimal totalCobros = subCobroEfec.add(subCobroPat);
+        BigDecimal totalPagos = subPagoEfec.add(subPagoPat).add(subCompraDol);
+        BigDecimal saldoTotal = totalCobros.subtract(totalPagos);
+        
+        lblSaldoTotal.setText("SALDO: " + formatearMonto(saldoTotal));
     }
 
     private void cargarMovimientosPorAnio() {
@@ -533,7 +793,7 @@ gbc.gridx = 0; gbc.gridy = 2;
         List<CajaMovimientoDTO> lista = controlador.listarMovimientos(desde, hasta);
         for (CajaMovimientoDTO dto : lista) {
             String desc = dto.getDescripcion() != null ? dto.getDescripcion() : "";
-            String montoStr = dto.getMonto() != null ? "$" + dto.getMonto().toString() : "$0.00";
+            String montoStr = dto.getMonto() != null ? formatearMonto(dto.getMonto()) : "$ 0,00";
             String fechaStr = dto.getFecha() != null ? dto.getFecha().format(fechaFormatter) : "";
             
             boolean esCompraDolares = desc.contains("COMPRA DÓLARES|") || desc.contains("COMPRA DOLARES|");
@@ -541,7 +801,7 @@ gbc.gridx = 0; gbc.gridy = 2;
             
             if (esCompraDolares) {
                 String[] parts = desc.split("\\|");
-                String dolaresStr = parts.length > 1 ? "$" + parts[1] : "";
+                String dolaresStr = parts.length > 1 ? "$ " + parts[1] : "";
                 String esEfectivoDolar = parts.length > 3 ? parts[3] : "";
                 
                 String pesosEfectivo = "";
@@ -568,7 +828,8 @@ gbc.gridx = 0; gbc.gridy = 2;
             } else if ("cobro".equalsIgnoreCase(dto.getTipo())) {
                 String[] parts = desc.split(" - ");
                 String cliente = parts.length > 0 ? parts[0] : "";
-                String formaPago = parts.length > 1 ? parts[1] : "";
+                String formaPagoCompleta = parts.length > 1 ? parts[1] : "";
+                String formaPago = formaPagoCompleta.replaceAll("\\s+ELS\\s+\\d+$", "").trim();
                 boolean esEfectivo = formaPago.toLowerCase().contains("efectivo");
                 
                 if (desc.toLowerCase().contains("els")) {
@@ -596,7 +857,8 @@ gbc.gridx = 0; gbc.gridy = 2;
             } else {
                 String[] parts = desc.split(" - ");
                 String cliente = parts.length > 0 ? parts[0] : "";
-                String formaPago = parts.length > 1 ? parts[1] : "";
+                String formaPagoCompleta = parts.length > 1 ? parts[1] : "";
+                String formaPago = formaPagoCompleta.replaceAll("\\s+ELS\\s+\\d+$", "").trim();
                 boolean esEfectivo = formaPago.toLowerCase().contains("efectivo");
                 
                 if (desc.toLowerCase().contains("els")) {

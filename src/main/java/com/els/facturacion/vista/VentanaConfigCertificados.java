@@ -179,9 +179,14 @@ public class VentanaConfigCertificados extends JFrame {
         panelBotones.add(btnEliminar);
         panelBotones.add(btnLimpiar);
 
+        JPanel panelSur = new JPanel(new BorderLayout());
+        panelSur.setBackground(COLOR_FONDO);
+        panelSur.add(panelFormulario, BorderLayout.NORTH);
+        panelSur.add(panelBotones, BorderLayout.SOUTH);
+
         add(panelSuperior, BorderLayout.NORTH);
         add(scrollTabla, BorderLayout.CENTER);
-        add(panelFormulario, BorderLayout.SOUTH);
+        add(panelSur, BorderLayout.SOUTH);
     }
 
     private JLabel crearLabel(String texto) {

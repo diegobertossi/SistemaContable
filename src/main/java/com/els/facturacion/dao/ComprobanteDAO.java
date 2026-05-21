@@ -21,8 +21,11 @@ public class ComprobanteDAO {
     public int insertar(ComprobanteDTO comp) {
         String sql = "INSERT INTO comprobantes (cuit_emisor, tipo_comprobante, punto_venta, numero, "
                 + "cuit_receptor, razon_social_rec, fecha_emision, importe_neto, importe_iva, "
-                + "importe_total, cae, vencimiento_cae, els_asociado, ruta_pdf, email_enviado) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "importe_total, cae, vencimiento_cae, els_asociado, ruta_pdf, email_enviado, "
+                + "concepto, periodo_desde, periodo_hasta, periodo_vto, "
+                + "condicion_iva_receptor, tipo_documento, nro_documento, "
+                + "domicilio_receptor, email_receptor, condiciones_venta, comprobante_asociado) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, comp.getCuitEmisor());
@@ -40,6 +43,17 @@ public class ComprobanteDAO {
             ps.setInt(13, comp.getElsAsociado() != null ? comp.getElsAsociado() : 0);
             ps.setString(14, comp.getRutaPdf());
             ps.setBoolean(15, comp.getEmailEnviado() != null ? comp.getEmailEnviado() : false);
+            ps.setString(16, comp.getConcepto());
+            ps.setDate(17, comp.getPeriodoDesde() != null ? java.sql.Date.valueOf(comp.getPeriodoDesde()) : null);
+            ps.setDate(18, comp.getPeriodoHasta() != null ? java.sql.Date.valueOf(comp.getPeriodoHasta()) : null);
+            ps.setDate(19, comp.getPeriodoVto() != null ? java.sql.Date.valueOf(comp.getPeriodoVto()) : null);
+            ps.setString(20, comp.getCondicionIvaReceptor());
+            ps.setString(21, comp.getTipoDocumento());
+            ps.setString(22, comp.getNroDocumento());
+            ps.setString(23, comp.getDomicilioReceptor());
+            ps.setString(24, comp.getEmailReceptor());
+            ps.setString(25, comp.getCondicionesVenta());
+            ps.setString(26, comp.getComprobanteAsociado());
 
             int affected = ps.executeUpdate();
             if (affected > 0) {
@@ -243,6 +257,19 @@ public class ComprobanteDAO {
 
         dto.setRutaPdf(rs.getString("ruta_pdf"));
         dto.setEmailEnviado(rs.getBoolean("email_enviado"));
+
+        try { dto.setConcepto(rs.getString("concepto")); } catch (SQLException e) {}
+        try { java.sql.Date pd = rs.getDate("periodo_desde"); if (pd != null) dto.setPeriodoDesde(pd.toLocalDate()); } catch (SQLException e) {}
+        try { java.sql.Date ph = rs.getDate("periodo_hasta"); if (ph != null) dto.setPeriodoHasta(ph.toLocalDate()); } catch (SQLException e) {}
+        try { java.sql.Date pv = rs.getDate("periodo_vto"); if (pv != null) dto.setPeriodoVto(pv.toLocalDate()); } catch (SQLException e) {}
+        try { dto.setCondicionIvaReceptor(rs.getString("condicion_iva_receptor")); } catch (SQLException e) {}
+        try { dto.setTipoDocumento(rs.getString("tipo_documento")); } catch (SQLException e) {}
+        try { dto.setNroDocumento(rs.getString("nro_documento")); } catch (SQLException e) {}
+        try { dto.setDomicilioReceptor(rs.getString("domicilio_receptor")); } catch (SQLException e) {}
+        try { dto.setEmailReceptor(rs.getString("email_receptor")); } catch (SQLException e) {}
+        try { dto.setCondicionesVenta(rs.getString("condiciones_venta")); } catch (SQLException e) {}
+        try { dto.setComprobanteAsociado(rs.getString("comprobante_asociado")); } catch (SQLException e) {}
+
         return dto;
     }
 }

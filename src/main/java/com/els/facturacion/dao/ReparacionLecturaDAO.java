@@ -17,7 +17,7 @@ public class ReparacionLecturaDAO {
             return null;
         }
 
-        String sql = "SELECT * FROM ordenes WHERE els = ? LIMIT 1";
+        String sql = "SELECT * FROM reparaciones WHERE els = ? LIMIT 1";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, els);

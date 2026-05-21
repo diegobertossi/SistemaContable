@@ -23,6 +23,18 @@ public class ComprobanteDTO {
     private Boolean emailEnviado;
     private String descripcion;
 
+    private String concepto;
+    private LocalDate periodoDesde;
+    private LocalDate periodoHasta;
+    private LocalDate periodoVto;
+    private String condicionIvaReceptor;
+    private String tipoDocumento;
+    private String nroDocumento;
+    private String domicilioReceptor;
+    private String emailReceptor;
+    private String condicionesVenta;
+    private String comprobanteAsociado;
+
     public ComprobanteDTO() {
     }
 
@@ -162,6 +174,29 @@ public class ComprobanteDTO {
         this.descripcion = descripcion;
     }
 
+    public String getConcepto() { return concepto; }
+    public void setConcepto(String concepto) { this.concepto = concepto; }
+    public LocalDate getPeriodoDesde() { return periodoDesde; }
+    public void setPeriodoDesde(LocalDate periodoDesde) { this.periodoDesde = periodoDesde; }
+    public LocalDate getPeriodoHasta() { return periodoHasta; }
+    public void setPeriodoHasta(LocalDate periodoHasta) { this.periodoHasta = periodoHasta; }
+    public LocalDate getPeriodoVto() { return periodoVto; }
+    public void setPeriodoVto(LocalDate periodoVto) { this.periodoVto = periodoVto; }
+    public String getCondicionIvaReceptor() { return condicionIvaReceptor; }
+    public void setCondicionIvaReceptor(String condicionIvaReceptor) { this.condicionIvaReceptor = condicionIvaReceptor; }
+    public String getTipoDocumento() { return tipoDocumento; }
+    public void setTipoDocumento(String tipoDocumento) { this.tipoDocumento = tipoDocumento; }
+    public String getNroDocumento() { return nroDocumento; }
+    public void setNroDocumento(String nroDocumento) { this.nroDocumento = nroDocumento; }
+    public String getDomicilioReceptor() { return domicilioReceptor; }
+    public void setDomicilioReceptor(String domicilioReceptor) { this.domicilioReceptor = domicilioReceptor; }
+    public String getEmailReceptor() { return emailReceptor; }
+    public void setEmailReceptor(String emailReceptor) { this.emailReceptor = emailReceptor; }
+    public String getCondicionesVenta() { return condicionesVenta; }
+    public void setCondicionesVenta(String condicionesVenta) { this.condicionesVenta = condicionesVenta; }
+    public String getComprobanteAsociado() { return comprobanteAsociado; }
+    public void setComprobanteAsociado(String comprobanteAsociado) { this.comprobanteAsociado = comprobanteAsociado; }
+
     public String getTipoComprobanteStr() {
         switch (tipoComprobante) {
             case 1: return "Factura A";
@@ -173,6 +208,7 @@ public class ComprobanteDTO {
             case 2: return "Nota de Débito A";
             case 7: return "Nota de Débito B";
             case 12: return "Nota de Débito C";
+            case 10: return "Recibo C";
             default: return "Tipo " + tipoComprobante;
         }
     }

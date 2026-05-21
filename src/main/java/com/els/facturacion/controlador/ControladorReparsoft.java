@@ -90,7 +90,7 @@ public class ControladorReparsoft {
             return false;
         }
 
-        String sql = "UPDATE ordenes SET numero_factura = ? WHERE els = ?";
+        String sql = "UPDATE reparaciones SET numero_factura = ? WHERE els = ?";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, numeroFactura);
