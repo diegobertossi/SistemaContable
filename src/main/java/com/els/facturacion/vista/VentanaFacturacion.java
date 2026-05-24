@@ -1,81 +1,65 @@
 package com.els.facturacion.vista;
 
-import com.els.facturacion.controlador.ControladorClientes;
-import com.els.facturacion.controlador.ControladorFacturacion;
-import com.els.facturacion.controlador.ControladorReparsoft;
-import com.els.facturacion.modelo.ClienteDTO;
-import com.els.facturacion.modelo.ComprobanteDTO;
-import com.els.facturacion.modelo.CuitConfigDTO;
-import com.els.facturacion.modelo.ItemFacturaDTO;
-import com.els.facturacion.modelo.RemitoReparsoftDTO;
-import com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem;
-import com.els.facturacion.modelo.RespuestaCAE;
 import com.els.facturacion.util.AutoCompleteComboBox;
 import javax.swing.BorderFactory;
-import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
 import java.awt.Insets;
-import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.List;
+import javax.swing.border.EtchedBorder;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.border.EmptyBorder;
 
 public class VentanaFacturacion extends javax.swing.JFrame {
 
     private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
     private static final Color COLOR_TITULO = new Color(65, 105, 225);
+    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
+    private static final Color COLOR_BOTON = new Color(176, 196, 222);
     private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
-    private static final Font FUENTE_LABEL = new Font("Cambria", Font.BOLD, 11);
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-    private static final DecimalFormat DF = new DecimalFormat("#,##0.00");
-
-    private ControladorFacturacion controlador;
-    private ControladorReparsoft controladorReparsoft;
-    private ControladorClientes controladorClientes;
 
     private CardLayout cardLayout;
     private JPanel panelPrincipal;
 
+    // PuntoVenta + Emision
     private JComboBox<String> cmbPuntoVenta;
     private JComboBox<String> cmbTipoComprobante;
-
-    private JTextField txtFecha;
+    private JComponent dateFecha;
+    private JComponent datePeriodoDesde;
+    private JComponent datePeriodoHasta;
+    private JComponent datePeriodoVto;
     private JComboBox<String> cmbConcepto;
     private JTextField txtActividades;
-    private JTextField txtPeriodoDesde;
-    private JButton btnFecha, btnPeriodoDesde, btnPeriodoHasta, btnPeriodoVto;
-    private JTextField txtPeriodoHasta;
-    private JTextField txtPeriodoVto;
 
+    // Receptor
     private JComboBox<String> cmbCondicionIva;
     private JComboBox<String> cmbTipoDoc;
     private AutoCompleteComboBox cmbRazonSocial;
@@ -84,7 +68,10 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private JTextField txtEmail;
     private JCheckBox chkContado, chkTarjetaDeb, chkTarjetaCred, chkCC, chkCheque, chkTransf, chkOtra;
     private JTextField txtComprobanteAsoc;
+    private JButton btnImportarRemito;
 
+    // Operacion
+    private JButton btnAnterior;
     private JTable tablaItems;
     private DefaultTableModel modeloTablaItems;
     private JLabel lblTotal;
@@ -95,45 +82,69 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private JLabel lblEstadoPago;
     private JComboBox<String> cmbAlicuotaIva;
     private JButton btnEliminarItem;
-
-    private JButton btnSiguiente;
-    private JButton btnAnterior;
+    private JButton btnAgregarItem;
+    private JButton btnCalcular;
     private JButton btnEmitir;
+    private JButton btnLimpiar;
+
+    // Navigation
+    private JCheckBox chkModoPrueba;
+    private JButton btnSiguiente;
+
+    // Menu items (needed for controller to wire actions)
+    private JMenuItem itemSalir;
+    private JMenuItem itemConfig;
+    private JMenuItem itemHistorial;
+    private JMenuItem itemCaja;
+    private JMenuItem itemGastos;
+    private JMenuItem itemMigrar;
+    private JMenuItem itemClientes;
+    private JMenuItem itemRemitos;
+    private JMenuItem itemRecibos;
+    private JMenuItem itemPagos;
 
     public VentanaFacturacion() {
-        controlador = new ControladorFacturacion();
-        controladorReparsoft = new ControladorReparsoft();
-        controladorClientes = new ControladorClientes();
         initComponents();
-        cargarCuits();
-        cargarClientes();
     }
 
     private void initComponents() {
-        setTitle("FacturaSoft v1.0 - Sistema de Facturacion Electronica");
-        setSize(820, 780);
+        setTitle("FacturaSoft v1.0 \u2014 Sistema de Facturaci\u00f3n Electr\u00f3nica");
+        setSize(1024, 720);
+        setMinimumSize(new Dimension(900, 650));
         setDefaultCloseOperation(javax.swing.JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(COLOR_FONDO);
 
+        // ===================== MENU BAR =====================
         JMenuBar menuBar = new JMenuBar();
+        menuBar.setBackground(new Color(240, 240, 245));
+
         JMenu menuArchivo = new JMenu("Archivo");
-        JMenuItem itemSalir = new JMenuItem("Salir");
-        itemSalir.addActionListener(e -> System.exit(0));
+        itemSalir = new JMenuItem("Salir");
         menuArchivo.add(itemSalir);
 
-        JMenu menuHerramientas = new JMenu("Herramientas");
-        JMenuItem itemConfig = new JMenuItem("Configurar Certificados");
-        itemConfig.addActionListener(e -> abrirConfiguracion());
-        JMenuItem itemHistorial = new JMenuItem("Ver Comprobantes");
-        itemHistorial.addActionListener(e -> abrirHistorial());
-        JMenuItem itemCaja = new JMenuItem("Caja");
-        itemCaja.addActionListener(e -> abrirCaja());
-        JMenuItem itemGastos = new JMenuItem("Gastos");
-        itemGastos.addActionListener(e -> abrirGastos());
-        JMenuItem itemMigrar = new JMenuItem("Migrar desde Excel");
-        itemMigrar.addActionListener(e -> abrirMigracion());
+        JMenu menuClientes = new JMenu("Clientes");
+        itemClientes = new JMenuItem("Gestion de Clientes");
+        menuClientes.add(itemClientes);
 
+        JMenu menuRemitos = new JMenu("Remitos");
+        itemRemitos = new JMenuItem("Gestion de Remitos");
+        menuRemitos.add(itemRemitos);
+
+        JMenu menuRecibos = new JMenu("Recibos");
+        itemRecibos = new JMenuItem("Gestion de Recibos");
+        menuRecibos.add(itemRecibos);
+
+        JMenu menuPagos = new JMenu("Pagos");
+        itemPagos = new JMenuItem("Pagos / Cobranzas");
+        menuPagos.add(itemPagos);
+
+        JMenu menuHerramientas = new JMenu("Herramientas");
+        itemConfig = new JMenuItem("Configurar Certificados");
+        itemHistorial = new JMenuItem("Ver Comprobantes");
+        itemCaja = new JMenuItem("Caja");
+        itemGastos = new JMenuItem("Gastos");
+        itemMigrar = new JMenuItem("Migrar desde Excel");
         menuHerramientas.add(itemConfig);
         menuHerramientas.add(itemHistorial);
         menuHerramientas.addSeparator();
@@ -141,26 +152,6 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         menuHerramientas.add(itemGastos);
         menuHerramientas.addSeparator();
         menuHerramientas.add(itemMigrar);
-
-        JMenu menuClientes = new JMenu("Clientes");
-        JMenuItem itemClientes = new JMenuItem("Gestion de Clientes");
-        itemClientes.addActionListener(e -> abrirClientes());
-        menuClientes.add(itemClientes);
-
-        JMenu menuRemitos = new JMenu("Remitos");
-        JMenuItem itemRemitos = new JMenuItem("Gestion de Remitos");
-        itemRemitos.addActionListener(e -> abrirRemitos());
-        menuRemitos.add(itemRemitos);
-
-        JMenu menuRecibos = new JMenu("Recibos");
-        JMenuItem itemRecibos = new JMenuItem("Gestion de Recibos");
-        itemRecibos.addActionListener(e -> abrirRecibos());
-        menuRecibos.add(itemRecibos);
-
-        JMenu menuPagos = new JMenu("Pagos");
-        JMenuItem itemPagos = new JMenuItem("Pagos / Cobranzas");
-        itemPagos.addActionListener(e -> abrirPagos());
-        menuPagos.add(itemPagos);
 
         menuBar.add(menuArchivo);
         menuBar.add(menuClientes);
@@ -170,63 +161,199 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         menuBar.add(menuHerramientas);
         setJMenuBar(menuBar);
 
+        // ===================== CARD LAYOUT =====================
         cardLayout = new CardLayout();
         panelPrincipal = new JPanel(cardLayout);
         panelPrincipal.setBackground(COLOR_FONDO);
 
-        panelPrincipal.add(crearPanelDatos(), "datos");
-        panelPrincipal.add(crearPanelOperacion(), "operacion");
+        // ===================== DATOS CARD =====================
+        JPanel datosWrapper = new JPanel(new GridBagLayout());
+        datosWrapper.setBackground(COLOR_FONDO);
 
-        add(panelPrincipal);
-    }
+        JPanel centerCol = new JPanel(new GridBagLayout());
+        centerCol.setBorder(new CompoundBorder(new LineBorder(new Color(0, 0, 255), 2), new EmptyBorder(10, 10, 10, 10)));
+        centerCol.setBackground(COLOR_FONDO);
 
-    private JPanel crearPanelDatos() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(COLOR_FONDO);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 10, 5, 10);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-        gbc.gridx = 0;
-        gbc.gridy = 0;
+        centerCol.add(crearSeccionPuntoVenta(), new GridBagConstraints(0, 0, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(8, 0, 8, 0), 0, 0));
+        centerCol.add(crearSeccionEmision(), new GridBagConstraints(0, 1, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(8, 0, 8, 0), 0, 0));
+        centerCol.add(crearSeccionReceptor(), new GridBagConstraints(0, 2, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(8, 0, 8, 0), 0, 0));
 
-        panel.add(crearSeccionPuntoVenta(), gbc);
-
-        gbc.gridy++;
-        panel.add(crearSeccionEmision(), gbc);
-
-        gbc.gridy++;
-        panel.add(crearSeccionReceptor(), gbc);
-
-        gbc.gridy++;
-        gbc.anchor = GridBagConstraints.CENTER;
-        JPanel panelNav = new JPanel();
-        panelNav.setBackground(COLOR_FONDO);
-
-        JCheckBox chkModoPrueba = new JCheckBox("MODO PRUEBA");
+        chkModoPrueba = new JCheckBox("MODO PRUEBA");
         chkModoPrueba.setFont(new Font("Cambria", Font.BOLD, 12));
         chkModoPrueba.setForeground(new Color(200, 0, 0));
         chkModoPrueba.setBackground(COLOR_FONDO);
-        chkModoPrueba.addActionListener(e -> controlador.setModoPrueba(chkModoPrueba.isSelected()));
 
-        btnSiguiente = crearBoton("SIGUIENTE >>");
-        btnSiguiente.addActionListener(e -> {
-            if (validarDatosReceptor()) {
-                cardLayout.show(panelPrincipal, "operacion");
-            }
-        });
+        btnSiguiente = new JButton("SIGUIENTE >>");
+        estilizarBoton(btnSiguiente);
+        JPanel panelNav = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 3));
+        panelNav.setBackground(COLOR_FONDO);
         panelNav.add(chkModoPrueba);
         panelNav.add(btnSiguiente);
-        panel.add(panelNav, gbc);
+        centerCol.add(panelNav, new GridBagConstraints(0, 3, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(5, 0, 0, 0), 0, 0));
 
-        JScrollPane scroll = new JScrollPane(panel);
+        datosWrapper.add(centerCol, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.NORTH, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+
+        JScrollPane scroll = new JScrollPane(datosWrapper);
         scroll.setBorder(null);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setBackground(COLOR_FONDO);
-        wrapper.add(scroll);
-        return wrapper;
+        JPanel datosCard = new JPanel(new BorderLayout());
+        datosCard.setBackground(COLOR_FONDO);
+        datosCard.add(scroll);
+
+        // ===================== OPERACION CARD =====================
+        JPanel panelOperacion = new JPanel(new BorderLayout(5, 5));
+        panelOperacion.setBackground(COLOR_FONDO);
+        panelOperacion.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+        JPanel panelSuperior = new JPanel(new BorderLayout());
+        panelSuperior.setBackground(COLOR_FONDO);
+        btnAnterior = new JButton("<< ANTERIOR");
+        estilizarBoton(btnAnterior);
+        JLabel lblTitulo = new JLabel("DATOS DE LA OPERACION", SwingConstants.CENTER);
+        lblTitulo.setFont(new Font("Cambria", Font.BOLD, 15));
+        lblTitulo.setForeground(COLOR_TEXTO);
+        panelSuperior.add(btnAnterior, BorderLayout.WEST);
+        panelSuperior.add(lblTitulo, BorderLayout.CENTER);
+
+        String[] columnas = {"Sel.", "Codigo", "Producto/Servicio", "Cantidad", "U. Medida", "P. Unitario", "Subtotal", "IVA %"};
+        modeloTablaItems = new DefaultTableModel(columnas, 0) {
+            @Override
+            public Class<?> getColumnClass(int column) {
+                return column == 0 ? Boolean.class : String.class;
+            }
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column != 6;
+            }
+        };
+        tablaItems = new JTable(modeloTablaItems);
+        tablaItems.setFont(new Font("Cambria", Font.PLAIN, 11));
+        tablaItems.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 11));
+        tablaItems.getTableHeader().setBackground(COLOR_BOTON);
+        tablaItems.setRowHeight(22);
+        tablaItems.setShowGrid(true);
+        tablaItems.setGridColor(new Color(200, 210, 230));
+        tablaItems.getColumnModel().getColumn(0).setPreferredWidth(30);
+        tablaItems.getColumnModel().getColumn(1).setPreferredWidth(60);
+        tablaItems.getColumnModel().getColumn(2).setPreferredWidth(200);
+        tablaItems.getColumnModel().getColumn(3).setPreferredWidth(50);
+        tablaItems.getColumnModel().getColumn(4).setPreferredWidth(60);
+        tablaItems.getColumnModel().getColumn(5).setPreferredWidth(80);
+        tablaItems.getColumnModel().getColumn(6).setPreferredWidth(80);
+        tablaItems.getColumnModel().getColumn(7).setPreferredWidth(50);
+
+        JScrollPane scrollTabla = new JScrollPane(tablaItems);
+
+        btnAgregarItem = new JButton("+ AGREGAR ITEM");
+        estilizarBoton(btnAgregarItem);
+        btnEliminarItem = new JButton("- ELIMINAR ITEM");
+        estilizarBoton(btnEliminarItem);
+        cmbAlicuotaIva = new JComboBox<>(new String[]{"21%", "10.5%", "0%", "27%"});
+        cmbAlicuotaIva.setPreferredSize(new Dimension(80, 24));
+        cmbAlicuotaIva.setPrototypeDisplayValue("21%");
+
+        JPanel panelSur = new JPanel(new BorderLayout(5, 3));
+        panelSur.setBackground(COLOR_FONDO);
+
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
+        panelBotones.setBackground(COLOR_FONDO);
+        panelBotones.add(new JLabel("IVA:"));
+        panelBotones.add(cmbAlicuotaIva);
+        panelBotones.add(btnAgregarItem);
+        panelBotones.add(btnEliminarItem);
+
+        JPanel panelTotales = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
+        panelTotales.setBackground(COLOR_FONDO);
+
+        lblTotal = new JLabel("$ 0.00");
+        lblTotal.setFont(new Font("Cambria", Font.BOLD, 16));
+        lblTotal.setForeground(new Color(0, 100, 0));
+
+        txtImporteNeto = new JTextField(10);
+        txtImporteNeto.setEditable(false);
+        txtImporteNeto.setFont(FUENTE_BOTON);
+        txtImporteNeto.setPreferredSize(new Dimension(90, 24));
+        txtImporteNeto.setHorizontalAlignment(JTextField.RIGHT);
+        txtImporteIva = new JTextField(10);
+        txtImporteIva.setEditable(false);
+        txtImporteIva.setFont(FUENTE_BOTON);
+        txtImporteIva.setPreferredSize(new Dimension(90, 24));
+        txtImporteIva.setHorizontalAlignment(JTextField.RIGHT);
+        txtOtrosImpuestos = new JTextField(8);
+        txtOtrosImpuestos.setText("0,00");
+        txtOtrosImpuestos.setPreferredSize(new Dimension(80, 24));
+        txtOtrosImpuestos.setHorizontalAlignment(JTextField.RIGHT);
+        txtOtrosImpuestos.setFont(FUENTE_BOTON);
+        txtImporteTotal = new JTextField(10);
+        txtImporteTotal.setEditable(false);
+        txtImporteTotal.setFont(FUENTE_BOTON);
+        txtImporteTotal.setPreferredSize(new Dimension(100, 24));
+        txtImporteTotal.setHorizontalAlignment(JTextField.RIGHT);
+        txtImporteTotal.setForeground(new Color(0, 100, 0));
+
+        panelTotales.add(new JLabel("Neto:"));
+        panelTotales.add(txtImporteNeto);
+        panelTotales.add(new JLabel("IVA:"));
+        panelTotales.add(txtImporteIva);
+        panelTotales.add(new JLabel("O.Imp:"));
+        panelTotales.add(txtOtrosImpuestos);
+        panelTotales.add(new JLabel("Total:"));
+        panelTotales.add(txtImporteTotal);
+        btnCalcular = new JButton("CALCULAR");
+        estilizarBoton(btnCalcular);
+        panelTotales.add(btnCalcular);
+
+        JPanel panelEmitir = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 2));
+        panelEmitir.setBackground(COLOR_FONDO);
+        lblEstadoPago = new JLabel("Estado: Pendiente de pago");
+        lblEstadoPago.setFont(FUENTE_BOTON);
+        lblEstadoPago.setForeground(COLOR_TEXTO);
+
+        btnEmitir = new JButton("GUARDAR / EMITIR FACTURA");
+        btnEmitir.setFont(new Font("Cambria", Font.BOLD, 12));
+        btnEmitir.setBackground(new Color(70, 160, 70));
+        btnEmitir.setForeground(Color.WHITE);
+        btnEmitir.setFocusPainted(false);
+        btnEmitir.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(50, 130, 50), 1),
+            BorderFactory.createEmptyBorder(4, 12, 4, 12)
+        ));
+        btnEmitir.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnLimpiar = new JButton("LIMPIAR");
+        estilizarBoton(btnLimpiar);
+
+        panelEmitir.add(lblEstadoPago);
+        panelEmitir.add(btnEmitir);
+        panelEmitir.add(btnLimpiar);
+
+        panelSur.add(panelBotones, BorderLayout.WEST);
+        panelSur.add(panelTotales, BorderLayout.CENTER);
+        panelSur.add(panelEmitir, BorderLayout.SOUTH);
+
+        panelOperacion.add(panelSuperior, BorderLayout.NORTH);
+        panelOperacion.add(scrollTabla, BorderLayout.CENTER);
+        panelOperacion.add(panelSur, BorderLayout.SOUTH);
+
+        panelPrincipal.add(datosCard, "datos");
+        panelPrincipal.add(panelOperacion, "operacion");
+
+        // ===================== WRAPPER + STATUS BAR =====================
+        JPanel panelPrincipalWrapper = new JPanel(new BorderLayout());
+        panelPrincipalWrapper.setBackground(COLOR_FONDO);
+        panelPrincipalWrapper.add(panelPrincipal, BorderLayout.CENTER);
+
+        JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
+        statusBar.setBackground(new Color(50, 50, 80));
+        JLabel lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica");
+        lblStatus.setFont(new Font("Cambria", Font.PLAIN, 11));
+        lblStatus.setForeground(new Color(200, 200, 220));
+        statusBar.add(lblStatus);
+        panelPrincipalWrapper.add(statusBar, BorderLayout.SOUTH);
+
+        getContentPane().add(panelPrincipalWrapper);
     }
+
+    // ===================== SECTION BUILDERS =====================
 
     private JPanel crearSeccionPuntoVenta() {
         JPanel panel = new JPanel(new GridBagLayout());
@@ -234,32 +361,29 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             BorderFactory.createLineBorder(COLOR_TITULO),
             "PUNTO DE VENTA Y TIPO DE COMPROBANTE",
             TitledBorder.LEFT, TitledBorder.TOP,
-            new Font("Cambria", Font.BOLD, 12), COLOR_TEXTO
+            new Font("Cambria", Font.BOLD, 11), COLOR_TEXTO
         ));
         panel.setBackground(COLOR_FONDO);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(3, 5, 3, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        Insets ins = new Insets(3, 6, 3, 6);
 
+        panel.add(new JLabel("Punto de Venta:"), new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
         cmbPuntoVenta = new JComboBox<>(new String[]{"00001"});
         cmbPuntoVenta.setFont(FUENTE_BOTON);
+        cmbPuntoVenta.setPreferredSize(new Dimension(80, 24));
+        cmbPuntoVenta.setPrototypeDisplayValue("00001");
+        panel.add(cmbPuntoVenta, new GridBagConstraints(1, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+
+        panel.add(new JLabel("Tipo Comprobante:"), new GridBagConstraints(2, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
         cmbTipoComprobante = new JComboBox<>(new String[]{
-            "Factura C", "Nota de Débito C", "Nota de Crédito C",
-            "Recibo C", "Factura de Crédito Electrónica MiPymes (FCE) C",
-            "Nota de Débito Electrónica MiPymes (FCE) C",
-            "Nota de Crédito Electrónica MiPymes (FCE) C"
+            "Factura C", "Nota de D\u00e9bito C", "Nota de Cr\u00e9dito C",
+            "Recibo C", "Factura de Cr\u00e9dito Electr\u00f3nica MiPymes (FCE) C",
+            "Nota de D\u00e9bito Electr\u00f3nica MiPymes (FCE) C",
+            "Nota de Cr\u00e9dito Electr\u00f3nica MiPymes (FCE) C"
         });
         cmbTipoComprobante.setFont(FUENTE_BOTON);
-
-        gbc.gridx = 0; gbc.gridy = 0;
-        panel.add(new JLabel("Punto de Venta:"), gbc);
-        gbc.gridx = 1;
-        panel.add(cmbPuntoVenta, gbc);
-        gbc.gridx = 2;
-        panel.add(new JLabel("Tipo Comprobante:"), gbc);
-        gbc.gridx = 3; gbc.weightx = 1.0;
-        panel.add(cmbTipoComprobante, gbc);
-
+        cmbTipoComprobante.setPreferredSize(new Dimension(240, 24));
+        cmbTipoComprobante.setPrototypeDisplayValue("Factura de Cr\u00e9dito Electr\u00f3nica");
+        panel.add(cmbTipoComprobante, new GridBagConstraints(3, 0, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
         return panel;
     }
 
@@ -269,87 +393,45 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             BorderFactory.createLineBorder(COLOR_TITULO),
             "DATOS DE EMISION",
             TitledBorder.LEFT, TitledBorder.TOP,
-            new Font("Cambria", Font.BOLD, 12), COLOR_TEXTO
+            new Font("Cambria", Font.BOLD, 11), COLOR_TEXTO
         ));
         panel.setBackground(COLOR_FONDO);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(3, 5, 3, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        Insets ins = new Insets(4, 8, 4, 8);
 
-        txtFecha = new JTextField(12);
-        txtFecha.setText(LocalDate.now().format(FMT));
-        txtFecha.setFont(new Font("Cambria", Font.PLAIN, 11));
-        btnFecha = crearBotonDate();
-        btnFecha.addActionListener(e -> seleccionarFecha(txtFecha));
-
+        dateFecha = crearDateChooser();
         cmbConcepto = new JComboBox<>(new String[]{"Productos", "Servicios", "Productos y Servicios"});
         cmbConcepto.setFont(FUENTE_BOTON);
+        cmbConcepto.setPreferredSize(new Dimension(180, 24));
+        cmbConcepto.setPrototypeDisplayValue("Productos");
 
-        txtActividades = new JTextField(30);
+        txtActividades = new JTextField(25);
         txtActividades.setText("331290 - Reparacion y mantenimiento de maquinaria de uso especial n.c.p.");
         txtActividades.setEditable(false);
-        txtActividades.setFont(new Font("Cambria", Font.PLAIN, 10));
+        txtActividades.setFont(FUENTE_BOTON);
+        txtActividades.setPreferredSize(new Dimension(300, 24));
         txtActividades.setBackground(new Color(240, 240, 240));
 
-        txtPeriodoDesde = new JTextField(10);
-        txtPeriodoDesde.setText(LocalDate.now().format(FMT));
-        txtPeriodoDesde.setFont(new Font("Cambria", Font.PLAIN, 11));
-        btnPeriodoDesde = crearBotonDate();
-        btnPeriodoDesde.addActionListener(e -> seleccionarFecha(txtPeriodoDesde));
-
-        txtPeriodoHasta = new JTextField(10);
-        txtPeriodoHasta.setText(LocalDate.now().format(FMT));
-        txtPeriodoHasta.setFont(new Font("Cambria", Font.PLAIN, 11));
-        btnPeriodoHasta = crearBotonDate();
-        btnPeriodoHasta.addActionListener(e -> seleccionarFecha(txtPeriodoHasta));
-
-        txtPeriodoVto = new JTextField(10);
-        txtPeriodoVto.setText(LocalDate.now().format(FMT));
-        txtPeriodoVto.setFont(new Font("Cambria", Font.PLAIN, 11));
-        btnPeriodoVto = crearBotonDate();
-        btnPeriodoVto.addActionListener(e -> seleccionarFecha(txtPeriodoVto));
+        datePeriodoDesde = crearDateChooser();
+        datePeriodoHasta = crearDateChooser();
+        datePeriodoVto = crearDateChooser();
 
         int row = 0;
-        gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("Fecha del comprobante:"), gbc);
-        gbc.gridx = 1;
-        panel.add(txtFecha, gbc);
-        gbc.gridx = 2;
-        panel.add(btnFecha, gbc);
-        gbc.gridx = 3;
-        panel.add(new JLabel("Concepto:"), gbc);
-        gbc.gridx = 4; gbc.weightx = 1.0;
-        panel.add(cmbConcepto, gbc);
+        panel.add(new JLabel("Fecha del comprobante:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        panel.add(dateFecha, new GridBagConstraints(1, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        panel.add(new JLabel("     Concepto:"), new GridBagConstraints(2, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        panel.add(cmbConcepto, new GridBagConstraints(3, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
 
         row++;
-        gbc.gridwidth = 1; gbc.weightx = 0;
-        gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("Actividades Asociadas:"), gbc);
-        gbc.gridx = 1; gbc.gridwidth = 4; gbc.weightx = 1.0;
-        panel.add(txtActividades, gbc);
+        panel.add(new JLabel("Actividades Asociadas:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        panel.add(txtActividades, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
-        gbc.gridwidth = 1; gbc.weightx = 0;
-        gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("Periodo facturado:"), gbc);
-        gbc.gridx = 1;
-        panel.add(new JLabel("Desde:"), gbc);
-        gbc.gridx = 2;
-        panel.add(txtPeriodoDesde, gbc);
-        gbc.gridx = 3;
-        panel.add(btnPeriodoDesde, gbc);
-        gbc.gridx = 4;
-        panel.add(new JLabel("Hasta:"), gbc);
-        gbc.gridx = 5;
-        panel.add(txtPeriodoHasta, gbc);
-        gbc.gridx = 6;
-        panel.add(btnPeriodoHasta, gbc);
-        gbc.gridx = 7;
-        panel.add(new JLabel("Vto. Pago:"), gbc);
-        gbc.gridx = 8;
-        panel.add(txtPeriodoVto, gbc);
-        gbc.gridx = 9;
-        panel.add(btnPeriodoVto, gbc);
+        panel.add(new JLabel("Periodo facturado:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        panel.add(datePeriodoDesde, new GridBagConstraints(1, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        panel.add(new JLabel("Hasta:"), new GridBagConstraints(2, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        panel.add(datePeriodoHasta, new GridBagConstraints(3, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        panel.add(new JLabel("Vto.:"), new GridBagConstraints(4, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        panel.add(datePeriodoVto, new GridBagConstraints(5, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
 
         return panel;
     }
@@ -360,12 +442,10 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             BorderFactory.createLineBorder(COLOR_TITULO),
             "DATOS DEL RECEPTOR",
             TitledBorder.LEFT, TitledBorder.TOP,
-            new Font("Cambria", Font.BOLD, 12), COLOR_TEXTO
+            new Font("Cambria", Font.BOLD, 11), COLOR_TEXTO
         ));
         panel.setBackground(COLOR_FONDO);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(3, 5, 3, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        Insets ins = new Insets(4, 8, 4, 8);
 
         cmbCondicionIva = new JComboBox<>(new String[]{
             "IVA Responsable Inscripto", "IVA Sujeto Exento", "Consumidor Final",
@@ -373,82 +453,62 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             "IVA Liberado - Ley 19.640", "Monotributista Social", "IVA No Alcanzado"
         });
         cmbCondicionIva.setFont(FUENTE_BOTON);
+        cmbCondicionIva.setPreferredSize(new Dimension(200, 24));
+        cmbCondicionIva.setPrototypeDisplayValue("IVA Responsable Inscripto");
 
         cmbTipoDoc = new JComboBox<>(new String[]{"CUIT", "DNI"});
         cmbTipoDoc.setFont(FUENTE_BOTON);
+        cmbTipoDoc.setPreferredSize(new Dimension(80, 24));
+        cmbTipoDoc.setPrototypeDisplayValue("CUIT");
 
         cmbNroDoc = new AutoCompleteComboBox();
-        cmbNroDoc.setFont(new Font("Cambria", Font.PLAIN, 11));
-        cmbNroDoc.setPreferredSize(new java.awt.Dimension(150, 24));
+        cmbNroDoc.setFont(FUENTE_BOTON);
+        cmbNroDoc.setPreferredSize(new Dimension(140, 24));
 
         cmbRazonSocial = new AutoCompleteComboBox();
-        cmbRazonSocial.setFont(new Font("Cambria", Font.PLAIN, 11));
-        cmbRazonSocial.setPreferredSize(new java.awt.Dimension(250, 24));
+        cmbRazonSocial.setFont(FUENTE_BOTON);
+        cmbRazonSocial.setPreferredSize(new Dimension(220, 24));
 
-        javax.swing.JTextField editorRS = (javax.swing.JTextField) cmbRazonSocial.getEditor().getEditorComponent();
-        editorRS.addActionListener(e -> autocompletarPorRazonSocial());
+        txtDomicilio = new JTextField(20);
+        txtDomicilio.setFont(FUENTE_BOTON);
+        txtDomicilio.setPreferredSize(new Dimension(180, 24));
 
-        javax.swing.JTextField editorND = (javax.swing.JTextField) cmbNroDoc.getEditor().getEditorComponent();
-        editorND.addActionListener(e -> autocompletarPorDocumento());
+        txtEmail = new JTextField(18);
+        txtEmail.setFont(FUENTE_BOTON);
+        txtEmail.setPreferredSize(new Dimension(160, 24));
 
-        txtDomicilio = new JTextField(25);
-        txtDomicilio.setFont(new Font("Cambria", Font.PLAIN, 11));
-
-        txtEmail = new JTextField(20);
-        txtEmail.setFont(new Font("Cambria", Font.PLAIN, 11));
-
-        txtComprobanteAsoc = new JTextField(15);
-        txtComprobanteAsoc.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtComprobanteAsoc = new JTextField(12);
+        txtComprobanteAsoc.setFont(FUENTE_BOTON);
+        txtComprobanteAsoc.setPreferredSize(new Dimension(110, 24));
 
         int row = 0;
-        gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("Condicion frente al IVA:"), gbc);
-        gbc.gridx = 1; gbc.gridwidth = 3; gbc.weightx = 1.0;
-        panel.add(cmbCondicionIva, gbc);
+        panel.add(new JLabel("Condicion IVA:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        panel.add(cmbCondicionIva, new GridBagConstraints(1, row, 2, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        panel.add(new JLabel("Doc:"), new GridBagConstraints(3, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        panel.add(cmbTipoDoc, new GridBagConstraints(4, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        panel.add(cmbNroDoc, new GridBagConstraints(5, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
-        gbc.gridwidth = 1; gbc.weightx = 0;
-        gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("Nombre o Razon Social:"), gbc);
-        gbc.gridx = 1; gbc.gridwidth = 3; gbc.weightx = 1.0;
-        panel.add(cmbRazonSocial, gbc);
+        panel.add(new JLabel("Razon Social:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        panel.add(cmbRazonSocial, new GridBagConstraints(1, row, 5, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
-        gbc.gridwidth = 1; gbc.weightx = 0;
-        gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("Tipo y Nro Documento:"), gbc);
-        gbc.gridx = 1;
-        panel.add(cmbTipoDoc, gbc);
-        gbc.gridx = 2;
-        panel.add(cmbNroDoc, gbc);
+        panel.add(new JLabel("Domicilio:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        panel.add(txtDomicilio, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
+        panel.add(new JLabel("Email:"), new GridBagConstraints(4, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        panel.add(txtEmail, new GridBagConstraints(5, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
-        gbc.gridwidth = 1; gbc.weightx = 0;
-        gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("Domicilio:"), gbc);
-        gbc.gridx = 1; gbc.gridwidth = 3; gbc.weightx = 1.0;
-        panel.add(txtDomicilio, gbc);
+        panel.add(new JLabel("Cond. Venta:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
 
-        row++;
-        gbc.gridwidth = 1; gbc.weightx = 0;
-        gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("Email:"), gbc);
-        gbc.gridx = 1;
-        panel.add(txtEmail, gbc);
-
-        row++;
-        gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("Condiciones de Venta:"), gbc);
-        gbc.gridx = 1; gbc.gridwidth = 4; gbc.weightx = 1.0;
-
-        JPanel panelChecks = new JPanel(new GridLayout(2, 4, 5, 2));
+        JPanel panelChecks = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         panelChecks.setBackground(COLOR_FONDO);
         chkContado = new JCheckBox("Contado");
-        chkTarjetaDeb = new JCheckBox("Tarjeta Debito");
-        chkTarjetaCred = new JCheckBox("Tarjeta Credito");
-        chkCC = new JCheckBox("Cuenta Corriente");
+        chkTarjetaDeb = new JCheckBox("Tarj. Debito");
+        chkTarjetaCred = new JCheckBox("Tarj. Credito");
+        chkCC = new JCheckBox("Cta. Cte.");
         chkCheque = new JCheckBox("Cheque");
-        chkTransf = new JCheckBox("Transf. Bancaria");
+        chkTransf = new JCheckBox("Transf.");
         chkOtra = new JCheckBox("Otra");
         for (JCheckBox c : new JCheckBox[]{chkContado, chkTarjetaDeb, chkTarjetaCred, chkCC, chkCheque, chkTransf, chkOtra}) {
             c.setBackground(COLOR_FONDO);
@@ -462,607 +522,127 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelChecks.add(chkCheque);
         panelChecks.add(chkTransf);
         panelChecks.add(chkOtra);
-        panel.add(panelChecks, gbc);
+        panel.add(panelChecks, new GridBagConstraints(1, row, 5, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
-        gbc.gridwidth = 1; gbc.weightx = 0;
-        gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("Comp. Asociado/Remito:"), gbc);
-        gbc.gridx = 1;
-        panel.add(txtComprobanteAsoc, gbc);
-        gbc.gridx = 2;
-        JButton btnImportarRemito = crearBoton("Importar desde ReparSoft");
-        btnImportarRemito.addActionListener(e -> importarRemitoReparsoft());
-        panel.add(btnImportarRemito, gbc);
+        JLabel lblCompAsoc = new JLabel("Comp. Asoc.:");
+        panel.add(lblCompAsoc, new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        panel.add(txtComprobanteAsoc, new GridBagConstraints(1, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        btnImportarRemito = new JButton("Importar ReparSoft");
+        btnImportarRemito.setFont(FUENTE_BOTON);
+        panel.add(btnImportarRemito, new GridBagConstraints(2, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
 
         return panel;
     }
 
-    private JPanel crearPanelOperacion() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(COLOR_FONDO);
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    // ===================== UI FACTORIES =====================
 
-        JPanel panelSuperior = new JPanel(new BorderLayout());
-        panelSuperior.setBackground(COLOR_FONDO);
-        btnAnterior = crearBoton("<< ANTERIOR");
-        btnAnterior.addActionListener(e -> cardLayout.show(panelPrincipal, "datos"));
-        JLabel lblTitulo = new JLabel("DATOS DE LA OPERACION", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Cambria", Font.BOLD, 16));
-        lblTitulo.setForeground(COLOR_TEXTO);
-        panelSuperior.add(btnAnterior, BorderLayout.WEST);
-        panelSuperior.add(lblTitulo, BorderLayout.CENTER);
-
-        String[] columnas = {"Codigo", "Producto/Servicio", "Cantidad", "U. Medida", "P. Unitario", "Subtotal", "IVA %"};
-        modeloTablaItems = new DefaultTableModel(columnas, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column != 5;
-            }
-        };
-        tablaItems = new JTable(modeloTablaItems);
-        tablaItems.setFont(new Font("Cambria", Font.PLAIN, 11));
-        tablaItems.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 11));
-        tablaItems.getColumnModel().getColumn(0).setPreferredWidth(60);
-        tablaItems.getColumnModel().getColumn(1).setPreferredWidth(200);
-        tablaItems.getColumnModel().getColumn(2).setPreferredWidth(60);
-        tablaItems.getColumnModel().getColumn(3).setPreferredWidth(60);
-        tablaItems.getColumnModel().getColumn(4).setPreferredWidth(90);
-        tablaItems.getColumnModel().getColumn(5).setPreferredWidth(90);
-        tablaItems.getColumnModel().getColumn(6).setPreferredWidth(50);
-
-        JScrollPane scrollTabla = new JScrollPane(tablaItems);
-
-        JButton btnAgregarItem = crearBoton("+ AGREGAR ITEM");
-        btnAgregarItem.addActionListener(e -> agregarItem());
-        btnEliminarItem = crearBoton("- ELIMINAR ITEM");
-        btnEliminarItem.addActionListener(e -> eliminarItem());
-        cmbAlicuotaIva = new JComboBox<>(new String[]{"21%", "10.5%", "0%", "27%"});
-
-        JPanel panelSur = new JPanel(new BorderLayout(10, 5));
-        panelSur.setBackground(COLOR_FONDO);
-
-        JPanel panelBotones = new JPanel();
-        panelBotones.setBackground(COLOR_FONDO);
-        panelBotones.add(new JLabel("IVA:"));
-        panelBotones.add(cmbAlicuotaIva);
-        panelBotones.add(btnAgregarItem);
-        panelBotones.add(btnEliminarItem);
-
-        JPanel panelTotales = new JPanel(new GridBagLayout());
-        panelTotales.setBackground(COLOR_FONDO);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(3, 5, 3, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        lblTotal = new JLabel("$ 0.00");
-        lblTotal.setFont(new Font("Cambria", Font.BOLD, 18));
-        lblTotal.setForeground(new Color(0, 100, 0));
-
-        gbc.gridx = 0; gbc.gridy = 0;
-        panelTotales.add(new JLabel("Importe Neto:"), gbc);
-        txtImporteNeto = new JTextField(12);
-        txtImporteNeto.setEditable(false);
-        txtImporteNeto.setFont(new Font("Cambria", Font.BOLD, 12));
-        txtImporteNeto.setHorizontalAlignment(JTextField.RIGHT);
-        gbc.gridx = 1;
-        panelTotales.add(txtImporteNeto, gbc);
-        gbc.gridx = 2;
-        panelTotales.add(new JLabel("IVA 21%:"), gbc);
-        txtImporteIva = new JTextField(12);
-        txtImporteIva.setEditable(false);
-        txtImporteIva.setFont(new Font("Cambria", Font.BOLD, 12));
-        txtImporteIva.setHorizontalAlignment(JTextField.RIGHT);
-        gbc.gridx = 3;
-        panelTotales.add(txtImporteIva, gbc);
-        gbc.gridx = 4;
-        panelTotales.add(new JLabel("Otros Imp:"), gbc);
-        txtOtrosImpuestos = new JTextField(10);
-        txtOtrosImpuestos.setText("0,00");
-        txtOtrosImpuestos.setHorizontalAlignment(JTextField.RIGHT);
-        gbc.gridx = 5;
-        panelTotales.add(txtOtrosImpuestos, gbc);
-        gbc.gridx = 6;
-        panelTotales.add(new JLabel("Total:"), gbc);
-        txtImporteTotal = new JTextField(12);
-        txtImporteTotal.setEditable(false);
-        txtImporteTotal.setFont(new Font("Cambria", Font.BOLD, 14));
-        txtImporteTotal.setHorizontalAlignment(JTextField.RIGHT);
-        txtImporteTotal.setForeground(new Color(0, 100, 0));
-        gbc.gridx = 7;
-        panelTotales.add(txtImporteTotal, gbc);
-
-        JButton btnCalcular = crearBoton("CALCULAR");
-        btnCalcular.addActionListener(e -> recalcularTotales());
-        gbc.gridx = 8;
-        panelTotales.add(btnCalcular, gbc);
-
-        JPanel panelEmitir = new JPanel();
-        panelEmitir.setBackground(COLOR_FONDO);
-        lblEstadoPago = new JLabel("Estado: Pendiente de pago");
-        lblEstadoPago.setFont(new Font("Cambria", Font.BOLD, 12));
-        lblEstadoPago.setForeground(COLOR_TEXTO);
-
-        btnEmitir = crearBoton("GUARDAR / EMITIR FACTURA");
-        btnEmitir.setFont(new Font("Cambria", Font.BOLD, 13));
-        btnEmitir.setBackground(new Color(100, 180, 100));
-        btnEmitir.addActionListener(e -> btnEmitirAction());
-        JButton btnLimpiar = crearBoton("LIMPIAR");
-        btnLimpiar.addActionListener(e -> limpiarTodo());
-
-        panelEmitir.add(lblEstadoPago);
-        panelEmitir.add(btnEmitir);
-        panelEmitir.add(btnLimpiar);
-
-        panelSur.add(panelBotones, BorderLayout.NORTH);
-        panelSur.add(panelTotales, BorderLayout.CENTER);
-        panelSur.add(panelEmitir, BorderLayout.SOUTH);
-
-        panel.add(panelSuperior, BorderLayout.NORTH);
-        panel.add(scrollTabla, BorderLayout.CENTER);
-        panel.add(panelSur, BorderLayout.SOUTH);
-
-        return panel;
-    }
-
-    private void agregarItem() {
-        String iva = (String) cmbAlicuotaIva.getSelectedItem();
-        modeloTablaItems.addRow(new Object[]{"", "", "1", "Unidad", "0,00", "0,00", iva});
-    }
-
-    private void eliminarItem() {
-        int row = tablaItems.getSelectedRow();
-        if (row >= 0) {
-            modeloTablaItems.removeRow(row);
-            recalcularTotales();
-        }
-    }
-
-    private void recalcularTotales() {
-        BigDecimal totalNeto = BigDecimal.ZERO;
-        BigDecimal ivaTotal = BigDecimal.ZERO;
-        for (int i = 0; i < modeloTablaItems.getRowCount(); i++) {
-            try {
-                Object cantObj = modeloTablaItems.getValueAt(i, 2);
-                Object precioObj = modeloTablaItems.getValueAt(i, 4);
-                double cant = Double.parseDouble(cantObj.toString().replace(",", "."));
-                double precio = Double.parseDouble(precioObj.toString().replace(",", ".").replace("$", "").trim());
-                BigDecimal subtotal = BigDecimal.valueOf(cant * precio).setScale(2, BigDecimal.ROUND_HALF_UP);
-                modeloTablaItems.setValueAt(DF.format(subtotal), i, 5);
-                totalNeto = totalNeto.add(subtotal);
-
-                String ivaStr = modeloTablaItems.getValueAt(i, 6) != null ? modeloTablaItems.getValueAt(i, 6).toString() : "21%";
-                BigDecimal alicuota = new BigDecimal(ivaStr.replace("%", ""));
-                BigDecimal ivaItem = subtotal.multiply(alicuota).divide(new BigDecimal("100"), 2, BigDecimal.ROUND_HALF_UP);
-                ivaTotal = ivaTotal.add(ivaItem);
-            } catch (Exception e) {
-                modeloTablaItems.setValueAt("0,00", i, 5);
-            }
-        }
-        BigDecimal otros = BigDecimal.ZERO;
+    private JComponent crearDateChooser() {
         try {
-            otros = new BigDecimal(txtOtrosImpuestos.getText().replace(",", "."));
-        } catch (Exception e) {}
-        BigDecimal totalConIva = totalNeto.add(ivaTotal).add(otros);
-        txtImporteNeto.setText(DF.format(totalNeto));
-        txtImporteIva.setText(DF.format(ivaTotal));
-        txtImporteTotal.setText(DF.format(totalConIva));
-        lblTotal.setText("$ " + DF.format(totalConIva));
-    }
-
-    private boolean validarDatosReceptor() {
-        if (cmbNroDoc.getEditorText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Ingrese numero de documento", "Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-        if (cmbRazonSocial.getEditorText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Ingrese razon social", "Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-        return true;
-    }
-
-    private void btnEmitirAction() {
-        if (modeloTablaItems.getRowCount() == 0) {
-            JOptionPane.showMessageDialog(this, "Agregue al menos un item", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        recalcularTotales();
-
-        try {
-            CuitConfigDTO cuiSelected = obtenerCuitSeleccionado();
-            if (cuiSelected == null) {
-                JOptionPane.showMessageDialog(this, "Configure un CUIT emisor en Herramientas > Configurar Certificados", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            ComprobanteDTO comprobante = new ComprobanteDTO();
-            comprobante.setCuitEmisor(cuiSelected.getCuit());
-            comprobante.setTipoComprobante(obtenerTipoCodigo());
-            comprobante.setPuntoVenta(Integer.parseInt((String) cmbPuntoVenta.getSelectedItem()));
-            comprobante.setCuitReceptor(obtenerDocReceptor());
-            comprobante.setRazonSocialRec(cmbRazonSocial.getEditorText().trim());
-            comprobante.setFechaEmision(parseFecha(txtFecha.getText()));
-            comprobante.setImporteNeto(new BigDecimal(txtImporteNeto.getText().replace(",", "")));
-            comprobante.setImporteIva(new BigDecimal(txtImporteIva.getText().replace(",", "")));
-            comprobante.setImporteTotal(new BigDecimal(txtImporteTotal.getText().replace(",", "")));
-            comprobante.setConcepto((String) cmbConcepto.getSelectedItem());
-            comprobante.setPeriodoDesde(parseFecha(txtPeriodoDesde.getText()));
-            comprobante.setPeriodoHasta(parseFecha(txtPeriodoHasta.getText()));
-            comprobante.setPeriodoVto(parseFecha(txtPeriodoVto.getText()));
-            comprobante.setCondicionIvaReceptor((String) cmbCondicionIva.getSelectedItem());
-            comprobante.setTipoDocumento((String) cmbTipoDoc.getSelectedItem());
-            comprobante.setNroDocumento(cmbNroDoc.getEditorText().trim());
-            comprobante.setDomicilioReceptor(txtDomicilio.getText().trim());
-            comprobante.setEmailReceptor(txtEmail.getText().trim());
-            comprobante.setCondicionesVenta(obtenerCondicionesVenta());
-            comprobante.setComprobanteAsociado(txtComprobanteAsoc.getText().trim());
-            comprobante.setDescripcion(obtenerDescripcionItems());
-            comprobante.setEstadoPago("pendiente");
-            try {
-                comprobante.setOtrosImpuestos(new BigDecimal(txtOtrosImpuestos.getText().replace(",", ".")));
-            } catch (Exception e) {
-                comprobante.setOtrosImpuestos(BigDecimal.ZERO);
-            }
-
-            btnEmitir.setEnabled(false);
-            btnEmitir.setText("Emitiendo...");
-
-            List<ItemFacturaDTO> items = obtenerItems();
-            RespuestaCAE respuesta = controlador.emitirFactura(comprobante, items);
-
-            if (respuesta.isExitosa()) {
-                String modo = controlador.isModoPrueba() ? " (MODO PRUEBA)" : "";
-                JOptionPane.showMessageDialog(this,
-                    "Comprobante emitido exitosamente!" + modo + "\n\n"
-                    + "CAE: " + respuesta.getCae() + "\n"
-                    + "Numero: " + respuesta.getNumeroComprobante(),
-                    "Exito", JOptionPane.INFORMATION_MESSAGE);
-                limpiarTodo();
-            } else {
-                JOptionPane.showMessageDialog(this,
-                    "Error al emitir comprobante:\n" + respuesta.getMensaje(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
-            }
-
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            ex.printStackTrace();
-        } finally {
-            btnEmitir.setEnabled(true);
-            btnEmitir.setText("EMITIR COMPROBANTE");
-        }
-    }
-
-    private int obtenerTipoCodigo() {
-        String sel = (String) cmbTipoComprobante.getSelectedItem();
-        if (sel.startsWith("Factura C")) return 11;
-        if (sel.startsWith("Nota de Debito")) return 12;
-        if (sel.startsWith("Nota de Credito")) return 13;
-        if (sel.startsWith("Recibo")) return 10;
-        if (sel.contains("FCE")) return 11;
-        return 11;
-    }
-
-    private String obtenerDocReceptor() {
-        String tipo = (String) cmbTipoDoc.getSelectedItem();
-        String nro = cmbNroDoc.getEditorText().trim().replaceAll("[^0-9]", "");
-        if ("CUIT".equals(tipo)) {
-            while (nro.length() < 11) nro = "0" + nro;
-        }
-        return nro;
-    }
-
-    private List<ItemFacturaDTO> obtenerItems() {
-        List<ItemFacturaDTO> lista = new ArrayList<>();
-        for (int i = 0; i < modeloTablaItems.getRowCount(); i++) {
-            try {
-                String codigo = (String) modeloTablaItems.getValueAt(i, 0);
-                String descripcion = (String) modeloTablaItems.getValueAt(i, 1);
-                BigDecimal cantidad = new BigDecimal(modeloTablaItems.getValueAt(i, 2).toString().replace(",", "."));
-                String unidad = (String) modeloTablaItems.getValueAt(i, 3);
-                BigDecimal precio = new BigDecimal(modeloTablaItems.getValueAt(i, 4).toString().replace(",", "."));
-                BigDecimal subtotal = cantidad.multiply(precio).setScale(2, BigDecimal.ROUND_HALF_UP);
-                ItemFacturaDTO item = new ItemFacturaDTO(codigo, descripcion, cantidad, unidad, precio, subtotal);
-                String ivaStr = modeloTablaItems.getValueAt(i, 6) != null ? modeloTablaItems.getValueAt(i, 6).toString() : "21%";
-                item.setAlicuotaIva(new BigDecimal(ivaStr.replace("%", "")));
-                lista.add(item);
-            } catch (Exception e) {
-                System.err.println("Error leyendo item fila " + i + ": " + e.getMessage());
-            }
-        }
-        return lista;
-    }
-
-    private String obtenerDescripcionItems() {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < modeloTablaItems.getRowCount(); i++) {
-            if (i > 0) sb.append(" | ");
-            sb.append(modeloTablaItems.getValueAt(i, 1));
-        }
-        return sb.toString();
-    }
-
-    private CuitConfigDTO obtenerCuitSeleccionado() {
-        List<CuitConfigDTO> cuits = controlador.getCuitsActivos();
-        if (cuits.isEmpty()) return null;
-        return cuits.get(0);
-    }
-
-    private String obtenerCondicionesVenta() {
-        StringBuilder sb = new StringBuilder();
-        JCheckBox[] checks = {chkContado, chkTarjetaDeb, chkTarjetaCred, chkCC, chkCheque, chkTransf, chkOtra};
-        String[] labels = {"Contado", "Tarjeta Debito", "Tarjeta Credito", "Cuenta Corriente", "Cheque", "Transf. Bancaria", "Otra"};
-        for (int i = 0; i < checks.length; i++) {
-            if (checks[i].isSelected()) {
-                if (sb.length() > 0) sb.append(", ");
-                sb.append(labels[i]);
-            }
-        }
-        return sb.toString();
-    }
-
-    private void cargarCuits() {
-    }
-
-    private void cargarClientes() {
-        List<ClienteDTO> clientes = controladorClientes.listarTodos();
-        List<String> razones = new ArrayList<>();
-        List<String> docs = new ArrayList<>();
-        for (ClienteDTO c : clientes) {
-            razones.add(c.getRazonSocial());
-            docs.add(c.getNroDocumento());
-        }
-        cmbRazonSocial.setData(razones);
-        cmbNroDoc.setData(docs);
-    }
-
-    private void autocompletarPorRazonSocial() {
-        String texto = cmbRazonSocial.getEditorText().trim();
-        if (texto.isEmpty()) return;
-
-        List<ClienteDTO> resultados = controladorClientes.buscarPorRazonSocial(texto);
-        ClienteDTO match = null;
-        for (ClienteDTO c : resultados) {
-            if (c.getRazonSocial().equalsIgnoreCase(texto)) {
-                match = c;
-                break;
-            }
-        }
-        if (match == null && resultados.size() == 1) {
-            match = resultados.get(0);
-        }
-
-        if (match != null) {
-            autocompletarCamposCliente(match);
-        } else {
-            int opcion = JOptionPane.showConfirmDialog(this,
-                "No existe un cliente con razon social \"" + texto + "\". Desea darlo de alta?",
-                "Cliente no encontrado", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-            if (opcion == JOptionPane.YES_OPTION) {
-                VentanaClientes ventana = new VentanaClientes();
-                ventana.setVisible(true);
-                ventana.addWindowListener(new java.awt.event.WindowAdapter() {
-                    public void windowClosed(java.awt.event.WindowEvent e) {
-                        cargarClientes();
-                    }
-                });
-            }
-        }
-    }
-
-    private void autocompletarPorDocumento() {
-        String texto = cmbNroDoc.getEditorText().trim();
-        if (texto.isEmpty()) return;
-
-        String tipoDoc = (String) cmbTipoDoc.getSelectedItem();
-        ClienteDTO cli = controladorClientes.buscarPorDocumento(tipoDoc, texto);
-        if (cli != null) {
-            autocompletarCamposCliente(cli);
-            return;
-        }
-
-        List<ClienteDTO> todos = controladorClientes.listarTodos();
-        for (ClienteDTO c : todos) {
-            if (c.getNroDocumento() != null && c.getNroDocumento().contains(texto)) {
-                autocompletarCamposCliente(c);
-                return;
-            }
-        }
-
-        int opcion = JOptionPane.showConfirmDialog(this,
-            "No existe un cliente con " + tipoDoc + " \"" + texto + "\". Desea darlo de alta?",
-            "Cliente no encontrado", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-        if (opcion == JOptionPane.YES_OPTION) {
-            VentanaClientes ventana = new VentanaClientes();
-            ventana.setVisible(true);
-            ventana.addWindowListener(new java.awt.event.WindowAdapter() {
-                public void windowClosed(java.awt.event.WindowEvent e) {
-                    cargarClientes();
-                }
-            });
-        }
-    }
-
-    private void autocompletarCamposCliente(ClienteDTO cli) {
-        cmbRazonSocial.setSelectedItem(cli.getRazonSocial());
-        cmbRazonSocial.setEditorText(cli.getRazonSocial());
-        cmbTipoDoc.setSelectedItem(cli.getTipoDocumento() != null ? cli.getTipoDocumento() : "CUIT");
-        cmbNroDoc.setEditorText(cli.getNroDocumento() != null ? cli.getNroDocumento() : "");
-        cmbCondicionIva.setSelectedItem(cli.getCondicionIva() != null ? cli.getCondicionIva() : "IVA Responsable Inscripto");
-        txtDomicilio.setText(cli.getDomicilio() != null ? cli.getDomicilio() : "");
-        txtEmail.setText(cli.getEmail() != null ? cli.getEmail() : "");
-    }
-
-
-
-    private void importarRemitoReparsoft() {
-        RemitoReparsoftDTO remito = VentanaImportarRemito.mostrarDialog(this);
-        if (remito == null) return;
-
-        txtComprobanteAsoc.setText(remito.getNumeroRemitoDisplay());
-
-        if (remito.getRazonSocialCliente() != null && !remito.getRazonSocialCliente().isEmpty()) {
-            boolean encontrado = false;
-            List<ClienteDTO> clientes = controladorClientes.buscarPorRazonSocial(remito.getRazonSocialCliente());
-            for (ClienteDTO c : clientes) {
-                if (c.getRazonSocial().equalsIgnoreCase(remito.getRazonSocialCliente())) {
-                    autocompletarCamposCliente(c);
-                    encontrado = true;
-                    break;
-                }
-            }
-            if (!encontrado && remito.getCuitCliente() != null && !remito.getCuitCliente().isEmpty()) {
-                String cuitLimpio = remito.getCuitCliente().replaceAll("[^0-9]", "");
-                for (ClienteDTO c : controladorClientes.listarTodos()) {
-                    if (c.getNroDocumento() != null && c.getNroDocumento().replaceAll("[^0-9]", "").equals(cuitLimpio)) {
-                        autocompletarCamposCliente(c);
-                        encontrado = true;
-                        break;
-                    }
-                }
-            }
-            if (!encontrado) {
-                cmbRazonSocial.setEditorText(remito.getRazonSocialCliente());
-                if (remito.getCuitCliente() != null && !remito.getCuitCliente().isEmpty()) {
-                    cmbNroDoc.setEditorText(remito.getCuitCliente());
-                    cmbTipoDoc.setSelectedItem("CUIT");
-                }
-            }
-        }
-
-        cardLayout.show(panelPrincipal, "operacion");
-        modeloTablaItems.setRowCount(0);
-        if (remito.getItems() != null) {
-            for (RemitoReparsoftItem item : remito.getItems()) {
-                String descripcion = item.getDescripcion();
-                BigDecimal precio = item.getPrecioPeso() != null ? item.getPrecioPeso() : BigDecimal.ZERO;
-                String precioStr = precio.compareTo(BigDecimal.ZERO) > 0
-                    ? String.format("%.2f", precio.doubleValue()).replace(",", ".")
-                    : "0.00";
-                modeloTablaItems.addRow(new Object[]{
-                    String.valueOf(item.getEls()),
-                    descripcion,
-                    "1",
-                    "Unidad",
-                    precioStr,
-                    "0.00",
-                    "21%"
-                });
-            }
-            recalcularTotales();
-        }
-    }
-
-    private void limpiarTodo() {
-        modeloTablaItems.setRowCount(0);
-        txtImporteNeto.setText("");
-        txtImporteIva.setText("");
-        txtImporteTotal.setText("");
-        txtOtrosImpuestos.setText("0,00");
-        lblTotal.setText("$ 0.00");
-        lblEstadoPago.setText("Estado: Pendiente de pago");
-        txtFecha.setText(LocalDate.now().format(FMT));
-        txtPeriodoDesde.setText(LocalDate.now().format(FMT));
-        txtPeriodoHasta.setText(LocalDate.now().format(FMT));
-        txtPeriodoVto.setText(LocalDate.now().format(FMT));
-        cmbRazonSocial.setSelectedItem(null);
-        cmbRazonSocial.setEditorText("");
-        cmbNroDoc.setSelectedItem(null);
-        cmbNroDoc.setEditorText("");
-        cmbCondicionIva.setSelectedIndex(0);
-        cmbTipoDoc.setSelectedIndex(0);
-        txtDomicilio.setText("");
-        txtEmail.setText("");
-        txtComprobanteAsoc.setText("");
-        cardLayout.show(panelPrincipal, "datos");
-    }
-
-    private void seleccionarFecha(JTextField campo) {
-        String input = JOptionPane.showInputDialog(this, "Fecha (dd/MM/yyyy):", campo.getText());
-        if (input != null) {
-            try {
-                LocalDate.parse(input, FMT);
-                campo.setText(input);
-            } catch (DateTimeParseException e) {
-                JOptionPane.showMessageDialog(this, "Fecha invalida. Use dd/MM/yyyy", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
-    }
-
-    private LocalDate parseFecha(String str) {
-        try {
-            return LocalDate.parse(str, FMT);
+            Class<?> clazz = Class.forName("com.toedter.calendar.JDateChooser");
+            JComponent chooser = (JComponent) clazz.getDeclaredConstructor().newInstance();
+            clazz.getMethod("setDateFormatString", String.class).invoke(chooser, "dd/MM/yyyy");
+            clazz.getMethod("setDate", java.util.Date.class).invoke(chooser,
+                java.util.Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant()));
+            chooser.setPreferredSize(new Dimension(110, 24));
+            return chooser;
         } catch (Exception e) {
-            return LocalDate.now();
+            JTextField tf = new JTextField(LocalDate.now().format(FMT));
+            tf.setPreferredSize(new Dimension(110, 24));
+            tf.setEditable(false);
+            return tf;
         }
     }
 
-    private JButton crearBoton(String texto) {
-        JButton btn = new JButton(texto);
+    private void estilizarBoton(JButton btn) {
         btn.setFont(FUENTE_BOTON);
         btn.setForeground(COLOR_TEXTO);
         btn.setBackground(COLOR_BOTON);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btn.setFocusPainted(false);
-        return btn;
     }
 
-    private JButton crearBotonDate() {
-        JButton btn = new JButton("...");
-        btn.setFont(new Font("Cambria", Font.BOLD, 10));
-        btn.setMargin(new Insets(0, 4, 0, 4));
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setFocusPainted(false);
-        return btn;
-    }
+    // ===================== GETTERS =====================
 
-    private void abrirConfiguracion() {
-        VentanaConfigCertificados ventana = new VentanaConfigCertificados();
-        ventana.setVisible(true);
-    }
+    public CardLayout getCardLayout() { return cardLayout; }
+    public JPanel getPanelPrincipal() { return panelPrincipal; }
 
-    private void abrirHistorial() {
-        VentanaComprobantes ventana = new VentanaComprobantes();
-        ventana.setVisible(true);
-    }
+    // PuntoVenta + Emision
+    public JComboBox<String> getCmbPuntoVenta() { return cmbPuntoVenta; }
+    public JComboBox<String> getCmbTipoComprobante() { return cmbTipoComprobante; }
+    public JComponent getDateFecha() { return dateFecha; }
+    public JComponent getDatePeriodoDesde() { return datePeriodoDesde; }
+    public JComponent getDatePeriodoHasta() { return datePeriodoHasta; }
+    public JComponent getDatePeriodoVto() { return datePeriodoVto; }
+    public JComboBox<String> getCmbConcepto() { return cmbConcepto; }
+    public JTextField getTxtActividades() { return txtActividades; }
 
-    private void abrirCaja() {
-        VentanaCaja ventana = new VentanaCaja();
-        ventana.setVisible(true);
-    }
+    // Receptor
+    public JComboBox<String> getCmbCondicionIva() { return cmbCondicionIva; }
+    public JComboBox<String> getCmbTipoDoc() { return cmbTipoDoc; }
+    public AutoCompleteComboBox getCmbRazonSocial() { return cmbRazonSocial; }
+    public AutoCompleteComboBox getCmbNroDoc() { return cmbNroDoc; }
+    public JTextField getTxtDomicilio() { return txtDomicilio; }
+    public JTextField getTxtEmail() { return txtEmail; }
+    public JCheckBox getChkContado() { return chkContado; }
+    public JCheckBox getChkTarjetaDeb() { return chkTarjetaDeb; }
+    public JCheckBox getChkTarjetaCred() { return chkTarjetaCred; }
+    public JCheckBox getChkCC() { return chkCC; }
+    public JCheckBox getChkCheque() { return chkCheque; }
+    public JCheckBox getChkTransf() { return chkTransf; }
+    public JCheckBox getChkOtra() { return chkOtra; }
+    public JTextField getTxtComprobanteAsoc() { return txtComprobanteAsoc; }
 
-    private void abrirGastos() {
-        VentanaGastos ventana = new VentanaGastos();
-        ventana.setVisible(true);
-    }
+    // Operacion
+    public JButton getBtnAnterior() { return btnAnterior; }
+    public JTable getTablaItems() { return tablaItems; }
+    public DefaultTableModel getModeloItems() { return modeloTablaItems; }
+    public JLabel getLblTotal() { return lblTotal; }
+    public JTextField getTxtImporteNeto() { return txtImporteNeto; }
+    public JTextField getTxtImporteIva() { return txtImporteIva; }
+    public JTextField getTxtImporteTotal() { return txtImporteTotal; }
+    public JTextField getTxtOtrosImpuestos() { return txtOtrosImpuestos; }
+    public JLabel getLblEstadoPago() { return lblEstadoPago; }
+    public JCheckBox getChkModoPrueba() { return chkModoPrueba; }
+    public JButton getBtnSiguiente() { return btnSiguiente; }
+    public JButton getBtnImportarRemito() { return btnImportarRemito; }
+    public JButton getBtnAgregarItem() { return btnAgregarItem; }
+    public JButton getBtnEliminarItem() { return btnEliminarItem; }
+    public JButton getBtnCalcular() { return btnCalcular; }
+    public JButton getBtnEmitir() { return btnEmitir; }
+    public JButton getBtnLimpiar() { return btnLimpiar; }
+    public JMenuItem getItemSalir() { return itemSalir; }
+    public JMenuItem getItemConfig() { return itemConfig; }
+    public JMenuItem getItemHistorial() { return itemHistorial; }
+    public JMenuItem getItemCaja() { return itemCaja; }
+    public JMenuItem getItemGastos() { return itemGastos; }
+    public JMenuItem getItemMigrar() { return itemMigrar; }
+    public JMenuItem getItemClientes() { return itemClientes; }
+    public JMenuItem getItemRemitos() { return itemRemitos; }
+    public JMenuItem getItemRecibos() { return itemRecibos; }
+    public JMenuItem getItemPagos() { return itemPagos; }
 
-    private void abrirMigracion() {
-        VentanaMigracion ventana = new VentanaMigracion();
-        ventana.setVisible(true);
-    }
+    // ===================== SETTERS / MUTATORS =====================
 
-    private void abrirClientes() {
-        VentanaClientes ventana = new VentanaClientes();
-        ventana.setVisible(true);
-    }
-
-    private void abrirRemitos() {
-        VentanaRemitos ventana = new VentanaRemitos();
-        ventana.setVisible(true);
-    }
-
-    private void abrirRecibos() {
-        VentanaRecibos ventana = new VentanaRecibos();
-        ventana.setVisible(true);
-    }
-
-    private void abrirPagos() {
-        VentanaPagos ventana = new VentanaPagos();
-        ventana.setVisible(true);
-    }
+    public void setRazonSocial(String texto) { cmbRazonSocial.setEditorText(texto); }
+    public void setNroDoc(String texto) { cmbNroDoc.setEditorText(texto); }
+    public void setTipoDoc(String tipo) { cmbTipoDoc.setSelectedItem(tipo); }
+    public void setCmbCondicionIva(String value) { cmbCondicionIva.setSelectedItem(value); }
 
     public static void main(String[] args) {
-        javax.swing.SwingUtilities.invokeLater(() -> new VentanaFacturacion().setVisible(true));
+        try {
+            UIManager.setLookAndFeel("com.jtattoo.plaf.aluminium.AluminiumLookAndFeel");
+        } catch (Exception e) {
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+        SwingUtilities.invokeLater(() -> {
+            VentanaFacturacion v = new VentanaFacturacion();
+            new com.els.facturacion.controlador.ControladorFacturacion(v).inicializar();
+            v.setVisible(true);
+        });
     }
 }

@@ -7,6 +7,7 @@ public class ReciboFacturaDTO {
     private Integer reciboId;
     private Integer comprobanteId;
     private BigDecimal montoAplicado;
+    private BigDecimal totalPagado;
     private String numeroFactura;
     private String tipoComprobanteStr;
 
@@ -20,6 +21,8 @@ public class ReciboFacturaDTO {
     public void setComprobanteId(Integer comprobanteId) { this.comprobanteId = comprobanteId; }
     public BigDecimal getMontoAplicado() { return montoAplicado; }
     public void setMontoAplicado(BigDecimal montoAplicado) { this.montoAplicado = montoAplicado; }
+    public BigDecimal getTotalPagado() { return totalPagado; }
+    public void setTotalPagado(BigDecimal totalPagado) { this.totalPagado = totalPagado; }
     public String getNumeroFactura() { return numeroFactura; }
     public void setNumeroFactura(String numeroFactura) { this.numeroFactura = numeroFactura; }
     public String getTipoComprobanteStr() { return tipoComprobanteStr; }

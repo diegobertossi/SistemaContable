@@ -160,7 +160,7 @@ public class ReparacionLecturaDAO {
 
         String sql = "SELECT r.idRemito, r.NumeroRemitoSalida, "
                 + "rep.ELS, rep.RemitoCliente, rep.idEquipo, "
-                + "e.Nombre as equipo_nombre, e.NumeroDeSerie, "
+                + "e.Nombre as equipo_nombre, e.NumeroDeSerie, e.Modelo, e.Marca, "
                 + "c.nombre as cliente_nombre, c.CUIT, "
                 + "rep.Falla, rep.PrecioPeso "
                 + "FROM " + baseDatos + ".remitos r "
@@ -194,15 +194,21 @@ public class ReparacionLecturaDAO {
                 String equipoNombre = "";
                 String serie = "";
                 String falla = "";
+                String modelo = "";
+                String marca = "";
                 double precio = 0;
+                boolean facturado = false;
                 try { els = rs.getInt("ELS"); } catch (Exception e) {}
                 try { equipoNombre = rs.getString("equipo_nombre"); } catch (Exception e) {}
                 try { serie = rs.getString("NumeroDeSerie"); } catch (Exception e) {}
                 try { falla = rs.getString("Falla"); } catch (Exception e) {}
+                try { modelo = rs.getString("Modelo"); } catch (Exception e) {}
+                try { marca = rs.getString("Marca"); } catch (Exception e) {}
                 try { precio = rs.getDouble("PrecioPeso"); } catch (Exception e) {}
+                facturado = false;
 
                 dto.getItems().add(new com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem(
-                    els, equipoNombre, serie, falla, java.math.BigDecimal.valueOf(precio)));
+                    els, equipoNombre, serie, falla, modelo, marca, java.math.BigDecimal.valueOf(precio), facturado));
             }
 
             lista.addAll(map.values());

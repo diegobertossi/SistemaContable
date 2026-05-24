@@ -172,7 +172,8 @@ public class ReciboDAO {
 
     private List<ReciboFacturaDTO> buscarFacturas(int reciboId) {
         List<ReciboFacturaDTO> lista = new ArrayList<>();
-        String sql = "SELECT rf.*, c.tipo_comprobante, c.punto_venta, c.numero "
+        String sql = "SELECT rf.*, c.tipo_comprobante, c.punto_venta, c.numero, "
+                + "COALESCE((SELECT SUM(fp.monto) FROM factura_pagos fp WHERE fp.comprobante_id = rf.comprobante_id), 0) AS total_pagado "
                 + "FROM recibo_facturas rf "
                 + "LEFT JOIN comprobantes c ON c.id = rf.comprobante_id "
                 + "WHERE rf.recibo_id = ?";
@@ -185,6 +186,7 @@ public class ReciboDAO {
                 f.setReciboId(rs.getInt("recibo_id"));
                 f.setComprobanteId(rs.getInt("comprobante_id"));
                 f.setMontoAplicado(rs.getBigDecimal("monto_aplicado"));
+                f.setTotalPagado(rs.getBigDecimal("total_pagado"));
                 String tipo = rs.getString("tipo_comprobante");
                 int pv = rs.getInt("punto_venta");
                 long num = rs.getLong("numero");

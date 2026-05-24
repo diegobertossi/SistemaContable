@@ -1,7 +1,6 @@
 package com.els.facturacion.pdf;
 
 import com.els.facturacion.dao.CuitDAO;
-import com.els.facturacion.modelo.ComprobanteDTO;
 import com.els.facturacion.modelo.CuitConfigDTO;
 import com.els.facturacion.modelo.ReciboDTO;
 import com.els.facturacion.modelo.ReciboPagoDTO;
@@ -45,7 +44,7 @@ public class GestorReciboPDF {
         }
     }
 
-    public String generarRecibo(ReciboDTO recibo, ComprobanteDTO comprobante) {
+    public String generarRecibo(ReciboDTO recibo) {
         try {
             CuitDAO cuitDAO = new CuitDAO();
             List<CuitConfigDTO> activos = cuitDAO.listarActivos();
@@ -59,7 +58,7 @@ public class GestorReciboPDF {
                 + recibo.getNumeroRecibo().replaceAll("[^a-zA-Z0-9_-]", "_") + ".pdf";
             String rutaSalida = DIRECTORIO_FACTURAS + File.separator + nombreArchivo;
 
-            String ruta = generarReciboPDF(recibo, emisor, comprobante, rutaSalida);
+            String ruta = generarReciboPDF(recibo, emisor, rutaSalida);
             return ruta;
         } catch (Exception e) {
             System.err.println("Error generando PDF de recibo: " + e.getMessage());
@@ -69,7 +68,7 @@ public class GestorReciboPDF {
     }
 
     private String generarReciboPDF(ReciboDTO recibo, CuitConfigDTO emisor,
-                                     ComprobanteDTO comprobante, String rutaSalida) {
+                                     String rutaSalida) {
         try {
             Map<String, Object> parametros = new HashMap<>();
             parametros.put("RECIBO_NUMERO", recibo.getNumeroRecibo());

@@ -91,30 +91,61 @@ public class FacturaPagoDAO {
         return false;
     }
 
-    public List<FacturaPagoDTO> buscarPorComprobante(int comprobanteId) {
-        String sql = "SELECT fp.*, r.numero_recibo "
+    public List<FacturaPagoDTO> buscarTodos() {
+        String sql = "SELECT fp.*, r.numero_recibo, "
+                + "c.tipo_comprobante, c.punto_venta, c.numero "
                 + "FROM factura_pagos fp "
                 + "LEFT JOIN recibos r ON r.id = fp.recibo_id "
+                + "LEFT JOIN comprobantes c ON c.id = fp.comprobante_id "
+                + "ORDER BY fp.fecha_pago DESC";
+        List<FacturaPagoDTO> lista = new ArrayList<>();
+        try (PreparedStatement ps = getConn().prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                lista.add(mapearConComprobante(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error buscando todos los pagos: " + e.getMessage());
+        }
+        return lista;
+    }
+
+    public List<FacturaPagoDTO> buscarPorComprobante(int comprobanteId) {
+        String sql = "SELECT fp.*, r.numero_recibo, "
+                + "c.tipo_comprobante, c.punto_venta, c.numero "
+                + "FROM factura_pagos fp "
+                + "LEFT JOIN recibos r ON r.id = fp.recibo_id "
+                + "LEFT JOIN comprobantes c ON c.id = fp.comprobante_id "
                 + "WHERE fp.comprobante_id = ? ORDER BY fp.fecha_pago DESC";
         List<FacturaPagoDTO> lista = new ArrayList<>();
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setInt(1, comprobanteId);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
-                FacturaPagoDTO dto = new FacturaPagoDTO();
-                dto.setId(rs.getInt("fp.id"));
-                dto.setComprobanteId(rs.getInt("fp.comprobante_id"));
-                dto.setMonto(rs.getBigDecimal("fp.monto"));
-                dto.setFechaPago(rs.getDate("fp.fecha_pago").toLocalDate());
-                dto.setFormaPago(rs.getString("fp.forma_pago"));
-                dto.setReciboId(rs.getObject("fp.recibo_id") != null ? rs.getInt("fp.recibo_id") : null);
-                dto.setReciboNumero(rs.getString("r.numero_recibo"));
-                dto.setObservaciones(rs.getString("fp.observaciones"));
-                lista.add(dto);
+                lista.add(mapearConComprobante(rs));
             }
         } catch (SQLException e) {
             System.err.println("Error buscando pagos de factura: " + e.getMessage());
         }
         return lista;
+    }
+
+    private FacturaPagoDTO mapearConComprobante(ResultSet rs) throws SQLException {
+        FacturaPagoDTO dto = new FacturaPagoDTO();
+        dto.setId(rs.getInt("id"));
+        dto.setComprobanteId(rs.getInt("comprobante_id"));
+        dto.setMonto(rs.getBigDecimal("monto"));
+        dto.setFechaPago(rs.getDate("fecha_pago").toLocalDate());
+        dto.setFormaPago(rs.getString("forma_pago"));
+        dto.setReciboId(rs.getObject("recibo_id") != null ? rs.getInt("recibo_id") : null);
+        dto.setReciboNumero(rs.getString("numero_recibo"));
+        dto.setObservaciones(rs.getString("observaciones"));
+        String tipo = rs.getString("tipo_comprobante");
+        int pv = rs.getInt("punto_venta");
+        long num = rs.getLong("numero");
+        if (tipo != null) {
+            dto.setComprobanteStr(tipo + " " + String.format("%04d-%08d", pv, num));
+        }
+        return dto;
     }
 }

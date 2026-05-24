@@ -116,39 +116,51 @@ public class ControladorPagos {
         return facturaPagoDAO.buscarPorComprobante(comprobanteId);
     }
 
+    public List<FacturaPagoDTO> getTodosLosPagos() {
+        return facturaPagoDAO.buscarTodos();
+    }
+
     public FacturaPagoDTO getPagoPorId(int pagoId) {
         return facturaPagoDAO.buscarPorId(pagoId);
     }
 
-    public String generarReciboDesdePagos(List<Integer> pagoIds, int comprobanteId) {
+    public String generarReciboDesdePagos(List<Integer> pagoIds) {
         if (pagoIds == null || pagoIds.isEmpty()) return null;
-
-        ComprobanteDTO comp = comprobanteDAO.buscarPorId(comprobanteId);
-        if (comp == null) return null;
 
         List<FacturaPagoDTO> pagos = new ArrayList<>();
         BigDecimal montoTotal = BigDecimal.ZERO;
+        int saltados = 0;
         for (int pagoId : pagoIds) {
             FacturaPagoDTO pago = facturaPagoDAO.buscarPorId(pagoId);
             if (pago == null) return null;
             if (pago.getReciboId() != null) {
-                JOptionPane.showMessageDialog(null,
-                    "El pago #" + pagoId + " ya tiene un recibo asociado",
-                    "Error", JOptionPane.ERROR_MESSAGE);
-                return null;
+                saltados++;
+                continue;
             }
             pagos.add(pago);
             montoTotal = montoTotal.add(pago.getMonto() != null ? pago.getMonto() : BigDecimal.ZERO);
         }
+        if (pagos.isEmpty()) {
+            JOptionPane.showMessageDialog(null,
+                "Ninguno de los pagos seleccionados puede generar un recibo\n"
+                + (saltados > 0 ? "(" + saltados + " ya tienen recibo asociado)" : ""),
+                "Error", JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
+        if (saltados > 0) {
+            JOptionPane.showMessageDialog(null,
+                saltados + " pago(s) ya ten\u00edan recibo asociado y fueron omitidos",
+                "Informaci\u00f3n", JOptionPane.INFORMATION_MESSAGE);
+        }
 
+        FacturaPagoDTO primerPago = pagos.get(0);
+        ComprobanteDTO comp = comprobanteDAO.buscarPorId(primerPago.getComprobanteId());
         ReciboDTO recibo = new ReciboDTO();
         recibo.setFechaCobro(LocalDate.now());
-        recibo.setCuitCliente(comp.getCuitReceptor());
-        recibo.setRazonSocialCliente(comp.getRazonSocialRec());
+        recibo.setCuitCliente(comp != null ? comp.getCuitReceptor() : "");
+        recibo.setRazonSocialCliente(comp != null ? comp.getRazonSocialRec() : "");
         recibo.setMontoTotal(montoTotal);
-        recibo.setObservaciones("Recibo generado desde pagos de "
-            + comp.getTipoComprobanteStr() + " "
-            + String.format("%04d-%08d", comp.getPuntoVenta(), comp.getNumero()));
+        recibo.setObservaciones("Recibo generado desde " + pagos.size() + " pago(s)");
 
         List<ReciboPagoDTO> formasPago = new ArrayList<>();
         for (FacturaPagoDTO pago : pagos) {
@@ -157,25 +169,30 @@ public class ControladorPagos {
         recibo.setFormasPago(formasPago);
 
         List<ReciboFacturaDTO> facturas = new ArrayList<>();
-        ReciboFacturaDTO rf = new ReciboFacturaDTO();
-        rf.setComprobanteId(comprobanteId);
-        rf.setMontoAplicado(montoTotal);
-        rf.setNumeroFactura(String.format("%04d-%08d", comp.getPuntoVenta(), comp.getNumero()));
-        rf.setTipoComprobanteStr(comp.getTipoComprobanteStr());
-        facturas.add(rf);
+        for (FacturaPagoDTO pago : pagos) {
+            ComprobanteDTO c = comprobanteDAO.buscarPorId(pago.getComprobanteId());
+            if (c != null) {
+                ReciboFacturaDTO rf = new ReciboFacturaDTO();
+                rf.setComprobanteId(c.getId());
+                rf.setMontoAplicado(pago.getMonto());
+                rf.setNumeroFactura(String.format("%04d-%08d", c.getPuntoVenta(), c.getNumero()));
+                rf.setTipoComprobanteStr(c.getTipoComprobanteStr());
+                facturas.add(rf);
+            }
+        }
         recibo.setFacturas(facturas);
 
         ControladorRecibos controladorRecibos = new ControladorRecibos();
         int reciboId = controladorRecibos.guardarRecibo(recibo);
         if (reciboId <= 0) return null;
 
-        for (int pagoId : pagoIds) {
-            facturaPagoDAO.actualizarReciboId(pagoId, reciboId);
+        for (FacturaPagoDTO pago : pagos) {
+            facturaPagoDAO.actualizarReciboId(pago.getId(), reciboId);
         }
 
         recibo.setId(reciboId);
         try {
-            new GestorReciboPDF().generarRecibo(recibo, comp);
+            new GestorReciboPDF().generarRecibo(recibo);
         } catch (Exception e) {
             System.err.println("Error generando PDF del recibo: " + e.getMessage());
             e.printStackTrace();

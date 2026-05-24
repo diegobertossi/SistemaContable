@@ -1,5 +1,6 @@
 package com.els.facturacion;
 
+import com.els.facturacion.controlador.ControladorFacturacion;
 import com.els.facturacion.vista.VentanaFacturacion;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -19,8 +20,8 @@ public class Main {
 
         SwingUtilities.invokeLater(() -> {
             VentanaFacturacion ventana = new VentanaFacturacion();
+            new ControladorFacturacion(ventana).inicializar();
             ventana.setVisible(true);
-            
         });
     }
 }

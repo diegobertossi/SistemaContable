@@ -70,6 +70,7 @@ public class VentanaPagos extends javax.swing.JFrame {
         controlador = new ControladorPagos();
         initComponents();
         cargarFacturas();
+        cargarHistorialCompleto();
     }
 
     private void initComponents() {
@@ -272,17 +273,17 @@ public class VentanaPagos extends javax.swing.JFrame {
             new Font("Cambria", Font.BOLD, 12), COLOR_TEXTO
         ));
 
-        String[] colPagos = {"Monto", "Fecha", "Forma de Pago", "Recibo N\u00b0", "Seleccionar"};
+        String[] colPagos = {"Monto", "Fecha", "Forma de Pago", "Factura", "Recibo N\u00b0", "Seleccionar"};
         modeloTablaPagos = new DefaultTableModel(colPagos, 0) {
             @Override
             public boolean isCellEditable(int row, int col) {
-                if (col != 4) return false;
-                Object reciboVal = getValueAt(row, 3);
+                if (col != 5) return false;
+                Object reciboVal = getValueAt(row, 4);
                 return reciboVal == null || reciboVal.toString().isEmpty();
             }
             @Override
             public Class<?> getColumnClass(int col) {
-                return col == 4 ? Boolean.class : Object.class;
+                return col == 5 ? Boolean.class : Object.class;
             }
         };
         tablaPagos = new JTable(modeloTablaPagos);
@@ -293,9 +294,10 @@ public class VentanaPagos extends javax.swing.JFrame {
 
         tablaPagos.getColumnModel().getColumn(0).setPreferredWidth(100);
         tablaPagos.getColumnModel().getColumn(1).setPreferredWidth(90);
-        tablaPagos.getColumnModel().getColumn(2).setPreferredWidth(150);
-        tablaPagos.getColumnModel().getColumn(3).setPreferredWidth(70);
+        tablaPagos.getColumnModel().getColumn(2).setPreferredWidth(120);
+        tablaPagos.getColumnModel().getColumn(3).setPreferredWidth(140);
         tablaPagos.getColumnModel().getColumn(4).setPreferredWidth(70);
+        tablaPagos.getColumnModel().getColumn(5).setPreferredWidth(70);
 
         DefaultTableCellRenderer montoRenderer = new DefaultTableCellRenderer();
         montoRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
@@ -339,7 +341,6 @@ public class VentanaPagos extends javax.swing.JFrame {
         lblInfoFactura.setText("Seleccione una factura de la lista");
         lblSaldoPendiente.setText("Saldo Pendiente: $ 0,00");
         modeloTablaItems.setRowCount(0);
-        modeloTablaPagos.setRowCount(0);
     }
 
     private void cargarFacturaSeleccionada() {
@@ -377,7 +378,10 @@ public class VentanaPagos extends javax.swing.JFrame {
             });
         }
 
-        List<FacturaPagoDTO> pagos = controlador.getPagosFactura(facturaId);
+    }
+
+    private void cargarHistorialCompleto() {
+        List<FacturaPagoDTO> pagos = controlador.getTodosLosPagos();
         modeloTablaPagos.setRowCount(0);
         pagosIds = new ArrayList<>();
         for (FacturaPagoDTO p : pagos) {
@@ -386,6 +390,7 @@ public class VentanaPagos extends javax.swing.JFrame {
                 p.getMonto() != null ? "$ " + DF.format(p.getMonto()) : "",
                 p.getFechaPago() != null ? p.getFechaPago().format(FMT) : "",
                 p.getFormaPago() != null ? p.getFormaPago() : "",
+                p.getComprobanteStr() != null ? p.getComprobanteStr() : "",
                 p.getReciboId() != null ? p.getReciboNumero() : "",
                 p.getReciboId() == null ? Boolean.FALSE : Boolean.TRUE
             });
@@ -474,10 +479,6 @@ public class VentanaPagos extends javax.swing.JFrame {
     }
 
     private void generarReciboDesdePago() {
-        if (comprobanteSeleccionadoId < 0) {
-            JOptionPane.showMessageDialog(this, "Seleccione una factura", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
         if (pagosIds == null || pagosIds.isEmpty()) {
             JOptionPane.showMessageDialog(this, "No hay pagos en el historial", "Error", JOptionPane.ERROR_MESSAGE);
             return;
@@ -485,7 +486,7 @@ public class VentanaPagos extends javax.swing.JFrame {
 
         List<Integer> idsSeleccionados = new ArrayList<>();
         for (int i = 0; i < modeloTablaPagos.getRowCount(); i++) {
-            Boolean checked = (Boolean) modeloTablaPagos.getValueAt(i, 4);
+            Boolean checked = (Boolean) modeloTablaPagos.getValueAt(i, 5);
             if (Boolean.TRUE.equals(checked)) {
                 idsSeleccionados.add(pagosIds.get(i));
             }
@@ -496,7 +497,7 @@ public class VentanaPagos extends javax.swing.JFrame {
             return;
         }
 
-        String reciboNro = controlador.generarReciboDesdePagos(idsSeleccionados, comprobanteSeleccionadoId);
+        String reciboNro = controlador.generarReciboDesdePagos(idsSeleccionados);
 
         if (reciboNro == null) {
             JOptionPane.showMessageDialog(this, "Error al generar el recibo", "Error", JOptionPane.ERROR_MESSAGE);
@@ -512,7 +513,7 @@ public class VentanaPagos extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Seleccione un pago del historial", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        Object reciboObj = modeloTablaPagos.getValueAt(row, 3);
+        Object reciboObj = modeloTablaPagos.getValueAt(row, 4);
         if (reciboObj == null || reciboObj.toString().isEmpty()) {
             JOptionPane.showMessageDialog(this, "El pago seleccionado no tiene un recibo asociado", "Informaci\u00f3n", JOptionPane.INFORMATION_MESSAGE);
             return;
@@ -537,6 +538,7 @@ public class VentanaPagos extends javax.swing.JFrame {
 
     private void recargarYSeleccionarFactura(int facturaId) {
         cargarFacturas();
+        cargarHistorialCompleto();
         boolean reencontrada = false;
         for (int i = 0; i < modeloTablaFacturas.getRowCount(); i++) {
             Object idObj = modeloTablaFacturas.getValueAt(i, 0);

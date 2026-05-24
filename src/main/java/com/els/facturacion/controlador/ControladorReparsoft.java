@@ -1,16 +1,21 @@
 package com.els.facturacion.controlador;
 
+import com.els.facturacion.conexion.ConexionFacturacion;
 import com.els.facturacion.conexion.ConexionReparsoft;
 import com.els.facturacion.dao.ReparacionLecturaDAO;
 import com.els.facturacion.modelo.ComprobanteDTO;
 import com.els.facturacion.modelo.RemitoReparsoftDTO;
+import com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ControladorReparsoft {
 
@@ -114,7 +119,38 @@ public class ControladorReparsoft {
     }
 
     public List<RemitoReparsoftDTO> listarRemitos(String baseDatos) {
-        return reparacionDAO.listarRemitos(baseDatos);
+        List<RemitoReparsoftDTO> remitos = reparacionDAO.listarRemitos(baseDatos);
+        Set<Integer> elsFacturados = obtenerELSFacturados();
+        if (!elsFacturados.isEmpty()) {
+            for (RemitoReparsoftDTO r : remitos) {
+                if (r.getItems() != null) {
+                    for (RemitoReparsoftItem item : r.getItems()) {
+                        if (elsFacturados.contains(item.getEls())) {
+                            item.setFacturado(true);
+                        }
+                    }
+                }
+            }
+        }
+        return remitos;
+    }
+
+    private Set<Integer> obtenerELSFacturados() {
+        Set<Integer> set = new HashSet<>();
+        String sql = "SELECT DISTINCT els_referencia FROM factura_items WHERE els_referencia IS NOT NULL";
+        try {
+            Connection conn = ConexionFacturacion.getInstancia().getConexion();
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                set.add(rs.getInt("els_referencia"));
+            }
+            rs.close();
+            ps.close();
+        } catch (SQLException e) {
+            System.err.println("Error consultando ELS facturados: " + e.getMessage());
+        }
+        return set;
     }
 
     private String limpiarCuit(String cuit) {

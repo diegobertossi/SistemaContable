@@ -15,21 +15,40 @@ public class RemitoReparsoftDTO {
         private String equipoNombre;
         private String numeroSerie;
         private String falla;
+        private String modelo;
+        private String marca;
         private BigDecimal precioPeso;
+        private boolean facturado;
+        private boolean seleccionado;
 
         public RemitoReparsoftItem(int els, String equipoNombre, String numeroSerie, String falla, BigDecimal precioPeso) {
+            this(els, equipoNombre, numeroSerie, falla, null, null, precioPeso, false);
+        }
+
+        public RemitoReparsoftItem(int els, String equipoNombre, String numeroSerie, String falla,
+                                    String modelo, String marca, BigDecimal precioPeso, boolean facturado) {
             this.els = els;
             this.equipoNombre = equipoNombre;
             this.numeroSerie = numeroSerie;
             this.falla = falla;
+            this.modelo = modelo;
+            this.marca = marca;
             this.precioPeso = precioPeso;
+            this.facturado = facturado;
+            this.seleccionado = false;
         }
 
         public int getEls() { return els; }
         public String getEquipoNombre() { return equipoNombre; }
         public String getNumeroSerie() { return numeroSerie; }
         public String getFalla() { return falla; }
+        public String getModelo() { return modelo; }
+        public String getMarca() { return marca; }
         public BigDecimal getPrecioPeso() { return precioPeso; }
+        public boolean isFacturado() { return facturado; }
+        public void setFacturado(boolean facturado) { this.facturado = facturado; }
+        public boolean isSeleccionado() { return seleccionado; }
+        public void setSeleccionado(boolean seleccionado) { this.seleccionado = seleccionado; }
 
         public String getDescripcion() {
             String desc = equipoNombre != null ? equipoNombre : "Sin equipo";

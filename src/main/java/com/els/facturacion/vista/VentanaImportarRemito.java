@@ -108,16 +108,33 @@ public class VentanaImportarRemito extends JDialog {
             new Font("Cambria", Font.BOLD, 12), COLOR_TEXTO
         ));
 
-        String[] colItems = {"ELS", "Equipo", "Nro Serie", "Falla", "Precio"};
+        String[] colItems = {"Seleccionar", "ELS", "Equipo", "Nro Serie", "Modelo", "Marca", "Precio"};
         modeloTablaItems = new DefaultTableModel(colItems, 0) {
             @Override
-            public boolean isCellEditable(int row, int column) { return false; }
+            public Class<?> getColumnClass(int column) {
+                return column == 0 ? Boolean.class : String.class;
+            }
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                if (column == 0) {
+                    RemitoReparsoftItem item = getItemAtRow(row);
+                    return item != null && !item.isFacturado();
+                }
+                return false;
+            }
         };
         tablaItems = new JTable(modeloTablaItems);
         tablaItems.setFont(new Font("Cambria", Font.PLAIN, 11));
         tablaItems.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 11));
         tablaItems.getTableHeader().setBackground(COLOR_BOTON);
         tablaItems.setRowHeight(22);
+        tablaItems.getColumnModel().getColumn(0).setPreferredWidth(20);
+        tablaItems.getColumnModel().getColumn(1).setPreferredWidth(60);
+        tablaItems.getColumnModel().getColumn(2).setPreferredWidth(140);
+        tablaItems.getColumnModel().getColumn(3).setPreferredWidth(80);
+        tablaItems.getColumnModel().getColumn(4).setPreferredWidth(80);
+        tablaItems.getColumnModel().getColumn(5).setPreferredWidth(80);
+        tablaItems.getColumnModel().getColumn(6).setPreferredWidth(80);
         JScrollPane scrollItems = new JScrollPane(tablaItems);
         scrollItems.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(COLOR_TITULO),
@@ -203,10 +220,12 @@ public class VentanaImportarRemito extends JDialog {
         if (remitoSeleccionado != null && remitoSeleccionado.getItems() != null) {
             for (RemitoReparsoftItem item : remitoSeleccionado.getItems()) {
                 modeloTablaItems.addRow(new Object[]{
+                    item.isFacturado(),
                     item.getEls(),
                     item.getEquipoNombre() != null ? item.getEquipoNombre() : "",
                     item.getNumeroSerie() != null ? item.getNumeroSerie() : "",
-                    item.getFalla() != null ? item.getFalla() : "",
+                    item.getModelo() != null ? item.getModelo() : "",
+                    item.getMarca() != null ? item.getMarca() : "",
                     item.getPrecioPeso() != null ? "$ " + String.format("%.2f", item.getPrecioPeso()) : "$ 0.00"
                 });
             }
@@ -215,11 +234,41 @@ public class VentanaImportarRemito extends JDialog {
         lblCliente.setText(remitoSeleccionado != null ? remitoSeleccionado.getClienteDisplay() : "Seleccione un remito");
     }
 
+    private RemitoReparsoftItem getItemAtRow(int row) {
+        if (remitoSeleccionado == null || remitoSeleccionado.getItems() == null) return null;
+        if (row < 0 || row >= remitoSeleccionado.getItems().size()) return null;
+        return remitoSeleccionado.getItems().get(row);
+    }
+
     private void importarRemito() {
         if (remitoSeleccionado == null) {
             JOptionPane.showMessageDialog(this, "Seleccione un remito para importar", "Importar Remito", JOptionPane.WARNING_MESSAGE);
             return;
         }
+
+        for (int i = 0; i < modeloTablaItems.getRowCount(); i++) {
+            boolean checked = Boolean.TRUE.equals(modeloTablaItems.getValueAt(i, 0));
+            RemitoReparsoftItem item = getItemAtRow(i);
+            if (item != null) {
+                item.setSeleccionado(checked);
+            }
+        }
+
+        List<RemitoReparsoftItem> seleccionados = new java.util.ArrayList<>();
+        if (remitoSeleccionado.getItems() != null) {
+            for (RemitoReparsoftItem item : remitoSeleccionado.getItems()) {
+                if (item.isSeleccionado() && !item.isFacturado()) {
+                    seleccionados.add(item);
+                }
+            }
+        }
+
+        if (seleccionados.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Seleccione al menos un item para importar (los items ya facturados no pueden reimportarse)", "Importar Remito", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        remitoSeleccionado.setItems(seleccionados);
         setVisible(false);
     }
 

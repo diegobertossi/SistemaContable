@@ -20,8 +20,8 @@ public class FacturaItemDAO {
 
     public void insertarItems(int comprobanteId, List<ItemFacturaDTO> items) {
         String sql = "INSERT INTO factura_items (comprobante_id, codigo, descripcion, cantidad, "
-                + "unidad_medida, precio_unitario, subtotal, alicuota_iva, orden) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "unidad_medida, precio_unitario, subtotal, alicuota_iva, orden, els_referencia) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             int orden = 0;
             for (ItemFacturaDTO item : items) {
@@ -34,6 +34,11 @@ public class FacturaItemDAO {
                 ps.setBigDecimal(7, item.getSubtotal());
                 ps.setBigDecimal(8, item.getAlicuotaIva());
                 ps.setInt(9, orden++);
+                if (item.getElsReferencia() != null) {
+                    ps.setInt(10, item.getElsReferencia());
+                } else {
+                    ps.setNull(10, java.sql.Types.INTEGER);
+                }
                 ps.addBatch();
             }
             ps.executeBatch();

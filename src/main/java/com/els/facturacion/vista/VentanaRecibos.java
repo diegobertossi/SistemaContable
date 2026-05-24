@@ -27,6 +27,7 @@ import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.awt.Desktop;
 import java.io.File;
+import java.math.BigDecimal;
 import java.util.List;
 
 public class VentanaRecibos extends javax.swing.JFrame {
@@ -336,10 +337,11 @@ public class VentanaRecibos extends javax.swing.JFrame {
         modeloTablaFacturas.setRowCount(0);
         if (r.getFacturas() != null) {
             for (ReciboFacturaDTO f : r.getFacturas()) {
+                BigDecimal totalPagado = f.getTotalPagado() != null ? f.getTotalPagado() : f.getMontoAplicado();
                 modeloTablaFacturas.addRow(new Object[]{
                     f.getComprobanteId(),
                     f.getNumeroFactura() != null ? f.getNumeroFactura() : "",
-                    f.getMontoAplicado() != null ? "$ " + DF.format(f.getMontoAplicado()) : ""
+                    totalPagado != null ? "$ " + DF.format(totalPagado) : ""
                 });
             }
         }
