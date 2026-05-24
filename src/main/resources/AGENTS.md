@@ -155,9 +155,73 @@ Formato JSON encodeado en Base64:
 
 ---
 
+## Nuevos Módulos v2.0
+
+### 1. MÓDULO DE CLIENTES (`com.els.facturacion.vista.VentanaClientes`)
+- Tabla: `clientes`
+- DTO: `ClienteDTO`, DAO: `ClienteDAO`, Controller: `ControladorClientes`
+- Importación desde ReparSoft (tabla `reparaciones` en `ordenesbrc`/`ordenesbsas`)
+- CRUD completo con búsqueda por razón social
+- Diálogo de selección: `VentanaSeleccionCliente`
+
+### 2. MÓDULO DE COMPROBANTES (mejoras)
+- Items de factura persistidos en `factura_items` (antes solo en memoria)
+- IVA discriminado por alícuota configurable por ítem (0%, 10.5%, 21%, 27%)
+- Campo `otros_impuestos` para percepciones/IIBB
+- Estado de pago: `pendiente`, `pagada_parcial`, `pagada_total`, `anulada`
+- Botón eliminar ítem en grilla de items
+- Punto de venta único (00001 por defecto)
+
+### 3. MÓDULO DE REMITOS (`com.els.facturacion.vista.VentanaRemitos`)
+- Tablas: `remitos`, `remito_items`
+- DTO: `RemitoDTO`, `RemitoItemDTO`, DAO: `RemitoDAO`, Controller: `ControladorRemitos`
+- Numeración automática: R 0001-XXXXXXXX
+- Estados: pendiente, entregado, anulado
+- Items sin valores económicos (documento no fiscal)
+
+### 4. MÓDULO DE RECIBOS (`com.els.facturacion.vista.VentanaRecibos`)
+- Tablas: `recibos`, `recibo_pagos`, `recibo_facturas`
+- DTO: `ReciboDTO`, `ReciboPagoDTO`, `ReciboFacturaDTO`
+- DAO: `ReciboDAO`, Controller: `ControladorRecibos`
+- Múltiples formas de pago por recibo
+- Referencia a facturas que cancela (parcial o totalmente)
+- Numeración automática: RE 0001-XXXXXXXX
+
+### 5. MÓDULO DE PAGOS (`com.els.facturacion.vista.VentanaPagos`)
+- Tablas: `factura_pagos`, `factura_item_pagos`
+- DTO: `FacturaPagoDTO`, `FacturaItemPagoDTO`
+- DAO: `FacturaPagoDAO`, Controller: `ControladorPagos`
+- Pago total o parcial de facturas
+- Pago individual por ítem (ELS)
+- Actualización automática del estado de la factura
+
+### 6. MÓDULO DE REPORTES (`com.els.facturacion.reportes.GestorReportes`)
+- Generación de reportes JasperReports para:
+  - Listado de facturas
+  - Remitos imprimibles
+  - Recibos de pago
+  - Cuentas corrientes por cliente
+
+### 7. CONFIGURACIÓN DEL SISTEMA
+- Alicuotas de IVA configurables en tabla `configuraciones`
+- Configuración de conexión ReparSoft
+
+## Relaciones entre Entidades
+```
+Cliente          →  tiene muchas →  Facturas (comprobantes)
+Factura          →  tiene muchos →  FacturaItem (cada uno referencia un ELS)
+Factura          →  tiene muchos →  Pagos (factura_pagos)
+FacturaItem      →  puede tener →  pago individual (factura_item_pagos)
+Factura          →  puede tener →  Remito vinculado
+Recibo           →  referencia  →  Factura(s) (recibo_facturas)
+Recibo           →  tiene muchos →  Formas de pago (recibo_pagos)
+```
+
 ## Notas Importantes
 
 1. **Facturación**: El comprobante se registra en ARCA ANTES de guardar en BD local. Si el sistema falla entre ambos pasos, el comprobante ya existe en ARCA.
 2. **PDF sin CAE**: El DAO debe poder regenerar PDFs para comprobantes que tienen CAE pero no PDF.
 3. **ReparSoft**: Solo lectura, NUNCA escribir en sus bases.
 4. **Certificados**: Los archivos .p12 se almacenan en `src/main/resources/certificados/`
+5. **Items de factura**: Se persisten en `factura_items` después de emitir el comprobante en ARCA.
+6. **Estado de pago**: Se actualiza automáticamente al registrar pagos en el módulo de Pagos o Recibos.

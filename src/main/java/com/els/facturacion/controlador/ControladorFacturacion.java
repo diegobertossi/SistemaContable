@@ -92,6 +92,10 @@ public class ControladorFacturacion {
                     comprobante.setId(id);
                     System.out.println("Comprobante guardado en BD con ID: " + id);
 
+                    if (items != null && !items.isEmpty()) {
+                        guardarItemsFactura(id, items);
+                    }
+
                     String rutaPDF = new GestorPDF().generarFactura(comprobante, cuit, items);
                     if (rutaPDF != null) {
                         comprobante.setRutaPdf(rutaPDF);
@@ -175,5 +179,53 @@ public class ControladorFacturacion {
 
     public boolean isModoPrueba() {
         return modoPrueba;
+    }
+
+    public void guardarItemsFactura(int comprobanteId, List<ItemFacturaDTO> items) {
+        com.els.facturacion.dao.FacturaItemDAO itemDAO = new com.els.facturacion.dao.FacturaItemDAO();
+        itemDAO.insertarItems(comprobanteId, items);
+    }
+
+    public List<ItemFacturaDTO> getItemsFactura(int comprobanteId) {
+        com.els.facturacion.dao.FacturaItemDAO itemDAO = new com.els.facturacion.dao.FacturaItemDAO();
+        return itemDAO.buscarPorComprobante(comprobanteId);
+    }
+
+    public List<ComprobanteDTO> listarFacturasPorEstado(String estado) {
+        List<ComprobanteDTO> todas = comprobanteDAO.listarTodos();
+        List<ComprobanteDTO> filtradas = new java.util.ArrayList<>();
+        for (ComprobanteDTO c : todas) {
+            if (estado == null || estado.isEmpty() || estado.equals(c.getEstadoPago())) {
+                filtradas.add(c);
+            }
+        }
+        return filtradas;
+    }
+
+    public void actualizarEstadoPago(int comprobanteId, String estado) {
+        ComprobanteDTO comp = comprobanteDAO.buscarPorId(comprobanteId);
+        if (comp != null) {
+            comp.setEstadoPago(estado);
+            String sql = "UPDATE comprobantes SET estado_pago = ? WHERE id = ?";
+            try (java.sql.Connection conn = com.els.facturacion.conexion.ConexionFacturacion.getInstancia().getConexion();
+                 java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, estado);
+                ps.setInt(2, comprobanteId);
+                ps.executeUpdate();
+            } catch (Exception e) {
+                System.err.println("Error actualizando estado pago: " + e.getMessage());
+            }
+        }
+    }
+
+    public List<ComprobanteDTO> buscarComprobantesPorReceptor(String cuitReceptor) {
+        List<ComprobanteDTO> todas = comprobanteDAO.listarTodos();
+        List<ComprobanteDTO> filtradas = new java.util.ArrayList<>();
+        for (ComprobanteDTO c : todas) {
+            if (cuitReceptor.equals(c.getCuitReceptor())) {
+                filtradas.add(c);
+            }
+        }
+        return filtradas;
     }
 }

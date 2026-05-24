@@ -2,6 +2,7 @@ package com.els.facturacion.modelo;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 public class ComprobanteDTO {
 
@@ -34,8 +35,13 @@ public class ComprobanteDTO {
     private String emailReceptor;
     private String condicionesVenta;
     private String comprobanteAsociado;
+    private String estadoPago;
+    private BigDecimal otrosImpuestos;
+    private List<ItemFacturaDTO> itemsFactura;
 
     public ComprobanteDTO() {
+        this.estadoPago = "pendiente";
+        this.otrosImpuestos = BigDecimal.ZERO;
     }
 
     public Integer getId() {
@@ -196,6 +202,12 @@ public class ComprobanteDTO {
     public void setCondicionesVenta(String condicionesVenta) { this.condicionesVenta = condicionesVenta; }
     public String getComprobanteAsociado() { return comprobanteAsociado; }
     public void setComprobanteAsociado(String comprobanteAsociado) { this.comprobanteAsociado = comprobanteAsociado; }
+    public String getEstadoPago() { return estadoPago; }
+    public void setEstadoPago(String estadoPago) { this.estadoPago = estadoPago; }
+    public BigDecimal getOtrosImpuestos() { return otrosImpuestos; }
+    public void setOtrosImpuestos(BigDecimal otrosImpuestos) { this.otrosImpuestos = otrosImpuestos; }
+    public List<ItemFacturaDTO> getItemsFactura() { return itemsFactura; }
+    public void setItemsFactura(List<ItemFacturaDTO> itemsFactura) { this.itemsFactura = itemsFactura; }
 
     public String getTipoComprobanteStr() {
         switch (tipoComprobante) {

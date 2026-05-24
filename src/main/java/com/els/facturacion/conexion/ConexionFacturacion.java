@@ -22,15 +22,7 @@ public class ConexionFacturacion {
             + "&allowPublicKeyRetrieval=true";
 
     private ConexionFacturacion() {
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            conexion = DriverManager.getConnection(URL, USER, PASS);
-            System.out.println("✓ Conexión a facturacion_db establecida");
-        } catch (ClassNotFoundException e) {
-            System.err.println("✗ Driver MySQL no encontrado: " + e.getMessage());
-        } catch (SQLException e) {
-            System.err.println("✗ Error conectando a facturacion_db: " + e.getMessage());
-        }
+        conectar();
     }
 
     public static ConexionFacturacion getInstancia() {
@@ -45,7 +37,28 @@ public class ConexionFacturacion {
     }
 
     public Connection getConexion() {
+        try {
+            if (conexion == null || conexion.isClosed()) {
+                System.out.println("Reconectando a facturacion_db...");
+                conectar();
+            }
+        } catch (SQLException e) {
+            System.err.println("Error verificando conexión: " + e.getMessage());
+            conectar();
+        }
         return conexion;
+    }
+
+    private void conectar() {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            conexion = DriverManager.getConnection(URL, USER, PASS);
+            System.out.println("✓ Conexión a facturacion_db establecida");
+        } catch (ClassNotFoundException e) {
+            System.err.println("✗ Driver MySQL no encontrado: " + e.getMessage());
+        } catch (SQLException e) {
+            System.err.println("✗ Error conectando a facturacion_db: " + e.getMessage());
+        }
     }
 
     public void cerrar() {

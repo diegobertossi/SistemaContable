@@ -19,6 +19,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -132,9 +133,9 @@ public class GestorPDF {
             parametros.put("CONDICION_IVA_RECEPTOR", comprobante.getCondicionIvaReceptor() != null ? comprobante.getCondicionIvaReceptor() : "");
             parametros.put("DOMICILIO_RECEPTOR", comprobante.getDomicilioReceptor() != null ? comprobante.getDomicilioReceptor() : "");
 
-            parametros.put("IMPORTE_NETO", comprobante.getImporteNeto().setScale(2));
-            parametros.put("IMPORTE_IVA", comprobante.getImporteIva() != null ? comprobante.getImporteIva().setScale(2) : BigDecimal.ZERO);
-            parametros.put("IMPORTE_TOTAL", comprobante.getImporteTotal().setScale(2));
+            parametros.put("IMPORTE_NETO", comprobante.getImporteNeto().setScale(2, RoundingMode.HALF_UP));
+            parametros.put("IMPORTE_IVA", comprobante.getImporteIva() != null ? comprobante.getImporteIva().setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
+            parametros.put("IMPORTE_TOTAL", comprobante.getImporteTotal().setScale(2, RoundingMode.HALF_UP));
             parametros.put("TOTAL_LETRAS", totalEnLetras(comprobante.getImporteTotal()));
 
             parametros.put("CAE", comprobante.getCae());

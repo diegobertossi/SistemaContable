@@ -51,64 +51,169 @@ CREATE TABLE IF NOT EXISTS comprobantes (
     ruta_pdf VARCHAR(500),
     email_enviado BOOLEAN DEFAULT FALSE,
     descripcion TEXT,
+    concepto VARCHAR(50),
+    periodo_desde DATE,
+    periodo_hasta DATE,
+    periodo_vto DATE,
+    condicion_iva_receptor VARCHAR(60),
+    tipo_documento VARCHAR(10),
+    nro_documento VARCHAR(20),
+    domicilio_receptor VARCHAR(200),
+    email_receptor VARCHAR(100),
+    condiciones_venta VARCHAR(200),
+    comprobante_asociado VARCHAR(50),
+    estado_pago VARCHAR(30) DEFAULT 'pendiente',
+    otros_impuestos DECIMAL(12,2) DEFAULT 0.00,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uk_comprobante (cuit_emisor, tipo_comprobante, punto_venta, numero),
     INDEX idx_cuit_emisor (cuit_emisor),
     INDEX idx_fecha_emision (fecha_emision),
-    INDEX idx_cae (cae)
+    INDEX idx_cae (cae),
+    INDEX idx_estado_pago (estado_pago)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-ALTER TABLE comprobantes ADD COLUMN IF NOT EXISTS descripcion TEXT AFTER email_enviado;
-ALTER TABLE comprobantes ADD COLUMN IF NOT EXISTS concepto VARCHAR(50) AFTER descripcion;
-ALTER TABLE comprobantes ADD COLUMN IF NOT EXISTS periodo_desde DATE AFTER concepto;
-ALTER TABLE comprobantes ADD COLUMN IF NOT EXISTS periodo_hasta DATE AFTER periodo_desde;
-ALTER TABLE comprobantes ADD COLUMN IF NOT EXISTS periodo_vto DATE AFTER periodo_hasta;
-ALTER TABLE comprobantes ADD COLUMN IF NOT EXISTS condicion_iva_receptor VARCHAR(60) AFTER periodo_vto;
-ALTER TABLE comprobantes ADD COLUMN IF NOT EXISTS tipo_documento VARCHAR(10) AFTER condicion_iva_receptor;
-ALTER TABLE comprobantes ADD COLUMN IF NOT EXISTS nro_documento VARCHAR(20) AFTER tipo_documento;
-ALTER TABLE comprobantes ADD COLUMN IF NOT EXISTS domicilio_receptor VARCHAR(200) AFTER nro_documento;
-ALTER TABLE comprobantes ADD COLUMN IF NOT EXISTS email_receptor VARCHAR(100) AFTER domicilio_receptor;
-ALTER TABLE comprobantes ADD COLUMN IF NOT EXISTS condiciones_venta VARCHAR(200) AFTER email_receptor;
-ALTER TABLE comprobantes ADD COLUMN IF NOT EXISTS comprobante_asociado VARCHAR(50) AFTER condiciones_venta;
-
--- Tabla: caja_movimientos
-CREATE TABLE IF NOT EXISTS caja_movimientos (
+-- Tabla: clientes
+CREATE TABLE IF NOT EXISTS clientes (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    fecha DATE NULL,
-    tipo VARCHAR(20) NOT NULL,
-    descripcion VARCHAR(300),
-    monto DECIMAL(12,2) NOT NULL,
-    cuit_asociado VARCHAR(11),
+    tipo_documento VARCHAR(10) DEFAULT 'CUIT',
+    nro_documento VARCHAR(20) NOT NULL,
+    razon_social VARCHAR(200) NOT NULL,
+    condicion_iva VARCHAR(60),
+    domicilio VARCHAR(200),
+    telefono VARCHAR(50),
+    email VARCHAR(100),
+    origen VARCHAR(20) DEFAULT 'manual',
+    els_referencia INT,
+    activo BOOLEAN DEFAULT TRUE,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_documento (tipo_documento, nro_documento),
+    INDEX idx_razon_social (razon_social),
+    INDEX idx_nro_documento (nro_documento)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabla: factura_items
+CREATE TABLE IF NOT EXISTS factura_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    comprobante_id INT NOT NULL,
+    codigo VARCHAR(50),
+    descripcion VARCHAR(500) NOT NULL,
+    cantidad DECIMAL(12,2) NOT NULL,
+    unidad_medida VARCHAR(20) DEFAULT 'Unidad',
+    precio_unitario DECIMAL(12,2) NOT NULL,
+    subtotal DECIMAL(12,2) NOT NULL,
+    alicuota_iva DECIMAL(5,2) DEFAULT 21.00,
+    estado_pago VARCHAR(20) DEFAULT 'pendiente',
+    els_referencia INT,
+    orden INT DEFAULT 0,
+    FOREIGN KEY (comprobante_id) REFERENCES comprobantes(id) ON DELETE CASCADE,
+    INDEX idx_comprobante (comprobante_id),
+    INDEX idx_els (els_referencia)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabla: remitos
+CREATE TABLE IF NOT EXISTS remitos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    numero_remito VARCHAR(30) NOT NULL UNIQUE,
+    fecha_emision DATE NOT NULL,
+    fecha_entrega DATE,
+    cuit_emisor VARCHAR(11) NOT NULL,
+    razon_social_emisor VARCHAR(200),
+    domicilio_emisor VARCHAR(200),
+    cuit_receptor VARCHAR(11),
+    razon_social_receptor VARCHAR(200),
+    domicilio_receptor VARCHAR(200),
     comprobante_id INT,
+    estado VARCHAR(30) DEFAULT 'pendiente',
+    observaciones TEXT,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_fecha (fecha),
-    INDEX idx_tipo (tipo)
+    INDEX idx_emisor (cuit_emisor),
+    INDEX idx_receptor (cuit_receptor),
+    INDEX idx_estado (estado),
+    INDEX idx_comprobante (comprobante_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabla: categorias_gastos
-CREATE TABLE IF NOT EXISTS categorias_gastos (
+-- Tabla: remito_items
+CREATE TABLE IF NOT EXISTS remito_items (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL,
-    descripcion VARCHAR(300),
-    activa BOOLEAN DEFAULT TRUE,
-    INDEX idx_nombre (nombre),
-    INDEX idx_activa (activa)
+    remito_id INT NOT NULL,
+    codigo VARCHAR(50),
+    descripcion VARCHAR(500) NOT NULL,
+    cantidad DECIMAL(12,2) NOT NULL,
+    unidad_medida VARCHAR(20) DEFAULT 'Unidad',
+    els_referencia INT,
+    orden INT DEFAULT 0,
+    FOREIGN KEY (remito_id) REFERENCES remitos(id) ON DELETE CASCADE,
+    INDEX idx_remito (remito_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Tabla: gastos
-CREATE TABLE IF NOT EXISTS gastos (
+-- Tabla: recibos
+CREATE TABLE IF NOT EXISTS recibos (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    fecha DATE NOT NULL,
-    categoria_id INT NOT NULL,
-    descripcion VARCHAR(300),
+    numero_recibo VARCHAR(30) NOT NULL UNIQUE,
+    fecha_cobro DATE NOT NULL,
+    cliente_id INT,
+    cuit_cliente VARCHAR(11),
+    razon_social_cliente VARCHAR(200),
+    monto_total DECIMAL(12,2) NOT NULL,
+    observaciones TEXT,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_numero (numero_recibo),
+    INDEX idx_cliente (cliente_id),
+    INDEX idx_fecha (fecha_cobro)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabla: recibo_pagos
+CREATE TABLE IF NOT EXISTS recibo_pagos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    recibo_id INT NOT NULL,
+    forma_pago VARCHAR(30) NOT NULL,
     monto DECIMAL(12,2) NOT NULL,
-    mes INT,
-    anio INT,
+    referencia VARCHAR(200),
+    datos_adicionales TEXT,
+    FOREIGN KEY (recibo_id) REFERENCES recibos(id) ON DELETE CASCADE,
+    INDEX idx_recibo (recibo_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabla: recibo_facturas
+CREATE TABLE IF NOT EXISTS recibo_facturas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    recibo_id INT NOT NULL,
+    comprobante_id INT NOT NULL,
+    monto_aplicado DECIMAL(12,2) NOT NULL,
+    FOREIGN KEY (recibo_id) REFERENCES recibos(id) ON DELETE CASCADE,
+    FOREIGN KEY (comprobante_id) REFERENCES comprobantes(id),
+    UNIQUE KEY uk_recibo_factura (recibo_id, comprobante_id),
+    INDEX idx_comprobante (comprobante_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabla: factura_pagos
+CREATE TABLE IF NOT EXISTS factura_pagos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    comprobante_id INT NOT NULL,
+    monto DECIMAL(12,2) NOT NULL,
+    fecha_pago DATE NOT NULL,
+    forma_pago VARCHAR(30),
+    recibo_id INT,
+    observaciones VARCHAR(300),
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_fecha (fecha),
-    INDEX idx_categoria (categoria_id),
-    INDEX idx_mes_anio (mes, anio),
-    FOREIGN KEY (categoria_id) REFERENCES categorias_gastos(id)
+    FOREIGN KEY (comprobante_id) REFERENCES comprobantes(id),
+    INDEX idx_comprobante (comprobante_id),
+    INDEX idx_recibo (recibo_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabla: factura_item_pagos
+CREATE TABLE IF NOT EXISTS factura_item_pagos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    factura_item_id INT NOT NULL,
+    comprobante_id INT NOT NULL,
+    monto DECIMAL(12,2) NOT NULL,
+    fecha_pago DATE NOT NULL,
+    recibo_id INT,
+    estado VARCHAR(20) DEFAULT 'pendiente',
+    FOREIGN KEY (factura_item_id) REFERENCES factura_items(id) ON DELETE CASCADE,
+    FOREIGN KEY (comprobante_id) REFERENCES comprobantes(id),
+    INDEX idx_item (factura_item_id),
+    INDEX idx_recibo (recibo_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tabla: configuraciones
@@ -126,5 +231,9 @@ INSERT INTO configuraciones (clave, valor, descripcion) VALUES
     ('smtp.user', '', 'Usuario SMTP'),
     ('smtp.pass', '', 'Contraseña SMTP'),
     ('reparsoft.host', 'localhost', 'Host de ReparSoft'),
-    ('reparsoft.port', '3306', 'Puerto de ReparSoft')
+    ('reparsoft.port', '3306', 'Puerto de ReparSoft'),
+    ('iva.alicuota.0', '0.00', 'Alicuota IVA 0%'),
+    ('iva.alicuota.1', '10.50', 'Alicuota IVA 10.5%'),
+    ('iva.alicuota.2', '21.00', 'Alicuota IVA 21%'),
+    ('iva.alicuota.3', '27.00', 'Alicuota IVA 27%')
 ON DUPLICATE KEY UPDATE valor = valor;

@@ -96,7 +96,7 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         gbc.gridx = 4;
         panelSuperior.add(btnVerPDF, gbc);
 
-        String[] columnas = {"ID", "Tipo", "PtoVta", "Numero", "Fecha", "CUIT Receptor", "Total", "CAE", "Vto CAE", "Email"};
+        String[] columnas = {"ID", "Tipo", "PtoVta", "Numero", "Fecha", "CUIT Receptor", "Total", "Estado Pago", "CAE", "Vto CAE", "Email"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -134,10 +134,22 @@ public class VentanaComprobantes extends javax.swing.JFrame {
                 dto.getFechaEmision() != null ? dto.getFechaEmision().format(fechaFormatter) : "",
                 dto.getCuitReceptor(),
                 dto.getImporteTotal() != null ? dto.getImporteTotal().toString() : "",
+                obtenerEstadoPagoDisplay(dto.getEstadoPago()),
                 dto.getCae(),
                 dto.getVencimientoCae() != null ? dto.getVencimientoCae().format(fechaFormatter) : "",
                 dto.getEmailEnviado() ? "Si" : "No"
             });
+        }
+    }
+
+    private String obtenerEstadoPagoDisplay(String estado) {
+        if (estado == null) return "Pendiente";
+        switch (estado) {
+            case "pendiente": return "Pendiente";
+            case "pagada_parcial": return "Pagada Parcial";
+            case "pagada_total": return "Pagada Total";
+            case "anulada": return "Anulada";
+            default: return estado;
         }
     }
 
@@ -159,6 +171,7 @@ public class VentanaComprobantes extends javax.swing.JFrame {
                 comp.getFechaEmision() != null ? comp.getFechaEmision().format(fechaFormatter) : "",
                 comp.getCuitReceptor(),
                 comp.getImporteTotal() != null ? comp.getImporteTotal().toString() : "",
+                obtenerEstadoPagoDisplay(comp.getEstadoPago()),
                 comp.getCae(),
                 comp.getVencimientoCae() != null ? comp.getVencimientoCae().format(fechaFormatter) : "",
                 comp.getEmailEnviado() ? "Si" : "No"

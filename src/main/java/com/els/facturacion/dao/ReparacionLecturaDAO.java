@@ -5,7 +5,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ReparacionLecturaDAO {
@@ -13,11 +15,18 @@ public class ReparacionLecturaDAO {
     public Map<String, Object> buscarOrdenPorELS(int els, String baseDatos) {
         Connection conn = ConexionReparsoft.getInstancia().getConexion(baseDatos);
         if (conn == null) {
-            System.err.println("No hay conexión a base de datos: " + baseDatos);
+            System.err.println("No hay conexi�n a base de datos: " + baseDatos);
             return null;
         }
 
-        String sql = "SELECT * FROM reparaciones WHERE els = ? LIMIT 1";
+        String sql = "SELECT r.*, e.IdEquipo, e.Nombre as equipo_nombre, e.Modelo, e.Marca, "
+                + "e.NumeroDeSerie, e.idCliente, "
+                + "c.nombre as cliente_nombre, c.CUIT, c.Domicilio, "
+                + "c.TelefonoEmpresa, c.CorreoElectronico "
+                + "FROM reparaciones r "
+                + "LEFT JOIN equipos e ON r.idEquipo = e.IdEquipo "
+                + "LEFT JOIN cliente c ON e.idCliente = c.idCliente "
+                + "WHERE r.ELS = ? LIMIT 1";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, els);
@@ -65,29 +74,25 @@ public class ReparacionLecturaDAO {
     private Map<String, Object> mapearOrden(ResultSet rs) throws SQLException {
         Map<String, Object> orden = new HashMap<>();
 
-        try {
-            orden.put("els", rs.getInt("els"));
-            orden.put("fecha", rs.getDate("fecha"));
-            orden.put("cliente", rs.getString("cliente"));
-            orden.put("domicilio", rs.getString("domicilio"));
-            orden.put("telefono", rs.getString("telefono"));
-            orden.put("vehiculo", rs.getString("vehiculo"));
-            orden.put("patente", rs.getString("patente"));
-            orden.put("modelo", rs.getString("modelo"));
-            orden.put("kilometros", rs.getInt("kilometros"));
-            orden.put("motor", rs.getString("motor"));
-            orden.put("chasis", rs.getString("chasis"));
-
-            try { orden.put("cuit", rs.getString("cuit")); } catch (Exception e) {}
-            try { orden.put("iva", rs.getString("iva")); } catch (Exception e) {}
-            try { orden.put("total", rs.getDouble("total")); } catch (Exception e) {}
-
-            orden.put("estado", rs.getString("estado"));
-            orden.put("observaciones", rs.getString("observaciones"));
-
-        } catch (SQLException e) {
-            System.err.println("Error mapeando orden: " + e.getMessage());
-        }
+        try { orden.put("els", rs.getInt("ELS")); } catch (Exception e) {}
+        try { orden.put("fecha", rs.getDate("FechaEntrada")); } catch (Exception e) {}
+        try { orden.put("cliente", rs.getString("cliente_nombre")); } catch (Exception e) {}
+        try { orden.put("domicilio", rs.getString("Domicilio")); } catch (Exception e) {}
+        try { orden.put("telefono", rs.getString("TelefonoEmpresa")); } catch (Exception e) {}
+        try { orden.put("email", rs.getString("CorreoElectronico")); } catch (Exception e) {}
+        try { orden.put("vehiculo", rs.getString("equipo_nombre")); } catch (Exception e) {}
+        try { orden.put("patente", rs.getString("NumeroDeSerie")); } catch (Exception e) {}
+        try { orden.put("modelo", rs.getString("Modelo")); } catch (Exception e) {}
+        try { orden.put("marca", rs.getString("Marca")); } catch (Exception e) {}
+        try { orden.put("falla", rs.getString("Falla")); } catch (Exception e) {}
+        try { orden.put("solucion", rs.getString("Solucion")); } catch (Exception e) {}
+        try { orden.put("cuit", rs.getString("CUIT")); } catch (Exception e) {}
+        try { orden.put("total", rs.getDouble("PrecioPeso")); } catch (Exception e) {}
+        try { orden.put("iva", rs.getString("iva")); } catch (Exception e) {}
+        try { orden.put("estado", rs.getString("EstadoComercial")); } catch (Exception e) {}
+        try { orden.put("observaciones", rs.getString("Informecliente")); } catch (Exception e) {}
+        try { orden.put("idEquipo", rs.getInt("idEquipo")); } catch (Exception e) {}
+        try { orden.put("idCliente", rs.getInt("idCliente")); } catch (Exception e) {}
 
         return orden;
     }
@@ -106,6 +111,7 @@ public class ReparacionLecturaDAO {
         String vehiculo = (String) orden.get("vehiculo");
         String patente = (String) orden.get("patente");
         String modelo = (String) orden.get("modelo");
+        String falla = (String) orden.get("falla");
         Object totalObj = orden.get("total");
 
         datos.put("razonSocial", razonSocial != null ? razonSocial.trim() : "");
@@ -116,7 +122,12 @@ public class ReparacionLecturaDAO {
         datos.put("modelo", modelo != null ? modelo.trim() : "");
 
         try {
-            datos.put("cuit", orden.get("cuit"));
+            String cuit = (String) orden.get("cuit");
+            if (cuit != null) {
+                datos.put("cuit", cuit.replaceAll("[^0-9]", ""));
+            } else {
+                datos.put("cuit", "");
+            }
         } catch (Exception e) {
             datos.put("cuit", "");
         }
@@ -130,10 +141,74 @@ public class ReparacionLecturaDAO {
         }
 
         datos.put("els", els);
-        datos.put("descripcion", String.format("Servicio de reparación - Vehículo: %s - Patente: %s",
-                vehiculo != null ? vehiculo : "",
-                patente != null ? patente : ""));
+        String descripcion = "Servicio de reparaci�n";
+        if (vehiculo != null && !vehiculo.trim().isEmpty()) {
+            descripcion += " - Equipo: " + vehiculo;
+        }
+        if (falla != null && !falla.trim().isEmpty()) {
+            descripcion += " - Falla: " + falla;
+        }
+        datos.put("descripcion", descripcion);
 
         return datos;
+    }
+
+    public List<com.els.facturacion.modelo.RemitoReparsoftDTO> listarRemitos(String baseDatos) {
+        List<com.els.facturacion.modelo.RemitoReparsoftDTO> lista = new ArrayList<>();
+        Connection conn = ConexionReparsoft.getInstancia().getConexion(baseDatos);
+        if (conn == null) return lista;
+
+        String sql = "SELECT r.idRemito, r.NumeroRemitoSalida, "
+                + "rep.ELS, rep.RemitoCliente, rep.idEquipo, "
+                + "e.Nombre as equipo_nombre, e.NumeroDeSerie, "
+                + "c.nombre as cliente_nombre, c.CUIT, "
+                + "rep.Falla, rep.PrecioPeso "
+                + "FROM " + baseDatos + ".remitos r "
+                + "JOIN " + baseDatos + ".reparaciones rep ON r.idRemito = rep.idRemito "
+                + "LEFT JOIN " + baseDatos + ".equipos e ON rep.idEquipo = e.IdEquipo "
+                + "LEFT JOIN " + baseDatos + ".cliente c ON e.idCliente = c.idCliente "
+                + "WHERE r.NumeroRemitoSalida IS NOT NULL "
+                + "ORDER BY r.NumeroRemitoSalida DESC";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            java.util.Map<Integer, com.els.facturacion.modelo.RemitoReparsoftDTO> map = new java.util.LinkedHashMap<>();
+
+            while (rs.next()) {
+                int idRemito = rs.getInt("idRemito");
+                Integer numSalida = rs.getObject("NumeroRemitoSalida") != null ? rs.getInt("NumeroRemitoSalida") : null;
+                String clienteNombre = "";
+                String cuit = "";
+                try { clienteNombre = rs.getString("cliente_nombre"); } catch (Exception e) {}
+                try { cuit = rs.getString("CUIT"); } catch (Exception e) {}
+
+                com.els.facturacion.modelo.RemitoReparsoftDTO dto = map.get(idRemito);
+                if (dto == null) {
+                    dto = new com.els.facturacion.modelo.RemitoReparsoftDTO(idRemito, numSalida, clienteNombre, cuit);
+                    dto.setItems(new ArrayList<>());
+                    map.put(idRemito, dto);
+                }
+
+                int els = 0;
+                String equipoNombre = "";
+                String serie = "";
+                String falla = "";
+                double precio = 0;
+                try { els = rs.getInt("ELS"); } catch (Exception e) {}
+                try { equipoNombre = rs.getString("equipo_nombre"); } catch (Exception e) {}
+                try { serie = rs.getString("NumeroDeSerie"); } catch (Exception e) {}
+                try { falla = rs.getString("Falla"); } catch (Exception e) {}
+                try { precio = rs.getDouble("PrecioPeso"); } catch (Exception e) {}
+
+                dto.getItems().add(new com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem(
+                    els, equipoNombre, serie, falla, java.math.BigDecimal.valueOf(precio)));
+            }
+
+            lista.addAll(map.values());
+        } catch (SQLException e) {
+            System.err.println("Error listando remitos desde " + baseDatos + ": " + e.getMessage());
+        }
+        return lista;
     }
 }

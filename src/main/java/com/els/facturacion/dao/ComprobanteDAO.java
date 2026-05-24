@@ -12,10 +12,11 @@ import java.util.List;
 
 public class ComprobanteDAO {
 
-    private Connection conn;
-
     public ComprobanteDAO() {
-        this.conn = ConexionFacturacion.getInstancia().getConexion();
+    }
+
+    private Connection getConn() {
+        return ConexionFacturacion.getInstancia().getConexion();
     }
 
     public int insertar(ComprobanteDTO comp) {
@@ -24,10 +25,11 @@ public class ComprobanteDAO {
                 + "importe_total, cae, vencimiento_cae, els_asociado, ruta_pdf, email_enviado, "
                 + "concepto, periodo_desde, periodo_hasta, periodo_vto, "
                 + "condicion_iva_receptor, tipo_documento, nro_documento, "
-                + "domicilio_receptor, email_receptor, condiciones_venta, comprobante_asociado) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "domicilio_receptor, email_receptor, condiciones_venta, comprobante_asociado, "
+                + "estado_pago, otros_impuestos) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, comp.getCuitEmisor());
             ps.setInt(2, comp.getTipoComprobante());
             ps.setInt(3, comp.getPuntoVenta());
@@ -54,6 +56,8 @@ public class ComprobanteDAO {
             ps.setString(24, comp.getEmailReceptor());
             ps.setString(25, comp.getCondicionesVenta());
             ps.setString(26, comp.getComprobanteAsociado());
+            ps.setString(27, comp.getEstadoPago());
+            ps.setBigDecimal(28, comp.getOtrosImpuestos());
 
             int affected = ps.executeUpdate();
             if (affected > 0) {
@@ -72,7 +76,7 @@ public class ComprobanteDAO {
         String sql = "UPDATE comprobantes SET cae = ?, vencimiento_cae = ?, ruta_pdf = ?, "
                 + "email_enviado = ? WHERE id = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, comp.getCae());
             ps.setDate(2, comp.getVencimientoCae() != null ? java.sql.Date.valueOf(comp.getVencimientoCae()) : null);
             ps.setString(3, comp.getRutaPdf());
@@ -89,7 +93,7 @@ public class ComprobanteDAO {
     public ComprobanteDTO buscarPorId(int id) {
         String sql = "SELECT * FROM comprobantes WHERE id = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setInt(1, id);
             ResultSet rs = ps.executeQuery();
 
@@ -105,7 +109,7 @@ public class ComprobanteDAO {
     public ComprobanteDTO buscarPorCAE(String cae) {
         String sql = "SELECT * FROM comprobantes WHERE cae = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, cae);
             ResultSet rs = ps.executeQuery();
 
@@ -122,7 +126,7 @@ public class ComprobanteDAO {
         String sql = "SELECT * FROM comprobantes WHERE cuit_emisor = ? AND tipo_comprobante = ? "
                 + "AND punto_venta = ? AND numero = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, cuit);
             ps.setInt(2, tipo);
             ps.setInt(3, puntoVenta);
@@ -142,7 +146,7 @@ public class ComprobanteDAO {
         String sql = "SELECT * FROM comprobantes ORDER BY fecha_emision DESC, numero DESC";
         List<ComprobanteDTO> lista = new ArrayList<>();
 
-        try (PreparedStatement ps = conn.prepareStatement(sql);
+        try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
@@ -158,7 +162,7 @@ public class ComprobanteDAO {
         String sql = "SELECT * FROM comprobantes WHERE cuit_emisor = ? ORDER BY fecha_emision DESC, numero DESC";
         List<ComprobanteDTO> lista = new ArrayList<>();
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, cuit);
             ResultSet rs = ps.executeQuery();
 
@@ -176,7 +180,7 @@ public class ComprobanteDAO {
                 + "ORDER BY fecha_emision DESC, numero DESC";
         List<ComprobanteDTO> lista = new ArrayList<>();
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setDate(1, java.sql.Date.valueOf(desde));
             ps.setDate(2, java.sql.Date.valueOf(hasta));
             ResultSet rs = ps.executeQuery();
@@ -194,7 +198,7 @@ public class ComprobanteDAO {
         String sql = "SELECT MAX(numero) as ultimo FROM comprobantes WHERE cuit_emisor = ? "
                 + "AND punto_venta = ? AND tipo_comprobante = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, cuit);
             ps.setInt(2, puntoVenta);
             ps.setInt(3, tipoComprobante);
@@ -215,7 +219,7 @@ public class ComprobanteDAO {
                 + "ORDER BY fecha_emision DESC";
         List<ComprobanteDTO> lista = new ArrayList<>();
 
-        try (PreparedStatement ps = conn.prepareStatement(sql);
+        try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
@@ -269,6 +273,8 @@ public class ComprobanteDAO {
         try { dto.setEmailReceptor(rs.getString("email_receptor")); } catch (SQLException e) {}
         try { dto.setCondicionesVenta(rs.getString("condiciones_venta")); } catch (SQLException e) {}
         try { dto.setComprobanteAsociado(rs.getString("comprobante_asociado")); } catch (SQLException e) {}
+        try { dto.setEstadoPago(rs.getString("estado_pago")); } catch (SQLException e) {}
+        try { dto.setOtrosImpuestos(rs.getBigDecimal("otros_impuestos")); } catch (SQLException e) {}
 
         return dto;
     }

@@ -3,11 +3,13 @@ package com.els.facturacion.controlador;
 import com.els.facturacion.conexion.ConexionReparsoft;
 import com.els.facturacion.dao.ReparacionLecturaDAO;
 import com.els.facturacion.modelo.ComprobanteDTO;
+import com.els.facturacion.modelo.RemitoReparsoftDTO;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 public class ControladorReparsoft {
@@ -109,6 +111,10 @@ public class ControladorReparsoft {
 
     public String getBaseDatosELS(int els) {
         return reparacionDAO.getBaseDatosELS(els);
+    }
+
+    public List<RemitoReparsoftDTO> listarRemitos(String baseDatos) {
+        return reparacionDAO.listarRemitos(baseDatos);
     }
 
     private String limpiarCuit(String cuit) {

@@ -1,11 +1,16 @@
 package com.els.facturacion.vista;
 
+import com.els.facturacion.controlador.ControladorClientes;
 import com.els.facturacion.controlador.ControladorFacturacion;
 import com.els.facturacion.controlador.ControladorReparsoft;
+import com.els.facturacion.modelo.ClienteDTO;
 import com.els.facturacion.modelo.ComprobanteDTO;
 import com.els.facturacion.modelo.CuitConfigDTO;
 import com.els.facturacion.modelo.ItemFacturaDTO;
+import com.els.facturacion.modelo.RemitoReparsoftDTO;
+import com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem;
 import com.els.facturacion.modelo.RespuestaCAE;
+import com.els.facturacion.util.AutoCompleteComboBox;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JButton;
@@ -55,6 +60,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
     private ControladorFacturacion controlador;
     private ControladorReparsoft controladorReparsoft;
+    private ControladorClientes controladorClientes;
 
     private CardLayout cardLayout;
     private JPanel panelPrincipal;
@@ -72,8 +78,8 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
     private JComboBox<String> cmbCondicionIva;
     private JComboBox<String> cmbTipoDoc;
-    private JTextField txtNroDoc;
-    private JTextField txtRazonSocial;
+    private AutoCompleteComboBox cmbRazonSocial;
+    private AutoCompleteComboBox cmbNroDoc;
     private JTextField txtDomicilio;
     private JTextField txtEmail;
     private JCheckBox chkContado, chkTarjetaDeb, chkTarjetaCred, chkCC, chkCheque, chkTransf, chkOtra;
@@ -85,6 +91,10 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private JTextField txtImporteNeto;
     private JTextField txtImporteIva;
     private JTextField txtImporteTotal;
+    private JTextField txtOtrosImpuestos;
+    private JLabel lblEstadoPago;
+    private JComboBox<String> cmbAlicuotaIva;
+    private JButton btnEliminarItem;
 
     private JButton btnSiguiente;
     private JButton btnAnterior;
@@ -93,8 +103,10 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     public VentanaFacturacion() {
         controlador = new ControladorFacturacion();
         controladorReparsoft = new ControladorReparsoft();
+        controladorClientes = new ControladorClientes();
         initComponents();
         cargarCuits();
+        cargarClientes();
     }
 
     private void initComponents() {
@@ -130,7 +142,31 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         menuHerramientas.addSeparator();
         menuHerramientas.add(itemMigrar);
 
+        JMenu menuClientes = new JMenu("Clientes");
+        JMenuItem itemClientes = new JMenuItem("Gestion de Clientes");
+        itemClientes.addActionListener(e -> abrirClientes());
+        menuClientes.add(itemClientes);
+
+        JMenu menuRemitos = new JMenu("Remitos");
+        JMenuItem itemRemitos = new JMenuItem("Gestion de Remitos");
+        itemRemitos.addActionListener(e -> abrirRemitos());
+        menuRemitos.add(itemRemitos);
+
+        JMenu menuRecibos = new JMenu("Recibos");
+        JMenuItem itemRecibos = new JMenuItem("Gestion de Recibos");
+        itemRecibos.addActionListener(e -> abrirRecibos());
+        menuRecibos.add(itemRecibos);
+
+        JMenu menuPagos = new JMenu("Pagos");
+        JMenuItem itemPagos = new JMenuItem("Pagos / Cobranzas");
+        itemPagos.addActionListener(e -> abrirPagos());
+        menuPagos.add(itemPagos);
+
         menuBar.add(menuArchivo);
+        menuBar.add(menuClientes);
+        menuBar.add(menuRemitos);
+        menuBar.add(menuRecibos);
+        menuBar.add(menuPagos);
         menuBar.add(menuHerramientas);
         setJMenuBar(menuBar);
 
@@ -205,7 +241,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         gbc.insets = new Insets(3, 5, 3, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        cmbPuntoVenta = new JComboBox<>(new String[]{"00001", "00002", "00003", "00004", "00005"});
+        cmbPuntoVenta = new JComboBox<>(new String[]{"00001"});
         cmbPuntoVenta.setFont(FUENTE_BOTON);
         cmbTipoComprobante = new JComboBox<>(new String[]{
             "Factura C", "Nota de Débito C", "Nota de Crédito C",
@@ -341,11 +377,19 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         cmbTipoDoc = new JComboBox<>(new String[]{"CUIT", "DNI"});
         cmbTipoDoc.setFont(FUENTE_BOTON);
 
-        txtNroDoc = new JTextField(15);
-        txtNroDoc.setFont(new Font("Cambria", Font.PLAIN, 11));
+        cmbNroDoc = new AutoCompleteComboBox();
+        cmbNroDoc.setFont(new Font("Cambria", Font.PLAIN, 11));
+        cmbNroDoc.setPreferredSize(new java.awt.Dimension(150, 24));
 
-        txtRazonSocial = new JTextField(25);
-        txtRazonSocial.setFont(new Font("Cambria", Font.PLAIN, 11));
+        cmbRazonSocial = new AutoCompleteComboBox();
+        cmbRazonSocial.setFont(new Font("Cambria", Font.PLAIN, 11));
+        cmbRazonSocial.setPreferredSize(new java.awt.Dimension(250, 24));
+
+        javax.swing.JTextField editorRS = (javax.swing.JTextField) cmbRazonSocial.getEditor().getEditorComponent();
+        editorRS.addActionListener(e -> autocompletarPorRazonSocial());
+
+        javax.swing.JTextField editorND = (javax.swing.JTextField) cmbNroDoc.getEditor().getEditorComponent();
+        editorND.addActionListener(e -> autocompletarPorDocumento());
 
         txtDomicilio = new JTextField(25);
         txtDomicilio.setFont(new Font("Cambria", Font.PLAIN, 11));
@@ -365,17 +409,18 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         row++;
         gbc.gridwidth = 1; gbc.weightx = 0;
         gbc.gridx = 0; gbc.gridy = row;
+        panel.add(new JLabel("Nombre o Razon Social:"), gbc);
+        gbc.gridx = 1; gbc.gridwidth = 3; gbc.weightx = 1.0;
+        panel.add(cmbRazonSocial, gbc);
+
+        row++;
+        gbc.gridwidth = 1; gbc.weightx = 0;
+        gbc.gridx = 0; gbc.gridy = row;
         panel.add(new JLabel("Tipo y Nro Documento:"), gbc);
         gbc.gridx = 1;
         panel.add(cmbTipoDoc, gbc);
         gbc.gridx = 2;
-        panel.add(txtNroDoc, gbc);
-
-        row++;
-        gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel("Nombre o Razon Social:"), gbc);
-        gbc.gridx = 1; gbc.gridwidth = 3; gbc.weightx = 1.0;
-        panel.add(txtRazonSocial, gbc);
+        panel.add(cmbNroDoc, gbc);
 
         row++;
         gbc.gridwidth = 1; gbc.weightx = 0;
@@ -425,6 +470,10 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panel.add(new JLabel("Comp. Asociado/Remito:"), gbc);
         gbc.gridx = 1;
         panel.add(txtComprobanteAsoc, gbc);
+        gbc.gridx = 2;
+        JButton btnImportarRemito = crearBoton("Importar desde ReparSoft");
+        btnImportarRemito.addActionListener(e -> importarRemitoReparsoft());
+        panel.add(btnImportarRemito, gbc);
 
         return panel;
     }
@@ -444,7 +493,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelSuperior.add(btnAnterior, BorderLayout.WEST);
         panelSuperior.add(lblTitulo, BorderLayout.CENTER);
 
-        String[] columnas = {"Codigo", "Producto/Servicio", "Cantidad", "U. Medida", "P. Unitario", "Subtotal"};
+        String[] columnas = {"Codigo", "Producto/Servicio", "Cantidad", "U. Medida", "P. Unitario", "Subtotal", "IVA %"};
         modeloTablaItems = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -455,23 +504,30 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         tablaItems.setFont(new Font("Cambria", Font.PLAIN, 11));
         tablaItems.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 11));
         tablaItems.getColumnModel().getColumn(0).setPreferredWidth(60);
-        tablaItems.getColumnModel().getColumn(1).setPreferredWidth(250);
+        tablaItems.getColumnModel().getColumn(1).setPreferredWidth(200);
         tablaItems.getColumnModel().getColumn(2).setPreferredWidth(60);
         tablaItems.getColumnModel().getColumn(3).setPreferredWidth(60);
-        tablaItems.getColumnModel().getColumn(4).setPreferredWidth(100);
-        tablaItems.getColumnModel().getColumn(5).setPreferredWidth(100);
+        tablaItems.getColumnModel().getColumn(4).setPreferredWidth(90);
+        tablaItems.getColumnModel().getColumn(5).setPreferredWidth(90);
+        tablaItems.getColumnModel().getColumn(6).setPreferredWidth(50);
 
         JScrollPane scrollTabla = new JScrollPane(tablaItems);
 
         JButton btnAgregarItem = crearBoton("+ AGREGAR ITEM");
         btnAgregarItem.addActionListener(e -> agregarItem());
+        btnEliminarItem = crearBoton("- ELIMINAR ITEM");
+        btnEliminarItem.addActionListener(e -> eliminarItem());
+        cmbAlicuotaIva = new JComboBox<>(new String[]{"21%", "10.5%", "0%", "27%"});
 
         JPanel panelSur = new JPanel(new BorderLayout(10, 5));
         panelSur.setBackground(COLOR_FONDO);
 
         JPanel panelBotones = new JPanel();
         panelBotones.setBackground(COLOR_FONDO);
+        panelBotones.add(new JLabel("IVA:"));
+        panelBotones.add(cmbAlicuotaIva);
         panelBotones.add(btnAgregarItem);
+        panelBotones.add(btnEliminarItem);
 
         JPanel panelTotales = new JPanel(new GridBagLayout());
         panelTotales.setBackground(COLOR_FONDO);
@@ -500,29 +556,41 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         gbc.gridx = 3;
         panelTotales.add(txtImporteIva, gbc);
         gbc.gridx = 4;
+        panelTotales.add(new JLabel("Otros Imp:"), gbc);
+        txtOtrosImpuestos = new JTextField(10);
+        txtOtrosImpuestos.setText("0,00");
+        txtOtrosImpuestos.setHorizontalAlignment(JTextField.RIGHT);
+        gbc.gridx = 5;
+        panelTotales.add(txtOtrosImpuestos, gbc);
+        gbc.gridx = 6;
         panelTotales.add(new JLabel("Total:"), gbc);
         txtImporteTotal = new JTextField(12);
         txtImporteTotal.setEditable(false);
         txtImporteTotal.setFont(new Font("Cambria", Font.BOLD, 14));
         txtImporteTotal.setHorizontalAlignment(JTextField.RIGHT);
         txtImporteTotal.setForeground(new Color(0, 100, 0));
-        gbc.gridx = 5;
+        gbc.gridx = 7;
         panelTotales.add(txtImporteTotal, gbc);
 
         JButton btnCalcular = crearBoton("CALCULAR");
         btnCalcular.addActionListener(e -> recalcularTotales());
-        gbc.gridx = 6;
+        gbc.gridx = 8;
         panelTotales.add(btnCalcular, gbc);
 
         JPanel panelEmitir = new JPanel();
         panelEmitir.setBackground(COLOR_FONDO);
-        btnEmitir = crearBoton("EMITIR COMPROBANTE");
+        lblEstadoPago = new JLabel("Estado: Pendiente de pago");
+        lblEstadoPago.setFont(new Font("Cambria", Font.BOLD, 12));
+        lblEstadoPago.setForeground(COLOR_TEXTO);
+
+        btnEmitir = crearBoton("GUARDAR / EMITIR FACTURA");
         btnEmitir.setFont(new Font("Cambria", Font.BOLD, 13));
         btnEmitir.setBackground(new Color(100, 180, 100));
         btnEmitir.addActionListener(e -> btnEmitirAction());
         JButton btnLimpiar = crearBoton("LIMPIAR");
         btnLimpiar.addActionListener(e -> limpiarTodo());
 
+        panelEmitir.add(lblEstadoPago);
         panelEmitir.add(btnEmitir);
         panelEmitir.add(btnLimpiar);
 
@@ -538,11 +606,21 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     }
 
     private void agregarItem() {
-        modeloTablaItems.addRow(new Object[]{"", "", "1", "Unidad", "0,00", "0,00"});
+        String iva = (String) cmbAlicuotaIva.getSelectedItem();
+        modeloTablaItems.addRow(new Object[]{"", "", "1", "Unidad", "0,00", "0,00", iva});
+    }
+
+    private void eliminarItem() {
+        int row = tablaItems.getSelectedRow();
+        if (row >= 0) {
+            modeloTablaItems.removeRow(row);
+            recalcularTotales();
+        }
     }
 
     private void recalcularTotales() {
-        BigDecimal total = BigDecimal.ZERO;
+        BigDecimal totalNeto = BigDecimal.ZERO;
+        BigDecimal ivaTotal = BigDecimal.ZERO;
         for (int i = 0; i < modeloTablaItems.getRowCount(); i++) {
             try {
                 Object cantObj = modeloTablaItems.getValueAt(i, 2);
@@ -551,25 +629,33 @@ public class VentanaFacturacion extends javax.swing.JFrame {
                 double precio = Double.parseDouble(precioObj.toString().replace(",", ".").replace("$", "").trim());
                 BigDecimal subtotal = BigDecimal.valueOf(cant * precio).setScale(2, BigDecimal.ROUND_HALF_UP);
                 modeloTablaItems.setValueAt(DF.format(subtotal), i, 5);
-                total = total.add(subtotal);
+                totalNeto = totalNeto.add(subtotal);
+
+                String ivaStr = modeloTablaItems.getValueAt(i, 6) != null ? modeloTablaItems.getValueAt(i, 6).toString() : "21%";
+                BigDecimal alicuota = new BigDecimal(ivaStr.replace("%", ""));
+                BigDecimal ivaItem = subtotal.multiply(alicuota).divide(new BigDecimal("100"), 2, BigDecimal.ROUND_HALF_UP);
+                ivaTotal = ivaTotal.add(ivaItem);
             } catch (Exception e) {
                 modeloTablaItems.setValueAt("0,00", i, 5);
             }
         }
-        BigDecimal iva = total.multiply(BigDecimal.valueOf(0.21)).setScale(2, BigDecimal.ROUND_HALF_UP);
-        BigDecimal totalConIva = total.add(iva);
-        txtImporteNeto.setText(DF.format(total));
-        txtImporteIva.setText(DF.format(iva));
+        BigDecimal otros = BigDecimal.ZERO;
+        try {
+            otros = new BigDecimal(txtOtrosImpuestos.getText().replace(",", "."));
+        } catch (Exception e) {}
+        BigDecimal totalConIva = totalNeto.add(ivaTotal).add(otros);
+        txtImporteNeto.setText(DF.format(totalNeto));
+        txtImporteIva.setText(DF.format(ivaTotal));
         txtImporteTotal.setText(DF.format(totalConIva));
         lblTotal.setText("$ " + DF.format(totalConIva));
     }
 
     private boolean validarDatosReceptor() {
-        if (txtNroDoc.getText().trim().isEmpty()) {
+        if (cmbNroDoc.getEditorText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Ingrese numero de documento", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
-        if (txtRazonSocial.getText().trim().isEmpty()) {
+        if (cmbRazonSocial.getEditorText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Ingrese razon social", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
@@ -595,7 +681,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             comprobante.setTipoComprobante(obtenerTipoCodigo());
             comprobante.setPuntoVenta(Integer.parseInt((String) cmbPuntoVenta.getSelectedItem()));
             comprobante.setCuitReceptor(obtenerDocReceptor());
-            comprobante.setRazonSocialRec(txtRazonSocial.getText().trim());
+            comprobante.setRazonSocialRec(cmbRazonSocial.getEditorText().trim());
             comprobante.setFechaEmision(parseFecha(txtFecha.getText()));
             comprobante.setImporteNeto(new BigDecimal(txtImporteNeto.getText().replace(",", "")));
             comprobante.setImporteIva(new BigDecimal(txtImporteIva.getText().replace(",", "")));
@@ -606,12 +692,18 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             comprobante.setPeriodoVto(parseFecha(txtPeriodoVto.getText()));
             comprobante.setCondicionIvaReceptor((String) cmbCondicionIva.getSelectedItem());
             comprobante.setTipoDocumento((String) cmbTipoDoc.getSelectedItem());
-            comprobante.setNroDocumento(txtNroDoc.getText().trim());
+            comprobante.setNroDocumento(cmbNroDoc.getEditorText().trim());
             comprobante.setDomicilioReceptor(txtDomicilio.getText().trim());
             comprobante.setEmailReceptor(txtEmail.getText().trim());
             comprobante.setCondicionesVenta(obtenerCondicionesVenta());
             comprobante.setComprobanteAsociado(txtComprobanteAsoc.getText().trim());
             comprobante.setDescripcion(obtenerDescripcionItems());
+            comprobante.setEstadoPago("pendiente");
+            try {
+                comprobante.setOtrosImpuestos(new BigDecimal(txtOtrosImpuestos.getText().replace(",", ".")));
+            } catch (Exception e) {
+                comprobante.setOtrosImpuestos(BigDecimal.ZERO);
+            }
 
             btnEmitir.setEnabled(false);
             btnEmitir.setText("Emitiendo...");
@@ -654,7 +746,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
     private String obtenerDocReceptor() {
         String tipo = (String) cmbTipoDoc.getSelectedItem();
-        String nro = txtNroDoc.getText().trim().replaceAll("[^0-9]", "");
+        String nro = cmbNroDoc.getEditorText().trim().replaceAll("[^0-9]", "");
         if ("CUIT".equals(tipo)) {
             while (nro.length() < 11) nro = "0" + nro;
         }
@@ -671,7 +763,10 @@ public class VentanaFacturacion extends javax.swing.JFrame {
                 String unidad = (String) modeloTablaItems.getValueAt(i, 3);
                 BigDecimal precio = new BigDecimal(modeloTablaItems.getValueAt(i, 4).toString().replace(",", "."));
                 BigDecimal subtotal = cantidad.multiply(precio).setScale(2, BigDecimal.ROUND_HALF_UP);
-                lista.add(new ItemFacturaDTO(codigo, descripcion, cantidad, unidad, precio, subtotal));
+                ItemFacturaDTO item = new ItemFacturaDTO(codigo, descripcion, cantidad, unidad, precio, subtotal);
+                String ivaStr = modeloTablaItems.getValueAt(i, 6) != null ? modeloTablaItems.getValueAt(i, 6).toString() : "21%";
+                item.setAlicuotaIva(new BigDecimal(ivaStr.replace("%", "")));
+                lista.add(item);
             } catch (Exception e) {
                 System.err.println("Error leyendo item fila " + i + ": " + e.getMessage());
             }
@@ -710,12 +805,176 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private void cargarCuits() {
     }
 
+    private void cargarClientes() {
+        List<ClienteDTO> clientes = controladorClientes.listarTodos();
+        List<String> razones = new ArrayList<>();
+        List<String> docs = new ArrayList<>();
+        for (ClienteDTO c : clientes) {
+            razones.add(c.getRazonSocial());
+            docs.add(c.getNroDocumento());
+        }
+        cmbRazonSocial.setData(razones);
+        cmbNroDoc.setData(docs);
+    }
+
+    private void autocompletarPorRazonSocial() {
+        String texto = cmbRazonSocial.getEditorText().trim();
+        if (texto.isEmpty()) return;
+
+        List<ClienteDTO> resultados = controladorClientes.buscarPorRazonSocial(texto);
+        ClienteDTO match = null;
+        for (ClienteDTO c : resultados) {
+            if (c.getRazonSocial().equalsIgnoreCase(texto)) {
+                match = c;
+                break;
+            }
+        }
+        if (match == null && resultados.size() == 1) {
+            match = resultados.get(0);
+        }
+
+        if (match != null) {
+            autocompletarCamposCliente(match);
+        } else {
+            int opcion = JOptionPane.showConfirmDialog(this,
+                "No existe un cliente con razon social \"" + texto + "\". Desea darlo de alta?",
+                "Cliente no encontrado", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+            if (opcion == JOptionPane.YES_OPTION) {
+                VentanaClientes ventana = new VentanaClientes();
+                ventana.setVisible(true);
+                ventana.addWindowListener(new java.awt.event.WindowAdapter() {
+                    public void windowClosed(java.awt.event.WindowEvent e) {
+                        cargarClientes();
+                    }
+                });
+            }
+        }
+    }
+
+    private void autocompletarPorDocumento() {
+        String texto = cmbNroDoc.getEditorText().trim();
+        if (texto.isEmpty()) return;
+
+        String tipoDoc = (String) cmbTipoDoc.getSelectedItem();
+        ClienteDTO cli = controladorClientes.buscarPorDocumento(tipoDoc, texto);
+        if (cli != null) {
+            autocompletarCamposCliente(cli);
+            return;
+        }
+
+        List<ClienteDTO> todos = controladorClientes.listarTodos();
+        for (ClienteDTO c : todos) {
+            if (c.getNroDocumento() != null && c.getNroDocumento().contains(texto)) {
+                autocompletarCamposCliente(c);
+                return;
+            }
+        }
+
+        int opcion = JOptionPane.showConfirmDialog(this,
+            "No existe un cliente con " + tipoDoc + " \"" + texto + "\". Desea darlo de alta?",
+            "Cliente no encontrado", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (opcion == JOptionPane.YES_OPTION) {
+            VentanaClientes ventana = new VentanaClientes();
+            ventana.setVisible(true);
+            ventana.addWindowListener(new java.awt.event.WindowAdapter() {
+                public void windowClosed(java.awt.event.WindowEvent e) {
+                    cargarClientes();
+                }
+            });
+        }
+    }
+
+    private void autocompletarCamposCliente(ClienteDTO cli) {
+        cmbRazonSocial.setSelectedItem(cli.getRazonSocial());
+        cmbRazonSocial.setEditorText(cli.getRazonSocial());
+        cmbTipoDoc.setSelectedItem(cli.getTipoDocumento() != null ? cli.getTipoDocumento() : "CUIT");
+        cmbNroDoc.setEditorText(cli.getNroDocumento() != null ? cli.getNroDocumento() : "");
+        cmbCondicionIva.setSelectedItem(cli.getCondicionIva() != null ? cli.getCondicionIva() : "IVA Responsable Inscripto");
+        txtDomicilio.setText(cli.getDomicilio() != null ? cli.getDomicilio() : "");
+        txtEmail.setText(cli.getEmail() != null ? cli.getEmail() : "");
+    }
+
+
+
+    private void importarRemitoReparsoft() {
+        RemitoReparsoftDTO remito = VentanaImportarRemito.mostrarDialog(this);
+        if (remito == null) return;
+
+        txtComprobanteAsoc.setText(remito.getNumeroRemitoDisplay());
+
+        if (remito.getRazonSocialCliente() != null && !remito.getRazonSocialCliente().isEmpty()) {
+            boolean encontrado = false;
+            List<ClienteDTO> clientes = controladorClientes.buscarPorRazonSocial(remito.getRazonSocialCliente());
+            for (ClienteDTO c : clientes) {
+                if (c.getRazonSocial().equalsIgnoreCase(remito.getRazonSocialCliente())) {
+                    autocompletarCamposCliente(c);
+                    encontrado = true;
+                    break;
+                }
+            }
+            if (!encontrado && remito.getCuitCliente() != null && !remito.getCuitCliente().isEmpty()) {
+                String cuitLimpio = remito.getCuitCliente().replaceAll("[^0-9]", "");
+                for (ClienteDTO c : controladorClientes.listarTodos()) {
+                    if (c.getNroDocumento() != null && c.getNroDocumento().replaceAll("[^0-9]", "").equals(cuitLimpio)) {
+                        autocompletarCamposCliente(c);
+                        encontrado = true;
+                        break;
+                    }
+                }
+            }
+            if (!encontrado) {
+                cmbRazonSocial.setEditorText(remito.getRazonSocialCliente());
+                if (remito.getCuitCliente() != null && !remito.getCuitCliente().isEmpty()) {
+                    cmbNroDoc.setEditorText(remito.getCuitCliente());
+                    cmbTipoDoc.setSelectedItem("CUIT");
+                }
+            }
+        }
+
+        cardLayout.show(panelPrincipal, "operacion");
+        modeloTablaItems.setRowCount(0);
+        if (remito.getItems() != null) {
+            for (RemitoReparsoftItem item : remito.getItems()) {
+                String descripcion = item.getDescripcion();
+                BigDecimal precio = item.getPrecioPeso() != null ? item.getPrecioPeso() : BigDecimal.ZERO;
+                String precioStr = precio.compareTo(BigDecimal.ZERO) > 0
+                    ? String.format("%.2f", precio.doubleValue()).replace(",", ".")
+                    : "0.00";
+                modeloTablaItems.addRow(new Object[]{
+                    String.valueOf(item.getEls()),
+                    descripcion,
+                    "1",
+                    "Unidad",
+                    precioStr,
+                    "0.00",
+                    "21%"
+                });
+            }
+            recalcularTotales();
+        }
+    }
+
     private void limpiarTodo() {
         modeloTablaItems.setRowCount(0);
         txtImporteNeto.setText("");
         txtImporteIva.setText("");
         txtImporteTotal.setText("");
+        txtOtrosImpuestos.setText("0,00");
         lblTotal.setText("$ 0.00");
+        lblEstadoPago.setText("Estado: Pendiente de pago");
+        txtFecha.setText(LocalDate.now().format(FMT));
+        txtPeriodoDesde.setText(LocalDate.now().format(FMT));
+        txtPeriodoHasta.setText(LocalDate.now().format(FMT));
+        txtPeriodoVto.setText(LocalDate.now().format(FMT));
+        cmbRazonSocial.setSelectedItem(null);
+        cmbRazonSocial.setEditorText("");
+        cmbNroDoc.setSelectedItem(null);
+        cmbNroDoc.setEditorText("");
+        cmbCondicionIva.setSelectedIndex(0);
+        cmbTipoDoc.setSelectedIndex(0);
+        txtDomicilio.setText("");
+        txtEmail.setText("");
+        txtComprobanteAsoc.setText("");
         cardLayout.show(panelPrincipal, "datos");
     }
 
@@ -780,6 +1039,26 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
     private void abrirMigracion() {
         VentanaMigracion ventana = new VentanaMigracion();
+        ventana.setVisible(true);
+    }
+
+    private void abrirClientes() {
+        VentanaClientes ventana = new VentanaClientes();
+        ventana.setVisible(true);
+    }
+
+    private void abrirRemitos() {
+        VentanaRemitos ventana = new VentanaRemitos();
+        ventana.setVisible(true);
+    }
+
+    private void abrirRecibos() {
+        VentanaRecibos ventana = new VentanaRecibos();
+        ventana.setVisible(true);
+    }
+
+    private void abrirPagos() {
+        VentanaPagos ventana = new VentanaPagos();
         ventana.setVisible(true);
     }
 
