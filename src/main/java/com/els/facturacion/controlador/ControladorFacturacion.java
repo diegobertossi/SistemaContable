@@ -310,6 +310,12 @@ public class ControladorFacturacion {
             }
 
             List<ItemFacturaDTO> items = obtenerItems();
+            try {
+                comprobante.setImporteNeto(parseBigDecimal(view.getTxtImporteNeto().getText()));
+                comprobante.setImporteIva(parseBigDecimal(view.getTxtImporteIva().getText()));
+                comprobante.setImporteTotal(parseBigDecimal(view.getTxtImporteTotal().getText()));
+            } catch (Exception e) {
+            }
             RespuestaCAE respuesta = emitirFactura(comprobante, items);
 
             if (respuesta.isExitosa()) {
