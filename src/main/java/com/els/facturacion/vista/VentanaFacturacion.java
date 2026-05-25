@@ -18,6 +18,7 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -29,6 +30,8 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -83,7 +86,6 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private JComboBox<String> cmbAlicuotaIva;
     private JButton btnEliminarItem;
     private JButton btnAgregarItem;
-    private JButton btnCalcular;
     private JButton btnEmitir;
     private JButton btnLimpiar;
 
@@ -215,15 +217,15 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelSuperior.add(btnAnterior, BorderLayout.WEST);
         panelSuperior.add(lblTitulo, BorderLayout.CENTER);
 
-        String[] columnas = {"Sel.", "Codigo", "Producto/Servicio", "Cantidad", "U. Medida", "P. Unitario", "Subtotal", "IVA %"};
+        String[] columnas = {"ELS", "PRODUCTO/SERVICIO", "CANTIDAD", "U. MEDIDA", "P. UNITARIO", "SUBTOTAL", "SEL"};
         modeloTablaItems = new DefaultTableModel(columnas, 0) {
             @Override
             public Class<?> getColumnClass(int column) {
-                return column == 0 ? Boolean.class : String.class;
+                return column == 6 ? Boolean.class : String.class;
             }
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column != 6;
+                return column != 5;
             }
         };
         tablaItems = new JTable(modeloTablaItems);
@@ -233,14 +235,47 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         tablaItems.setRowHeight(22);
         tablaItems.setShowGrid(true);
         tablaItems.setGridColor(new Color(200, 210, 230));
-        tablaItems.getColumnModel().getColumn(0).setPreferredWidth(30);
-        tablaItems.getColumnModel().getColumn(1).setPreferredWidth(60);
-        tablaItems.getColumnModel().getColumn(2).setPreferredWidth(200);
-        tablaItems.getColumnModel().getColumn(3).setPreferredWidth(50);
-        tablaItems.getColumnModel().getColumn(4).setPreferredWidth(60);
+        tablaItems.getColumnModel().getColumn(0).setPreferredWidth(60);
+        tablaItems.getColumnModel().getColumn(1).setPreferredWidth(200);
+        tablaItems.getColumnModel().getColumn(2).setPreferredWidth(50);
+        tablaItems.getColumnModel().getColumn(3).setPreferredWidth(60);
+        tablaItems.getColumnModel().getColumn(4).setPreferredWidth(80);
         tablaItems.getColumnModel().getColumn(5).setPreferredWidth(80);
-        tablaItems.getColumnModel().getColumn(6).setPreferredWidth(80);
-        tablaItems.getColumnModel().getColumn(7).setPreferredWidth(50);
+        tablaItems.getColumnModel().getColumn(6).setPreferredWidth(40);
+
+        // Centered headers
+        DefaultTableCellRenderer headerRenderer = (DefaultTableCellRenderer) tablaItems.getTableHeader().getDefaultRenderer();
+        headerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+
+        // Center renderer for ELS, CANTIDAD, U. MEDIDA
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        tablaItems.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
+        tablaItems.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
+        tablaItems.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
+
+        // Currency renderer for P. UNITARIO and SUBTOTAL
+        DecimalFormat currencyFormat = new DecimalFormat("$ #,##0.00");
+        DefaultTableCellRenderer currencyRenderer = new DefaultTableCellRenderer() {
+            @Override
+            protected void setValue(Object value) {
+                if (value != null) {
+                    String text = value.toString().trim();
+                    if (!text.isEmpty()) {
+                        try {
+                            String clean = text.replace("$", "").replace(".", "").replace(",", ".");
+                            BigDecimal num = new BigDecimal(clean);
+                            setText(currencyFormat.format(num));
+                            return;
+                        } catch (Exception ignored) {}
+                    }
+                }
+                setText(value != null ? value.toString() : "");
+            }
+        };
+        currencyRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        tablaItems.getColumnModel().getColumn(4).setCellRenderer(currencyRenderer);
+        tablaItems.getColumnModel().getColumn(5).setCellRenderer(currencyRenderer);
 
         JScrollPane scrollTabla = new JScrollPane(tablaItems);
 
@@ -252,20 +287,22 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         cmbAlicuotaIva.setPreferredSize(new Dimension(80, 24));
         cmbAlicuotaIva.setPrototypeDisplayValue("21%");
 
-        JPanel panelSur = new JPanel(new BorderLayout(5, 3));
+        JPanel panelSur = new JPanel(new GridBagLayout());
         panelSur.setBackground(COLOR_FONDO);
+        Insets panelIns = new Insets(2, 5, 2, 5);
 
-        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
-        panelBotones.setBackground(COLOR_FONDO);
-        panelBotones.add(new JLabel("IVA:"));
-        panelBotones.add(cmbAlicuotaIva);
-        panelBotones.add(btnAgregarItem);
-        panelBotones.add(btnEliminarItem);
+        // Row 0 - Items management + Totals
+        JPanel panelItems = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
+        panelItems.setBackground(COLOR_FONDO);
+        panelItems.add(new JLabel("IVA:"));
+        panelItems.add(cmbAlicuotaIva);
+        panelItems.add(btnAgregarItem);
+        panelItems.add(btnEliminarItem);
 
         JPanel panelTotales = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
         panelTotales.setBackground(COLOR_FONDO);
 
-        lblTotal = new JLabel("$ 0.00");
+        lblTotal = new JLabel("$ 0,00");
         lblTotal.setFont(new Font("Cambria", Font.BOLD, 16));
         lblTotal.setForeground(new Color(0, 100, 0));
 
@@ -299,24 +336,24 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelTotales.add(txtOtrosImpuestos);
         panelTotales.add(new JLabel("Total:"));
         panelTotales.add(txtImporteTotal);
-        btnCalcular = new JButton("CALCULAR");
-        estilizarBoton(btnCalcular);
-        panelTotales.add(btnCalcular);
+        panelSur.add(panelItems, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, panelIns, 0, 0));
+        panelSur.add(panelTotales, new GridBagConstraints(1, 0, 1, 1, 1, 0, GridBagConstraints.EAST, GridBagConstraints.HORIZONTAL, panelIns, 0, 0));
 
-        JPanel panelEmitir = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 2));
+        // Row 1 - Estado + Emitir + Limpiar
+        JPanel panelEmitir = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 4));
         panelEmitir.setBackground(COLOR_FONDO);
         lblEstadoPago = new JLabel("Estado: Pendiente de pago");
         lblEstadoPago.setFont(FUENTE_BOTON);
         lblEstadoPago.setForeground(COLOR_TEXTO);
 
         btnEmitir = new JButton("GUARDAR / EMITIR FACTURA");
-        btnEmitir.setFont(new Font("Cambria", Font.BOLD, 12));
-        btnEmitir.setBackground(new Color(70, 160, 70));
+        btnEmitir.setFont(new Font("Cambria", Font.BOLD, 13));
+        btnEmitir.setBackground(new Color(50, 140, 50));
         btnEmitir.setForeground(Color.WHITE);
         btnEmitir.setFocusPainted(false);
         btnEmitir.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(50, 130, 50), 1),
-            BorderFactory.createEmptyBorder(4, 12, 4, 12)
+            BorderFactory.createLineBorder(new Color(30, 110, 30), 2),
+            BorderFactory.createEmptyBorder(8, 20, 8, 20)
         ));
         btnEmitir.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnLimpiar = new JButton("LIMPIAR");
@@ -326,9 +363,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelEmitir.add(btnEmitir);
         panelEmitir.add(btnLimpiar);
 
-        panelSur.add(panelBotones, BorderLayout.WEST);
-        panelSur.add(panelTotales, BorderLayout.CENTER);
-        panelSur.add(panelEmitir, BorderLayout.SOUTH);
+        panelSur.add(panelEmitir, new GridBagConstraints(0, 1, 2, 1, 1, 0, GridBagConstraints.EAST, GridBagConstraints.HORIZONTAL, panelIns, 0, 0));
 
         panelOperacion.add(panelSuperior, BorderLayout.NORTH);
         panelOperacion.add(scrollTabla, BorderLayout.CENTER);
@@ -608,7 +643,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     public JButton getBtnImportarRemito() { return btnImportarRemito; }
     public JButton getBtnAgregarItem() { return btnAgregarItem; }
     public JButton getBtnEliminarItem() { return btnEliminarItem; }
-    public JButton getBtnCalcular() { return btnCalcular; }
+    public JComboBox<String> getCmbAlicuotaIva() { return cmbAlicuotaIva; }
     public JButton getBtnEmitir() { return btnEmitir; }
     public JButton getBtnLimpiar() { return btnLimpiar; }
     public JMenuItem getItemSalir() { return itemSalir; }

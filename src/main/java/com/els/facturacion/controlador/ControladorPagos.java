@@ -96,6 +96,22 @@ public class ControladorPagos {
         return todosPagados;
     }
 
+    public void pagarFacturaCompleta(int comprobanteId, String formaPago) {
+        BigDecimal saldo = getSaldoPendiente(comprobanteId);
+        if (saldo.compareTo(BigDecimal.ZERO) <= 0) return;
+
+        registrarPago(comprobanteId, saldo, formaPago, null);
+
+        List<ItemFacturaDTO> items = getItemsFactura(comprobanteId);
+        for (ItemFacturaDTO item : items) {
+            if (!"pagado".equals(item.getEstadoPago())) {
+                facturaItemDAO.actualizarEstadoPagoItem(item.getId(), "pagado");
+            }
+        }
+
+        setEstadoFactura(comprobanteId, "pagada_total");
+    }
+
     public void setEstadoFactura(int comprobanteId, String estado) {
         String sql = "UPDATE comprobantes SET estado_pago = ? WHERE id = ?";
         try (java.sql.Connection conn = com.els.facturacion.conexion.ConexionFacturacion.getInstancia().getConexion();

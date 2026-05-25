@@ -49,6 +49,7 @@ public class ControladorFacturacion {
     private ControladorClientes controladorClientes;
     private ControladorReparsoft controladorReparsoft;
     private boolean modoPrueba;
+    private boolean recalculando;
 
     public ControladorFacturacion() {
         this(null);
@@ -62,6 +63,7 @@ public class ControladorFacturacion {
         this.controladorClientes = new ControladorClientes();
         this.controladorReparsoft = new ControladorReparsoft();
         this.modoPrueba = false;
+        this.recalculando = false;
     }
 
     // ===================== INIT =====================
@@ -88,7 +90,17 @@ public class ControladorFacturacion {
         // Items table
         view.getBtnAgregarItem().addActionListener(e -> agregarItem());
         view.getBtnEliminarItem().addActionListener(e -> eliminarItem());
-        view.getBtnCalcular().addActionListener(e -> recalcularTotales());
+
+        // Auto-recalculate on cell edits (checkbox, cantidad, precio)
+        view.getModeloItems().addTableModelListener(e -> {
+            int col = e.getColumn();
+            if ((col == 2 || col == 4 || col == 6) && !recalculando) {
+                recalcularTotales();
+            }
+        });
+
+        // Auto-recalculate on IVA combobox change
+        view.getCmbAlicuotaIva().addActionListener(e -> recalcularTotales());
 
         // Autocomplete
         JTextField editorRS = (JTextField) view.getCmbRazonSocial().getEditor().getEditorComponent();
@@ -247,10 +259,10 @@ public class ControladorFacturacion {
                 String descripcion = item.getDescripcion();
                 BigDecimal precio = item.getPrecioPeso() != null ? item.getPrecioPeso() : BigDecimal.ZERO;
                 String precioStr = precio.compareTo(BigDecimal.ZERO) > 0
-                    ? String.format("%.2f", precio.doubleValue()).replace(",", ".")
-                    : "0.00";
+                    ? DF.format(precio)
+                    : "0,00";
                 String codigo = String.valueOf(item.getEls());
-                model.addRow(new Object[]{true, codigo, descripcion, "1", "Unidad", precioStr, "0,00", "21%"});
+                model.addRow(new Object[]{codigo, descripcion, "1", "Unidad", precioStr, "0,00", true});
             }
         }
         recalcularTotales();
@@ -266,7 +278,7 @@ public class ControladorFacturacion {
         }
         boolean algunSeleccionado = false;
         for (int i = 0; i < model.getRowCount(); i++) {
-            if (Boolean.TRUE.equals(model.getValueAt(i, 0))) {
+            if (Boolean.TRUE.equals(model.getValueAt(i, 6))) {
                 algunSeleccionado = true;
                 break;
             }
@@ -445,7 +457,7 @@ public class ControladorFacturacion {
     // ===================== ITEMS TABLE =====================
 
     private void agregarItem() {
-        view.getModeloItems().addRow(new Object[]{true, "", "", "1", "Unidad", "0,00", "0,00", "21%"});
+        view.getModeloItems().addRow(new Object[]{"", "", "1", "Unidad", "0,00", "0,00", true});
     }
 
     private void eliminarItem() {
@@ -457,28 +469,29 @@ public class ControladorFacturacion {
     }
 
     private void recalcularTotales() {
+        recalculando = true;
         DefaultTableModel model = view.getModeloItems();
         BigDecimal totalNeto = BigDecimal.ZERO;
-        BigDecimal ivaTotal = BigDecimal.ZERO;
         for (int i = 0; i < model.getRowCount(); i++) {
-            if (!Boolean.TRUE.equals(model.getValueAt(i, 0))) continue;
+            if (!Boolean.TRUE.equals(model.getValueAt(i, 6))) continue;
             try {
-                Object cantObj = model.getValueAt(i, 3);
-                Object precioObj = model.getValueAt(i, 5);
+                Object cantObj = model.getValueAt(i, 2);
+                Object precioObj = model.getValueAt(i, 4);
                 BigDecimal cantidad = parseBigDecimal(cantObj.toString());
                 BigDecimal precio = parseBigDecimal(precioObj.toString().replace("$", "").trim());
                 BigDecimal subtotal = redondear(cantidad.multiply(precio));
-                model.setValueAt(DF.format(subtotal), i, 6);
+                model.setValueAt(DF.format(subtotal), i, 5);
                 totalNeto = totalNeto.add(subtotal);
-
-                String ivaStr = model.getValueAt(i, 7) != null ? model.getValueAt(i, 7).toString() : "21%";
-                BigDecimal alicuota = parseBigDecimal(ivaStr.replace("%", ""));
-                BigDecimal ivaItem = redondear(subtotal.multiply(alicuota).divide(new BigDecimal("100")));
-                ivaTotal = ivaTotal.add(ivaItem);
             } catch (Exception e) {
-                model.setValueAt("0,00", i, 6);
+                model.setValueAt("0,00", i, 5);
             }
         }
+        BigDecimal alicuota = BigDecimal.ZERO;
+        try {
+            String ivaStr = view.getCmbAlicuotaIva().getSelectedItem().toString().replace("%", "");
+            alicuota = new BigDecimal(ivaStr);
+        } catch (Exception ignored) {}
+        BigDecimal ivaTotal = redondear(totalNeto.multiply(alicuota).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP));
         BigDecimal otros = BigDecimal.ZERO;
         try {
             otros = parseBigDecimal(view.getTxtOtrosImpuestos().getText());
@@ -488,6 +501,7 @@ public class ControladorFacturacion {
         view.getTxtImporteIva().setText(DF.format(ivaTotal));
         view.getTxtImporteTotal().setText(DF.format(totalConIva));
         view.getLblTotal().setText("$ " + DF.format(totalConIva));
+        recalculando = false;
     }
 
     private String obtenerDescripcionItems() {
@@ -495,7 +509,7 @@ public class ControladorFacturacion {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < model.getRowCount(); i++) {
             if (sb.length() > 0) sb.append("; ");
-            sb.append(model.getValueAt(i, 1)).append(" ").append(model.getValueAt(i, 2));
+            sb.append(model.getValueAt(i, 0)).append(" ").append(model.getValueAt(i, 1));
         }
         return sb.toString();
     }
@@ -503,18 +517,22 @@ public class ControladorFacturacion {
     private List<ItemFacturaDTO> obtenerItems() {
         DefaultTableModel model = view.getModeloItems();
         List<ItemFacturaDTO> items = new ArrayList<>();
+        BigDecimal alicuotaGlobal = BigDecimal.ZERO;
+        try {
+            String ivaStr = view.getCmbAlicuotaIva().getSelectedItem().toString().replace("%", "");
+            alicuotaGlobal = new BigDecimal(ivaStr);
+        } catch (Exception ignored) {}
         for (int i = 0; i < model.getRowCount(); i++) {
-            if (!Boolean.TRUE.equals(model.getValueAt(i, 0))) continue;
+            if (!Boolean.TRUE.equals(model.getValueAt(i, 6))) continue;
             try {
-                String codigo = (String) model.getValueAt(i, 1);
-                String descripcion = (String) model.getValueAt(i, 2);
-                BigDecimal cantidad = parseBigDecimal(model.getValueAt(i, 3).toString());
-                String unidad = (String) model.getValueAt(i, 4);
-                BigDecimal precio = parseBigDecimal(model.getValueAt(i, 5).toString());
+                String codigo = (String) model.getValueAt(i, 0);
+                String descripcion = (String) model.getValueAt(i, 1);
+                BigDecimal cantidad = parseBigDecimal(model.getValueAt(i, 2).toString());
+                String unidad = (String) model.getValueAt(i, 3);
+                BigDecimal precio = parseBigDecimal(model.getValueAt(i, 4).toString().replace("$", "").trim());
                 BigDecimal subtotal = redondear(cantidad.multiply(precio));
                 ItemFacturaDTO item = new ItemFacturaDTO(codigo, descripcion, cantidad, unidad, precio, subtotal);
-                String ivaStr = model.getValueAt(i, 7) != null ? model.getValueAt(i, 7).toString() : "21%";
-                item.setAlicuotaIva(new BigDecimal(ivaStr.replace("%", "")));
+                item.setAlicuotaIva(alicuotaGlobal);
                 item.setElsReferencia(codigo.matches("\\d+") ? Integer.parseInt(codigo) : null);
                 items.add(item);
             } catch (Exception e) {
@@ -530,7 +548,7 @@ public class ControladorFacturacion {
         view.getTxtImporteIva().setText("");
         view.getTxtImporteTotal().setText("");
         view.getTxtOtrosImpuestos().setText("0,00");
-        view.getLblTotal().setText("$ 0.00");
+        view.getLblTotal().setText("$ 0,00");
         view.getLblEstadoPago().setText("Estado: Pendiente de pago");
     }
 
