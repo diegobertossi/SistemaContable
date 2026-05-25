@@ -323,9 +323,9 @@ public class ControladorFacturacion {
 
             List<ItemFacturaDTO> items = obtenerItems();
             try {
-                comprobante.setImporteNeto(parseBigDecimal(view.getTxtImporteNeto().getText()));
-                comprobante.setImporteIva(parseBigDecimal(view.getTxtImporteIva().getText()));
-                comprobante.setImporteTotal(parseBigDecimal(view.getTxtImporteTotal().getText()));
+                comprobante.setImporteNeto(parseBigDecimal(view.getTxtImporteNeto().getText().replace("$", "").trim()));
+                comprobante.setImporteIva(parseBigDecimal(view.getTxtImporteIva().getText().replace("$", "").trim()));
+                comprobante.setImporteTotal(parseBigDecimal(view.getTxtImporteTotal().getText().replace("$", "").trim()));
             } catch (Exception e) {
             }
             RespuestaCAE respuesta = emitirFactura(comprobante, items);
@@ -497,9 +497,9 @@ public class ControladorFacturacion {
             otros = parseBigDecimal(view.getTxtOtrosImpuestos().getText());
         } catch (Exception e) {}
         BigDecimal totalConIva = totalNeto.add(ivaTotal).add(otros);
-        view.getTxtImporteNeto().setText(DF.format(totalNeto));
-        view.getTxtImporteIva().setText(DF.format(ivaTotal));
-        view.getTxtImporteTotal().setText(DF.format(totalConIva));
+        view.getTxtImporteNeto().setText("$ " + DF.format(totalNeto));
+        view.getTxtImporteIva().setText("$ " + DF.format(ivaTotal));
+        view.getTxtImporteTotal().setText("$ " + DF.format(totalConIva));
         view.getLblTotal().setText("$ " + DF.format(totalConIva));
         recalculando = false;
     }

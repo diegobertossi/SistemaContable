@@ -9,6 +9,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -19,6 +20,10 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -58,6 +63,7 @@ public class VentanaPagos extends javax.swing.JFrame {
 
     private JLabel lblSaldoPendiente;
     private JLabel lblInfoFactura;
+    private JLabel lblTotalFactura;
     private JTextField txtMontoPago;
     private JComboBox<String> cmbFormaPago;
     private JButton btnPagarItem;
@@ -71,6 +77,8 @@ public class VentanaPagos extends javax.swing.JFrame {
     private List<Integer> pagosIds;
     private List<Integer> facturaIds;
     private List<Integer> itemIds;
+    private List<String> reciboOriginalNums;
+    private boolean txtMontoPagoUpdating = false;
 
     public VentanaPagos() {
         controlador = new ControladorPagos();
@@ -92,27 +100,67 @@ public class VentanaPagos extends javax.swing.JFrame {
 
         btnPagarItem = new JButton("PAGAR ITEM");
         estilizarBoton(btnPagarItem);
-        btnPagarItem.addActionListener(e -> pagarItemSeleccionado());
+        btnPagarItem.setPreferredSize(new Dimension(120, 28));
+        btnPagarItem.addActionListener(e -> {
+            if (comprobanteSeleccionadoId < 0) { JOptionPane.showMessageDialog(this, "Seleccione una factura", "Error", JOptionPane.ERROR_MESSAGE); return; }
+            int itemRow = tablaItems.getSelectedRow();
+            if (itemRow < 0) { JOptionPane.showMessageDialog(this, "Seleccione un item de la factura", "Error", JOptionPane.ERROR_MESSAGE); return; }
+            if ("pagado".equals(modeloTablaItems.getValueAt(itemRow, 5))) { JOptionPane.showMessageDialog(this, "Este item ya fue pagado", "Informaci\u00f3n", JOptionPane.INFORMATION_MESSAGE); return; }
+            if (JOptionPane.showConfirmDialog(this, "\u00bfEst\u00e1 seguro de pagar este item?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                String fp = mostrarSelectorMedioPago();
+                if (fp != null) { cmbFormaPago.setSelectedItem(fp); pagarItemSeleccionado(); }
+            }
+        });
 
         btnPagarCompleta = new JButton("PAGAR FACTURA");
         estilizarBoton(btnPagarCompleta);
-        btnPagarCompleta.addActionListener(e -> pagarFacturaCompleta());
+        btnPagarCompleta.setPreferredSize(new Dimension(135, 28));
+        btnPagarCompleta.addActionListener(e -> {
+            if (comprobanteSeleccionadoId < 0) { JOptionPane.showMessageDialog(this, "Seleccione una factura", "Error", JOptionPane.ERROR_MESSAGE); return; }
+            BigDecimal saldo = controlador.getSaldoPendiente(comprobanteSeleccionadoId);
+            if (saldo.compareTo(BigDecimal.ZERO) <= 0) { JOptionPane.showMessageDialog(this, "La factura ya est\u00e1 totalmente pagada", "Informaci\u00f3n", JOptionPane.INFORMATION_MESSAGE); return; }
+            if (JOptionPane.showConfirmDialog(this, "\u00bfEst\u00e1 seguro de pagar toda la factura?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                String fp = mostrarSelectorMedioPago();
+                if (fp != null) { cmbFormaPago.setSelectedItem(fp); pagarFacturaCompleta(); }
+            }
+        });
 
-        btnPagar = new JButton("REGISTRAR PAGO");
+        btnPagar = new JButton("PAGAR");
         estilizarBoton(btnPagar);
-        btnPagar.addActionListener(e -> registrarPago());
+        btnPagar.setPreferredSize(new Dimension(70, 28));
+        btnPagar.addActionListener(e -> {
+            if (comprobanteSeleccionadoId < 0) { JOptionPane.showMessageDialog(this, "Seleccione una factura", "Error", JOptionPane.ERROR_MESSAGE); return; }
+            String montoStr = txtMontoPago.getText().trim().replace("$", "").trim();
+            if (montoStr.isEmpty()) { JOptionPane.showMessageDialog(this, "Ingrese un monto", "Error", JOptionPane.ERROR_MESSAGE); return; }
+            BigDecimal monto;
+            try { monto = new BigDecimal(montoStr.replace(".", "").replace(",", ".")); }
+            catch (NumberFormatException ex) { JOptionPane.showMessageDialog(this, "Monto inv\u00e1lido", "Error", JOptionPane.ERROR_MESSAGE); return; }
+            if (monto.compareTo(BigDecimal.ZERO) <= 0) { JOptionPane.showMessageDialog(this, "El monto debe ser mayor a cero", "Error", JOptionPane.ERROR_MESSAGE); return; }
+            BigDecimal saldo = controlador.getSaldoPendiente(comprobanteSeleccionadoId);
+            if (monto.compareTo(saldo) > 0) { JOptionPane.showMessageDialog(this, "El monto ($ " + DF.format(monto) + ") supera el saldo pendiente ($ " + DF.format(saldo) + ")", "Error", JOptionPane.ERROR_MESSAGE); return; }
+            if (JOptionPane.showConfirmDialog(this, "\u00bfEst\u00e1 seguro de registrar este pago por $ " + DF.format(monto) + "?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                String fp = mostrarSelectorMedioPago();
+                if (fp != null) { cmbFormaPago.setSelectedItem(fp); registrarPago(); }
+            }
+        });
 
         btnRefresh = new JButton("REFRESCAR");
         estilizarBoton(btnRefresh);
+        btnRefresh.setPreferredSize(new Dimension(110, 28));
         btnRefresh.addActionListener(e -> cargarFacturas());
 
         btnVerRecibo = new JButton("VER RECIBO");
         estilizarBoton(btnVerRecibo);
+        btnVerRecibo.setPreferredSize(new Dimension(110, 28));
         btnVerRecibo.addActionListener(e -> verReciboPagoSeleccionado());
 
         btnGenerarRecibo = new JButton("GENERAR RECIBO");
         estilizarBoton(btnGenerarRecibo);
-        btnGenerarRecibo.addActionListener(e -> generarReciboDesdePago());
+        btnGenerarRecibo.setPreferredSize(new Dimension(140, 28));
+        btnGenerarRecibo.addActionListener(e -> {
+            if (JOptionPane.showConfirmDialog(this, "\u00bfEst\u00e1 seguro de generar el recibo?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION)
+                generarReciboDesdePago();
+        });
 
         JPanel panelIzq = crearPanelFacturas();
         JPanel panelDer = crearPanelDetalle();
@@ -121,7 +169,7 @@ public class VentanaPagos extends javax.swing.JFrame {
         splitHorizontal.setLeftComponent(panelIzq);
         splitHorizontal.setRightComponent(panelDer);
 
-        add(splitHorizontal);
+        getContentPane().add(splitHorizontal);
         javax.swing.SwingUtilities.invokeLater(() -> splitHorizontal.setDividerLocation(0.45));
     }
 
@@ -206,10 +254,16 @@ public class VentanaPagos extends javax.swing.JFrame {
         panel.add(Box.createVerticalStrut(4));
 
         lblInfoFactura = new JLabel("Seleccione una factura de la lista");
-        lblInfoFactura.setFont(new Font("Cambria", Font.BOLD, 11));
+        lblInfoFactura.setFont(new Font("Cambria", Font.BOLD, 15));
         lblInfoFactura.setForeground(COLOR_TEXTO);
         lblInfoFactura.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(lblInfoFactura);
+
+        lblTotalFactura = new JLabel("");
+        lblTotalFactura.setFont(new Font("Cambria", Font.BOLD, 15));
+        lblTotalFactura.setForeground(COLOR_TEXTO);
+        lblTotalFactura.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(lblTotalFactura);
 
         return panel;
     }
@@ -241,7 +295,7 @@ public class VentanaPagos extends javax.swing.JFrame {
             new Font("Cambria", Font.BOLD, 11), COLOR_TEXTO
         ));
 
-        String[] colItems = {"C\u00f3digo", "Descripci\u00f3n", "Cant.", "P. Unitario", "Subtotal", "Estado"};
+        String[] colItems = {"ELS", "Descripci\u00f3n", "Cant.", "P. Unitario", "Subtotal", "Estado"};
         modeloTablaItems = new DefaultTableModel(colItems, 0) {
             @Override
             public boolean isCellEditable(int row, int col) { return false; }
@@ -259,21 +313,71 @@ public class VentanaPagos extends javax.swing.JFrame {
         tablaItems.getColumnModel().getColumn(4).setPreferredWidth(75);
         tablaItems.getColumnModel().getColumn(5).setPreferredWidth(55);
 
-        DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
-        rightRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
-        tablaItems.getColumnModel().getColumn(3).setCellRenderer(rightRenderer);
-        tablaItems.getColumnModel().getColumn(4).setCellRenderer(rightRenderer);
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        for (int c = 0; c < tablaItems.getColumnCount(); c++) {
+            if (c != 1) tablaItems.getColumnModel().getColumn(c).setCellRenderer(centerRenderer);
+        }
 
         panel.add(new JScrollPane(tablaItems), BorderLayout.CENTER);
 
-        txtMontoPago = new JTextField(8);
-        txtMontoPago.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtMontoPago = new JTextField();
+        txtMontoPago.setFont(new Font("Cambria", Font.BOLD, 14));
         txtMontoPago.setHorizontalAlignment(JTextField.RIGHT);
-        txtMontoPago.setPreferredSize(new Dimension(80, 22));
+        txtMontoPago.setPreferredSize(new Dimension(130, 28));
+        txtMontoPago.setMinimumSize(new Dimension(130, 28));
+
+        ((AbstractDocument) txtMontoPago.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void insertString(FilterBypass fb, int offset, String text, AttributeSet attr) throws BadLocationException {
+                if (txtMontoPagoUpdating || esNumeroValido(fb, offset, text)) {
+                    super.insertString(fb, offset, text, attr);
+                }
+            }
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
+                if (txtMontoPagoUpdating || esNumeroValido(fb, offset, text)) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+            @Override
+            public void remove(FilterBypass fb, int offset, int length) throws BadLocationException {
+                super.remove(fb, offset, length);
+            }
+            private boolean esNumeroValido(FilterBypass fb, int offset, String text) throws BadLocationException {
+                if (text == null || text.isEmpty()) return true;
+                String curText = fb.getDocument().getText(0, fb.getDocument().getLength());
+                StringBuilder sb = new StringBuilder(curText);
+                sb.insert(offset, text);
+                String nuevo = sb.toString();
+                if (nuevo.isEmpty()) return true;
+                return nuevo.matches("\\d*(,\\d{0,2})?");
+            }
+        });
+
+        txtMontoPago.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e) {
+                txtMontoPago.selectAll();
+            }
+        });
+
+        txtMontoPago.addActionListener(e -> {
+            String raw = txtMontoPago.getText().trim().replace("$", "").trim();
+            if (!raw.isEmpty()) {
+                try {
+                    String clean = raw.replace(".", "").replace(",", ".");
+                    BigDecimal val = new BigDecimal(clean);
+                    txtMontoPagoUpdating = true;
+                    txtMontoPago.setText("$ " + DF.format(val));
+                    txtMontoPagoUpdating = false;
+                } catch (Exception ignored) {}
+            }
+        });
 
         cmbFormaPago = new JComboBox<>(new String[]{"Efectivo", "Transferencia", "Cheque", "Tarjeta", "Mercado Pago", "Otra"});
         cmbFormaPago.setFont(FUENTE_BOTON);
-        cmbFormaPago.setPreferredSize(new Dimension(100, 22));
+        cmbFormaPago.setPreferredSize(new Dimension(90, 28));
 
         JPanel box1 = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 6));
         box1.setBackground(COLOR_FONDO);
@@ -292,7 +396,6 @@ public class VentanaPagos extends javax.swing.JFrame {
         ));
         box2.add(new JLabel("Importe:"));
         box2.add(txtMontoPago);
-        box2.add(cmbFormaPago);
         box2.add(btnPagar);
 
         JPanel panelAcciones = new JPanel();
@@ -355,7 +458,7 @@ public class VentanaPagos extends javax.swing.JFrame {
 
         panel.add(new JScrollPane(tablaPagos), BorderLayout.CENTER);
 
-        JPanel panelAcciones = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        JPanel panelAcciones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         panelAcciones.setBackground(COLOR_FONDO);
         panelAcciones.add(btnGenerarRecibo);
         panelAcciones.add(btnVerRecibo);
@@ -386,6 +489,7 @@ public class VentanaPagos extends javax.swing.JFrame {
         }
         comprobanteSeleccionadoId = -1;
         lblInfoFactura.setText("Seleccione una factura de la lista");
+        lblTotalFactura.setText("");
         lblSaldoPendiente.setText("Saldo Pendiente: $ 0,00");
         modeloTablaItems.setRowCount(0);
     }
@@ -401,16 +505,22 @@ public class VentanaPagos extends javax.swing.JFrame {
     private void cargarDetalleFactura(int facturaId) {
         ComprobanteDTO comp = controlador.buscarFactura(facturaId);
         if (comp != null) {
-            String info = "Factura: " + comp.getTipoComprobanteStr()
-                + " " + String.format("%04d-%08d", comp.getPuntoVenta(), comp.getNumero())
-                + "  |  Cliente: " + comp.getRazonSocialRec()
-                + "  |  Total: $ " + DF.format(comp.getImporteTotal());
-            lblInfoFactura.setText(info);
+            String tipoNum = comp.getTipoComprobanteStr()
+                + " " + String.format("%04d-%08d", comp.getPuntoVenta(), comp.getNumero());
+            String cliente = "Cliente: " + comp.getRazonSocialRec();
+            String total = "Total: $ " + DF.format(comp.getImporteTotal());
+            lblInfoFactura.setText(tipoNum + "  |  " + cliente);
+            lblTotalFactura.setText(total);
             BigDecimal saldo = controlador.getSaldoPendiente(facturaId);
             lblSaldoPendiente.setText("Saldo Pendiente: $ " + DF.format(saldo));
+            txtMontoPagoUpdating = true;
+            txtMontoPago.setText("$ " + DF.format(saldo));
+            txtMontoPagoUpdating = false;
         } else {
-            lblInfoFactura.setText("Factura #" + facturaId + " (eliminada)");
+            lblInfoFactura.setText("#" + facturaId + " (eliminada)");
+            lblTotalFactura.setText("");
             lblSaldoPendiente.setText("Saldo Pendiente: $ 0,00");
+            txtMontoPago.setText("");
         }
 
         List<ItemFacturaDTO> items = controlador.getItemsFactura(facturaId);
@@ -419,11 +529,12 @@ public class VentanaPagos extends javax.swing.JFrame {
         for (int i = items.size() - 1; i >= 0; i--) {
             ItemFacturaDTO item = items.get(i);
             itemIds.add(item.getId());
+            String cantStr = item.getCantidad() != null ? String.valueOf(item.getCantidad().intValue()) : "";
             modeloTablaItems.addRow(new Object[]{
                 item.getCodigo(), item.getDescripcion(),
-                item.getCantidad(),
-                item.getPrecioUnitario() != null ? DF.format(item.getPrecioUnitario()) : "",
-                item.getSubtotal() != null ? DF.format(item.getSubtotal()) : "",
+                cantStr,
+                item.getPrecioUnitario() != null ? "$ " + DF.format(item.getPrecioUnitario()) : "",
+                item.getSubtotal() != null ? "$ " + DF.format(item.getSubtotal()) : "",
                 item.getEstadoPago() != null ? item.getEstadoPago() : ""
             });
         }
@@ -434,8 +545,10 @@ public class VentanaPagos extends javax.swing.JFrame {
         List<FacturaPagoDTO> pagos = controlador.getTodosLosPagos();
         modeloTablaPagos.setRowCount(0);
         pagosIds = new ArrayList<>();
+        reciboOriginalNums = new ArrayList<>();
         for (FacturaPagoDTO p : pagos) {
             pagosIds.add(p.getId());
+            reciboOriginalNums.add(p.getReciboNumero());
             String compStr = p.getComprobanteStr();
             if (compStr != null && compStr.contains(" ")) {
                 compStr = compStr.substring(compStr.indexOf(' ') + 1).trim();
@@ -460,14 +573,14 @@ public class VentanaPagos extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Seleccione una factura", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        String montoStr = txtMontoPago.getText().trim();
+        String montoStr = txtMontoPago.getText().trim().replace("$", "").trim();
         if (montoStr.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Ingrese un monto", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
         BigDecimal monto;
         try {
-            monto = new BigDecimal(montoStr.replace(",", "."));
+            monto = new BigDecimal(montoStr.replace(".", "").replace(",", "."));
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(this, "Monto inv\u00e1lido", "Error", JOptionPane.ERROR_MESSAGE);
             return;
@@ -515,7 +628,7 @@ public class VentanaPagos extends javax.swing.JFrame {
         if (subtotalObj == null) return;
         BigDecimal monto;
         try {
-            monto = new BigDecimal(subtotalObj.toString().replace(",", "").replace("$", "").trim());
+            monto = new BigDecimal(subtotalObj.toString().replace("$", "").trim().replace(".", "").replace(",", "."));
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(this, "Error al obtener el monto del item", "Error", JOptionPane.ERROR_MESSAGE);
             return;
@@ -585,12 +698,11 @@ public class VentanaPagos extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Seleccione un pago del historial", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        Object reciboObj = modeloTablaPagos.getValueAt(row, 4);
-        if (reciboObj == null || reciboObj.toString().isEmpty()) {
+        String reciboNro = reciboOriginalNums != null && row < reciboOriginalNums.size() ? reciboOriginalNums.get(row) : null;
+        if (reciboNro == null || reciboNro.isEmpty()) {
             JOptionPane.showMessageDialog(this, "El pago seleccionado no tiene un recibo asociado", "Informaci\u00f3n", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        String reciboNro = reciboObj.toString();
         String ruta = com.els.facturacion.pdf.GestorReciboPDF.getRutaPDF(reciboNro);
         if (ruta == null) {
             JOptionPane.showMessageDialog(this, "No se pudo determinar la ubicaci\u00f3n del PDF", "Error", JOptionPane.ERROR_MESSAGE);
@@ -609,6 +721,20 @@ public class VentanaPagos extends javax.swing.JFrame {
     }
 
     private void recargarYSeleccionarFactura(int facturaId) {
+        BigDecimal saldo = controlador.getSaldoPendiente(facturaId);
+        if (saldo.compareTo(BigDecimal.ZERO) <= 0) {
+            cargarFacturas();
+            cargarHistorialCompleto();
+            comprobanteSeleccionadoId = -1;
+            modeloTablaItems.setRowCount(0);
+            txtMontoPagoUpdating = true;
+            txtMontoPago.setText("");
+            txtMontoPagoUpdating = false;
+            lblInfoFactura.setText("Seleccione una factura de la lista");
+            lblTotalFactura.setText("");
+            lblSaldoPendiente.setText("Saldo Pendiente: $ 0,00");
+            return;
+        }
         cargarFacturas();
         cargarHistorialCompleto();
         boolean reencontrada = false;
@@ -631,5 +757,52 @@ public class VentanaPagos extends javax.swing.JFrame {
         btn.setBackground(COLOR_BOTON);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setFocusPainted(false);
+    }
+
+    private String mostrarSelectorMedioPago() {
+        JDialog dialog = new JDialog(this, "Medio de pago", true);
+        dialog.getContentPane().setBackground(COLOR_FONDO);
+
+        JComboBox<String> combo = new JComboBox<>(new String[]{"Efectivo", "Transferencia", "Cheque", "Tarjeta", "Mercado Pago", "Otra"});
+        combo.setFont(FUENTE_BOTON);
+        combo.setBackground(Color.WHITE);
+
+        JLabel lbl = new JLabel("Seleccione el medio de pago:");
+        lbl.setFont(new Font("Cambria", Font.BOLD, 13));
+        lbl.setForeground(COLOR_TEXTO);
+
+        JButton btnOk = new JButton("ACEPTAR");
+        estilizarBoton(btnOk);
+        JButton btnCancel = new JButton("CANCELAR");
+        estilizarBoton(btnCancel);
+
+        JPanel content = new JPanel(new BorderLayout(8, 12));
+        content.setBackground(COLOR_FONDO);
+        content.setBorder(BorderFactory.createEmptyBorder(14, 16, 12, 16));
+        content.add(lbl, BorderLayout.NORTH);
+        content.add(combo, BorderLayout.CENTER);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
+        btnPanel.setBackground(COLOR_FONDO);
+        btnPanel.add(btnOk);
+        btnPanel.add(btnCancel);
+        content.add(btnPanel, BorderLayout.SOUTH);
+
+        dialog.getContentPane().add(content);
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        dialog.setResizable(false);
+
+        final String[] result = new String[1];
+
+        btnOk.addActionListener(e -> {
+            result[0] = (String) combo.getSelectedItem();
+            dialog.dispose();
+        });
+
+        btnCancel.addActionListener(e -> dialog.dispose());
+
+        dialog.setVisible(true);
+        return result[0];
     }
 }
