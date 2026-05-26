@@ -48,7 +48,10 @@ public class GestorPDF {
         TIPO_FILENAME.put(2, "00002");
         TIPO_FILENAME.put(7, "00007");
         TIPO_FILENAME.put(12, "00012");
+        TIPO_FILENAME.put(4, "00004");
+        TIPO_FILENAME.put(9, "00009");
         TIPO_FILENAME.put(10, "00010");
+        TIPO_FILENAME.put(331, "00331");
 
         TIPO_TITULO.put(1, "FACTURA A");
         TIPO_TITULO.put(6, "FACTURA B");
@@ -59,7 +62,10 @@ public class GestorPDF {
         TIPO_TITULO.put(2, "NOTA DE DEBITO A");
         TIPO_TITULO.put(7, "NOTA DE DEBITO B");
         TIPO_TITULO.put(12, "NOTA DE DEBITO C");
+        TIPO_TITULO.put(4, "RECIBO A");
+        TIPO_TITULO.put(9, "RECIBO B");
         TIPO_TITULO.put(10, "RECIBO C");
+        TIPO_TITULO.put(331, "FACTURA DE CREDITO ELECTRONICA MIPYMES");
     }
 
     private static final Map<Integer, String> LETRA = new HashMap<>();
@@ -67,7 +73,8 @@ public class GestorPDF {
         LETRA.put(1, "A"); LETRA.put(6, "B"); LETRA.put(11, "C");
         LETRA.put(3, "A"); LETRA.put(8, "B"); LETRA.put(13, "C");
         LETRA.put(2, "A"); LETRA.put(7, "B"); LETRA.put(12, "C");
-        LETRA.put(10, "C");
+        LETRA.put(4, "A"); LETRA.put(9, "B"); LETRA.put(10, "C");
+        LETRA.put(331, "FCE");
     }
 
     public String generarFactura(ComprobanteDTO comprobante, CuitConfigDTO emitidor, List<ItemFacturaDTO> items) {

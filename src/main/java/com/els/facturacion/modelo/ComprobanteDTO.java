@@ -220,7 +220,10 @@ public class ComprobanteDTO {
             case 2: return "Nota de Débito A";
             case 7: return "Nota de Débito B";
             case 12: return "Nota de Débito C";
+            case 4: return "Recibo A";
+            case 9: return "Recibo B";
             case 10: return "Recibo C";
+            case 331: return "FCE MiPymes";
             default: return "Tipo " + tipoComprobante;
         }
     }

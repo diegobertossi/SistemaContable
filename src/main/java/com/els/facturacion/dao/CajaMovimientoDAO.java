@@ -12,17 +12,15 @@ import java.util.List;
 
 public class CajaMovimientoDAO {
 
-    private Connection conn;
-
-    public CajaMovimientoDAO() {
-        this.conn = ConexionFacturacion.getInstancia().getConexion();
+    private Connection getConn() {
+        return ConexionFacturacion.getInstancia().getConexion();
     }
 
     public int insertar(CajaMovimientoDTO movimiento) {
         String sql = "INSERT INTO caja_movimientos (fecha, tipo, descripcion, monto, cuit_asociado, comprobante_id) "
                 + "VALUES (?, ?, ?, ?, ?, ?)";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             if (movimiento.getFecha() != null) {
                 ps.setDate(1, java.sql.Date.valueOf(movimiento.getFecha()));
             } else {
@@ -51,7 +49,7 @@ public class CajaMovimientoDAO {
         String sql = "UPDATE caja_movimientos SET fecha = ?, tipo = ?, descripcion = ?, "
                 + "monto = ?, cuit_asociado = ?, comprobante_id = ? WHERE id = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setDate(1, java.sql.Date.valueOf(movimiento.getFecha()));
             ps.setString(2, movimiento.getTipo());
             ps.setString(3, movimiento.getDescripcion());
@@ -70,7 +68,7 @@ public class CajaMovimientoDAO {
     public boolean eliminar(int id) {
         String sql = "DELETE FROM caja_movimientos WHERE id = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setInt(1, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -82,7 +80,7 @@ public class CajaMovimientoDAO {
     public CajaMovimientoDTO buscarPorId(int id) {
         String sql = "SELECT * FROM caja_movimientos WHERE id = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setInt(1, id);
             ResultSet rs = ps.executeQuery();
 
@@ -99,7 +97,7 @@ public class CajaMovimientoDAO {
         String sql = "SELECT * FROM caja_movimientos ORDER BY fecha DESC, id DESC";
         List<CajaMovimientoDTO> lista = new ArrayList<>();
 
-        try (PreparedStatement ps = conn.prepareStatement(sql);
+        try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
@@ -115,7 +113,7 @@ public class CajaMovimientoDAO {
         String sql = "SELECT * FROM caja_movimientos WHERE (fecha BETWEEN ? AND ?) OR fecha IS NULL ORDER BY fecha DESC, id DESC";
         List<CajaMovimientoDTO> lista = new ArrayList<>();
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setDate(1, java.sql.Date.valueOf(desde));
             ps.setDate(2, java.sql.Date.valueOf(hasta));
             ResultSet rs = ps.executeQuery();
@@ -133,7 +131,7 @@ public class CajaMovimientoDAO {
         String sql = "SELECT * FROM caja_movimientos WHERE tipo = ? ORDER BY fecha DESC";
         List<CajaMovimientoDTO> lista = new ArrayList<>();
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, tipo);
             ResultSet rs = ps.executeQuery();
 
@@ -152,7 +150,7 @@ public class CajaMovimientoDAO {
                 + "(SELECT COALESCE(SUM(monto), 0) FROM caja_movimientos WHERE tipo = 'pago' AND fecha <= ?) "
                 + "AS saldo";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setDate(1, java.sql.Date.valueOf(hasta));
             ps.setDate(2, java.sql.Date.valueOf(hasta));
             ResultSet rs = ps.executeQuery();

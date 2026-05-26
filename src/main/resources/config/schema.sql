@@ -237,3 +237,40 @@ INSERT INTO configuraciones (clave, valor, descripcion) VALUES
     ('iva.alicuota.2', '21.00', 'Alicuota IVA 21%'),
     ('iva.alicuota.3', '27.00', 'Alicuota IVA 27%')
 ON DUPLICATE KEY UPDATE valor = valor;
+
+-- Migración automática: agrega columnas faltantes sin romper si ya existen
+SET @db = (SELECT DATABASE());
+-- concepto
+SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN concepto VARCHAR(50) AFTER descripcion','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='concepto'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+-- periodo_desde
+SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN periodo_desde DATE AFTER concepto','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='periodo_desde'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+-- periodo_hasta
+SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN periodo_hasta DATE AFTER periodo_desde','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='periodo_hasta'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+-- periodo_vto
+SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN periodo_vto DATE AFTER periodo_hasta','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='periodo_vto'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+-- condicion_iva_receptor
+SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN condicion_iva_receptor VARCHAR(60) AFTER periodo_vto','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='condicion_iva_receptor'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+-- tipo_documento
+SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN tipo_documento VARCHAR(10) AFTER condicion_iva_receptor','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='tipo_documento'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+-- nro_documento
+SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN nro_documento VARCHAR(20) AFTER tipo_documento','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='nro_documento'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+-- domicilio_receptor
+SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN domicilio_receptor VARCHAR(200) AFTER nro_documento','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='domicilio_receptor'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+-- email_receptor
+SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN email_receptor VARCHAR(100) AFTER domicilio_receptor','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='email_receptor'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+-- condiciones_venta
+SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN condiciones_venta VARCHAR(200) AFTER email_receptor','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='condiciones_venta'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+-- comprobante_asociado
+SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN comprobante_asociado VARCHAR(50) AFTER condiciones_venta','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='comprobante_asociado'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+-- estado_pago
+SET @sql = (SELECT IF(COUNT(*)=0,"ALTER TABLE comprobantes ADD COLUMN estado_pago VARCHAR(30) DEFAULT 'pendiente' AFTER comprobante_asociado",'SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='estado_pago'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+-- otros_impuestos
+SET @sql = (SELECT IF(COUNT(*)=0,"ALTER TABLE comprobantes ADD COLUMN otros_impuestos DECIMAL(12,2) DEFAULT 0.00 AFTER estado_pago",'SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='otros_impuestos'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- Insertar emisores de prueba
+INSERT INTO cuit_certificados (cuit, razon_social, condicion_iva, punto_venta, ruta_certificado, password_cert, activo) VALUES
+    ('30678901234', 'FACTURASOFT TEST S.A.', 'RI', 1, 'src/main/resources/certificados/Certificado.p12', '123456', TRUE),
+    ('27123456789', 'FACTURASOFT MONOTRIBUTO', 'Monotributista', 2, 'src/main/resources/certificados/Certificado.p12', '123456', FALSE)
+ON DUPLICATE KEY UPDATE razon_social = VALUES(razon_social), condicion_iva = VALUES(condicion_iva),
+    punto_venta = VALUES(punto_venta), ruta_certificado = VALUES(ruta_certificado),
+    password_cert = VALUES(password_cert), activo = VALUES(activo);

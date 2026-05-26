@@ -71,8 +71,36 @@ public class VentanaConfigCertificados extends JFrame {
         String[] columnas = {"ID", "CUIT", "Razon Social", "Condicion IVA", "Punto Venta", "Activo"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             @Override
+            public Class<?> getColumnClass(int column) {
+                return column == 5 ? Boolean.class : String.class;
+            }
+            @Override
             public boolean isCellEditable(int row, int column) {
-                return false;
+                return column == 5;
+            }
+            @Override
+            public void setValueAt(Object aValue, int row, int column) {
+                if (column == 5) {
+                    boolean marcado = (Boolean) aValue;
+                    int id = (int) getValueAt(row, 0);
+                    if (marcado) {
+                        dao.activarExclusivo(id);
+                        for (int r = 0; r < getRowCount(); r++) {
+                            super.setValueAt(r == row, r, 5);
+                        }
+                    } else {
+                        int activos = dao.contarActivos();
+                        if (activos <= 1) {
+                            super.setValueAt(Boolean.TRUE, row, 5);
+                            return;
+                        }
+                        dao.activarExclusivo(-1);
+                        super.setValueAt(false, row, 5);
+                    }
+                    fireTableDataChanged();
+                } else {
+                    super.setValueAt(aValue, row, column);
+                }
             }
         };
 
@@ -216,7 +244,7 @@ public class VentanaConfigCertificados extends JFrame {
                 dto.getRazonSocial(),
                 dto.getCondicionIva(),
                 dto.getPuntoVenta(),
-                dto.getActivo() ? "Si" : "No"
+                dto.getActivo()
             });
         }
     }
@@ -240,6 +268,7 @@ public class VentanaConfigCertificados extends JFrame {
     private void btnAgregarAction(java.awt.event.ActionEvent e) {
         if (!validarCampos()) return;
 
+        boolean hayActivos = dao.contarActivos() > 0;
         CuitConfigDTO dto = new CuitConfigDTO(
             txtCuit.getText().trim(),
             txtRazonSocial.getText().trim(),
@@ -248,9 +277,13 @@ public class VentanaConfigCertificados extends JFrame {
             txtRutaCertificado.getText().trim(),
             new String(txtPassword.getPassword())
         );
+        dto.setActivo(!hayActivos);
 
         int id = dao.insertar(dto);
         if (id > 0) {
+            if (dto.getActivo()) {
+                dao.activarExclusivo(id);
+            }
             JOptionPane.showMessageDialog(this, "CUIT guardado correctamente", "Exito", JOptionPane.INFORMATION_MESSAGE);
             cargarTabla();
             limpiarCampos();

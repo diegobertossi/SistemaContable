@@ -11,10 +11,8 @@ import java.util.List;
 
 public class ClienteDAO {
 
-    private Connection conn;
-
-    public ClienteDAO() {
-        this.conn = ConexionFacturacion.getInstancia().getConexion();
+    private Connection getConn() {
+        return ConexionFacturacion.getInstancia().getConexion();
     }
 
     public int insertar(ClienteDTO cliente) {
@@ -22,7 +20,7 @@ public class ClienteDAO {
                 + "domicilio, telefono, email, origen, els_referencia, activo) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, cliente.getTipoDocumento());
             ps.setString(2, cliente.getNroDocumento());
             ps.setString(3, cliente.getRazonSocial());
@@ -55,7 +53,7 @@ public class ClienteDAO {
         String sql = "UPDATE clientes SET tipo_documento = ?, nro_documento = ?, razon_social = ?, "
                 + "condicion_iva = ?, domicilio = ?, telefono = ?, email = ?, activo = ? WHERE id = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, cliente.getTipoDocumento());
             ps.setString(2, cliente.getNroDocumento());
             ps.setString(3, cliente.getRazonSocial());
@@ -74,7 +72,7 @@ public class ClienteDAO {
 
     public boolean eliminar(int id) {
         String sql = "DELETE FROM clientes WHERE id = ?";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setInt(1, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -85,7 +83,7 @@ public class ClienteDAO {
 
     public ClienteDTO buscarPorId(int id) {
         String sql = "SELECT * FROM clientes WHERE id = ?";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setInt(1, id);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) return mapear(rs);
@@ -97,7 +95,7 @@ public class ClienteDAO {
 
     public ClienteDTO buscarPorDocumento(String tipo, String nro) {
         String sql = "SELECT * FROM clientes WHERE tipo_documento = ? AND nro_documento = ?";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, tipo);
             ps.setString(2, nro);
             ResultSet rs = ps.executeQuery();
@@ -111,7 +109,7 @@ public class ClienteDAO {
     public List<ClienteDTO> buscarPorRazonSocial(String termino) {
         String sql = "SELECT * FROM clientes WHERE razon_social LIKE ? ORDER BY razon_social";
         List<ClienteDTO> lista = new ArrayList<>();
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, "%" + termino + "%");
             ResultSet rs = ps.executeQuery();
             while (rs.next()) lista.add(mapear(rs));
@@ -124,7 +122,7 @@ public class ClienteDAO {
     public List<ClienteDTO> listarTodos() {
         String sql = "SELECT * FROM clientes ORDER BY razon_social";
         List<ClienteDTO> lista = new ArrayList<>();
-        try (PreparedStatement ps = conn.prepareStatement(sql);
+        try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) lista.add(mapear(rs));
         } catch (SQLException e) {
@@ -136,7 +134,7 @@ public class ClienteDAO {
     public List<ClienteDTO> listarActivos() {
         String sql = "SELECT * FROM clientes WHERE activo = TRUE ORDER BY razon_social";
         List<ClienteDTO> lista = new ArrayList<>();
-        try (PreparedStatement ps = conn.prepareStatement(sql);
+        try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) lista.add(mapear(rs));
         } catch (SQLException e) {

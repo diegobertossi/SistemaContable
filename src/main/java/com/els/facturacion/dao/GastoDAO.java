@@ -12,17 +12,15 @@ import java.util.List;
 
 public class GastoDAO {
 
-    private Connection conn;
-
-    public GastoDAO() {
-        this.conn = ConexionFacturacion.getInstancia().getConexion();
+    private Connection getConn() {
+        return ConexionFacturacion.getInstancia().getConexion();
     }
 
     public int insertar(GastoDTO gasto) {
         String sql = "INSERT INTO gastos (fecha, categoria_id, descripcion, monto, mes, anio) "
                 + "VALUES (?, ?, ?, ?, ?, ?)";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             ps.setDate(1, java.sql.Date.valueOf(gasto.getFecha()));
             ps.setInt(2, gasto.getCategoriaId());
             ps.setString(3, gasto.getDescripcion());
@@ -47,7 +45,7 @@ public class GastoDAO {
         String sql = "UPDATE gastos SET fecha = ?, categoria_id = ?, descripcion = ?, "
                 + "monto = ?, mes = ?, anio = ? WHERE id = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setDate(1, java.sql.Date.valueOf(gasto.getFecha()));
             ps.setInt(2, gasto.getCategoriaId());
             ps.setString(3, gasto.getDescripcion());
@@ -66,7 +64,7 @@ public class GastoDAO {
     public boolean eliminar(int id) {
         String sql = "DELETE FROM gastos WHERE id = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setInt(1, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -79,7 +77,7 @@ public class GastoDAO {
         String sql = "SELECT g.*, c.nombre as categoria_nombre FROM gastos g "
                 + "LEFT JOIN categorias_gastos c ON g.categoria_id = c.id WHERE g.id = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setInt(1, id);
             ResultSet rs = ps.executeQuery();
 
@@ -97,7 +95,7 @@ public class GastoDAO {
                 + "LEFT JOIN categorias_gastos c ON g.categoria_id = c.id ORDER BY g.fecha DESC";
         List<GastoDTO> lista = new ArrayList<>();
 
-        try (PreparedStatement ps = conn.prepareStatement(sql);
+        try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
@@ -115,7 +113,7 @@ public class GastoDAO {
                 + "WHERE g.mes = ? AND g.anio = ? ORDER BY g.fecha DESC";
         List<GastoDTO> lista = new ArrayList<>();
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setInt(1, mes);
             ps.setInt(2, anio);
             ResultSet rs = ps.executeQuery();
@@ -135,7 +133,7 @@ public class GastoDAO {
                 + "WHERE g.anio = ? ORDER BY g.fecha DESC";
         List<GastoDTO> lista = new ArrayList<>();
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setInt(1, anio);
             ResultSet rs = ps.executeQuery();
 
@@ -151,7 +149,7 @@ public class GastoDAO {
     public java.math.BigDecimal getTotalGastosMes(int mes, int anio) {
         String sql = "SELECT COALESCE(SUM(monto), 0) as total FROM gastos WHERE mes = ? AND anio = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setInt(1, mes);
             ps.setInt(2, anio);
             ResultSet rs = ps.executeQuery();

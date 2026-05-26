@@ -11,16 +11,14 @@ import java.util.List;
 
 public class CategoriaGastoDAO {
 
-    private Connection conn;
-
-    public CategoriaGastoDAO() {
-        this.conn = ConexionFacturacion.getInstancia().getConexion();
+    private Connection getConn() {
+        return ConexionFacturacion.getInstancia().getConexion();
     }
 
     public int insertar(CategoriaGastoDTO categoria) {
         String sql = "INSERT INTO categorias_gastos (nombre, descripcion, activa) VALUES (?, ?, ?)";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, categoria.getNombre());
             ps.setString(2, categoria.getDescripcion());
             ps.setBoolean(3, categoria.getActiva() != null ? categoria.getActiva() : true);
@@ -41,7 +39,7 @@ public class CategoriaGastoDAO {
     public boolean actualizar(CategoriaGastoDTO categoria) {
         String sql = "UPDATE categorias_gastos SET nombre = ?, descripcion = ?, activa = ? WHERE id = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, categoria.getNombre());
             ps.setString(2, categoria.getDescripcion());
             ps.setBoolean(3, categoria.getActiva());
@@ -57,7 +55,7 @@ public class CategoriaGastoDAO {
     public boolean eliminar(int id) {
         String sql = "DELETE FROM categorias_gastos WHERE id = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setInt(1, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -69,7 +67,7 @@ public class CategoriaGastoDAO {
     public CategoriaGastoDTO buscarPorId(int id) {
         String sql = "SELECT * FROM categorias_gastos WHERE id = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setInt(1, id);
             ResultSet rs = ps.executeQuery();
 
@@ -86,7 +84,7 @@ public class CategoriaGastoDAO {
         String sql = "SELECT * FROM categorias_gastos ORDER BY nombre";
         List<CategoriaGastoDTO> lista = new ArrayList<>();
 
-        try (PreparedStatement ps = conn.prepareStatement(sql);
+        try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
@@ -102,7 +100,7 @@ public class CategoriaGastoDAO {
         String sql = "SELECT * FROM categorias_gastos WHERE activa = TRUE ORDER BY nombre";
         List<CategoriaGastoDTO> lista = new ArrayList<>();
 
-        try (PreparedStatement ps = conn.prepareStatement(sql);
+        try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {

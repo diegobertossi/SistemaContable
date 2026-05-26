@@ -70,7 +70,7 @@ public class ControladorFacturacion {
 
     public void inicializar() {
         if (view == null) throw new IllegalStateException("ControladorFacturacion sin vista. Use constructor con VentanaFacturacion.");
-        cargarCuits();
+        cargarEmisorActivo();
         cargarClientes();
 
         // Navigation
@@ -110,18 +110,44 @@ public class ControladorFacturacion {
 
         // Menu actions
         view.getItemSalir().addActionListener(e -> System.exit(0));
-        view.getItemConfig().addActionListener(e -> new VentanaConfigCertificados().setVisible(true));
+        view.getItemConfig().addActionListener(e -> {
+            VentanaConfigCertificados configWindow = new VentanaConfigCertificados();
+            configWindow.addWindowListener(new java.awt.event.WindowAdapter() {
+                @Override
+                public void windowClosed(java.awt.event.WindowEvent e) {
+                    cargarEmisorActivo();
+                }
+            });
+            configWindow.setVisible(true);
+        });
         view.getItemHistorial().addActionListener(e -> new VentanaComprobantes().setVisible(true));
         view.getItemCaja().addActionListener(e -> new VentanaCaja().setVisible(true));
         view.getItemGastos().addActionListener(e -> new VentanaGastos().setVisible(true));
         view.getItemMigrar().addActionListener(e -> new VentanaMigracion().setVisible(true));
-        view.getItemClientes().addActionListener(e -> new VentanaClientes().setVisible(true));
+        view.getItemClientes().addActionListener(e -> {
+            VentanaClientes vc = new VentanaClientes();
+            vc.addWindowListener(new java.awt.event.WindowAdapter() {
+                @Override
+                public void windowClosed(java.awt.event.WindowEvent ev) {
+                    cargarClientes();
+                }
+            });
+            vc.setVisible(true);
+        });
         view.getItemRemitos().addActionListener(e -> JOptionPane.showMessageDialog(view, "Funcionalidad en desarrollo"));
         view.getItemRecibos().addActionListener(e -> new VentanaRecibos().setVisible(true));
         view.getItemPagos().addActionListener(e -> new VentanaPagos().setVisible(true));
     }
 
-    private void cargarCuits() {
+    private void cargarEmisorActivo() {
+        List<CuitConfigDTO> activos = cuitDAO.listarActivos();
+        if (!activos.isEmpty()) {
+            CuitConfigDTO emisor = activos.get(0);
+            view.actualizarEmisor(emisor.getRazonSocial(), emisor.getCuit(), emisor.getCondicionIva());
+            view.actualizarTiposComprobante(emisor.getCondicionIva());
+        } else {
+            view.actualizarEmisor("", "", "");
+        }
     }
 
     private void cargarClientes() {
@@ -387,10 +413,25 @@ public class ControladorFacturacion {
 
     private int obtenerTipoCodigo() {
         String tipo = (String) view.getCmbTipoComprobante().getSelectedItem();
-        if (tipo.startsWith("Factura C") || tipo.contains("FCE")) return 6;
-        if (tipo.startsWith("Nota de Debito")) return 7;
-        if (tipo.startsWith("Nota de Credito")) return 8;
-        if (tipo.startsWith("Recibo")) return 9;
+        if (tipo.contains("(FCE)")) return 331;
+        if (tipo.endsWith(" A")) {
+            if (tipo.startsWith("Factura")) return 1;
+            if (tipo.startsWith("Nota de Debito")) return 2;
+            if (tipo.startsWith("Nota de Credito")) return 3;
+            if (tipo.startsWith("Recibo")) return 4;
+        }
+        if (tipo.endsWith(" B")) {
+            if (tipo.startsWith("Factura")) return 6;
+            if (tipo.startsWith("Nota de Debito")) return 7;
+            if (tipo.startsWith("Nota de Credito")) return 8;
+            if (tipo.startsWith("Recibo")) return 9;
+        }
+        if (tipo.endsWith(" C")) {
+            if (tipo.startsWith("Factura")) return 11;
+            if (tipo.startsWith("Nota de Debito")) return 12;
+            if (tipo.startsWith("Nota de Credito")) return 13;
+            if (tipo.startsWith("Recibo")) return 10;
+        }
         return 6;
     }
 

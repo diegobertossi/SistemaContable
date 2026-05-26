@@ -12,10 +12,8 @@ import java.util.List;
 
 public class RemitoDAO {
 
-    private Connection conn;
-
-    public RemitoDAO() {
-        this.conn = ConexionFacturacion.getInstancia().getConexion();
+    private Connection getConn() {
+        return ConexionFacturacion.getInstancia().getConexion();
     }
 
     public int insertar(RemitoDTO remito) {
@@ -25,7 +23,7 @@ public class RemitoDAO {
                 + "comprobante_id, estado, observaciones) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, remito.getNumeroRemito());
             ps.setDate(2, java.sql.Date.valueOf(remito.getFechaEmision()));
             ps.setDate(3, remito.getFechaEntrega() != null ? java.sql.Date.valueOf(remito.getFechaEntrega()) : null);
@@ -63,7 +61,7 @@ public class RemitoDAO {
     private void insertarItems(int remitoId, List<RemitoItemDTO> items) {
         String sql = "INSERT INTO remito_items (remito_id, codigo, descripcion, cantidad, "
                 + "unidad_medida, els_referencia, orden) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             int orden = 0;
             for (RemitoItemDTO item : items) {
                 ps.setInt(1, remitoId);
@@ -87,7 +85,7 @@ public class RemitoDAO {
 
     public boolean actualizarEstado(int id, String estado) {
         String sql = "UPDATE remitos SET estado = ? WHERE id = ?";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, estado);
             ps.setInt(2, id);
             return ps.executeUpdate() > 0;
@@ -99,7 +97,7 @@ public class RemitoDAO {
 
     public RemitoDTO buscarPorId(int id) {
         String sql = "SELECT * FROM remitos WHERE id = ?";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setInt(1, id);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) return mapear(rs);
@@ -112,7 +110,7 @@ public class RemitoDAO {
     public List<RemitoDTO> listarTodos() {
         String sql = "SELECT * FROM remitos ORDER BY fecha_emision DESC";
         List<RemitoDTO> lista = new ArrayList<>();
-        try (PreparedStatement ps = conn.prepareStatement(sql);
+        try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) lista.add(mapear(rs));
         } catch (SQLException e) {
@@ -124,7 +122,7 @@ public class RemitoDAO {
     public List<RemitoDTO> buscarPorReceptor(String cuit) {
         String sql = "SELECT * FROM remitos WHERE cuit_receptor = ? ORDER BY fecha_emision DESC";
         List<RemitoDTO> lista = new ArrayList<>();
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, cuit);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) lista.add(mapear(rs));
@@ -136,7 +134,7 @@ public class RemitoDAO {
 
     public String getUltimoNumero() {
         String sql = "SELECT numero_remito FROM remitos ORDER BY id DESC LIMIT 1";
-        try (PreparedStatement ps = conn.prepareStatement(sql);
+        try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             if (rs.next()) return rs.getString("numero_remito");
         } catch (SQLException e) {

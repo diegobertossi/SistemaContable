@@ -11,10 +11,8 @@ import java.util.List;
 
 public class CuitDAO {
 
-    private Connection conn;
-
-    public CuitDAO() {
-        this.conn = ConexionFacturacion.getInstancia().getConexion();
+    private Connection getConn() {
+        return ConexionFacturacion.getInstancia().getConexion();
     }
 
     public int insertar(CuitConfigDTO cuit) {
@@ -22,7 +20,7 @@ public class CuitDAO {
                 + "punto_venta, ruta_certificado, password_cert, activo) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, cuit.getCuit());
             ps.setString(2, cuit.getRazonSocial());
             ps.setString(3, cuit.getCondicionIva());
@@ -49,7 +47,7 @@ public class CuitDAO {
                 + "punto_venta = ?, ruta_certificado = ?, password_cert = ?, activo = ? "
                 + "WHERE id = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, cuit.getRazonSocial());
             ps.setString(2, cuit.getCondicionIva());
             ps.setInt(3, cuit.getPuntoVenta());
@@ -68,7 +66,7 @@ public class CuitDAO {
     public boolean eliminar(int id) {
         String sql = "DELETE FROM cuit_certificados WHERE id = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setInt(1, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -80,7 +78,7 @@ public class CuitDAO {
     public CuitConfigDTO buscarPorId(int id) {
         String sql = "SELECT * FROM cuit_certificados WHERE id = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setInt(1, id);
             ResultSet rs = ps.executeQuery();
 
@@ -96,7 +94,7 @@ public class CuitDAO {
     public CuitConfigDTO buscarPorCuit(String cuit) {
         String sql = "SELECT * FROM cuit_certificados WHERE cuit = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, cuit);
             ResultSet rs = ps.executeQuery();
 
@@ -113,7 +111,7 @@ public class CuitDAO {
         String sql = "SELECT * FROM cuit_certificados ORDER BY razon_social";
         List<CuitConfigDTO> lista = new ArrayList<>();
 
-        try (PreparedStatement ps = conn.prepareStatement(sql);
+        try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
@@ -125,11 +123,34 @@ public class CuitDAO {
         return lista;
     }
 
+    public void activarExclusivo(int id) {
+        String sql = "UPDATE cuit_certificados SET activo = (id = ?)";
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error activando CUIT exclusivo: " + e.getMessage());
+        }
+    }
+
+    public int contarActivos() {
+        String sql = "SELECT COUNT(*) FROM cuit_certificados WHERE activo = TRUE";
+        try (PreparedStatement ps = getConn().prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error contando activos: " + e.getMessage());
+        }
+        return 0;
+    }
+
     public List<CuitConfigDTO> listarActivos() {
         String sql = "SELECT * FROM cuit_certificados WHERE activo = TRUE ORDER BY razon_social";
         List<CuitConfigDTO> lista = new ArrayList<>();
 
-        try (PreparedStatement ps = conn.prepareStatement(sql);
+        try (PreparedStatement ps = getConn().prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
