@@ -10,6 +10,8 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -66,14 +68,17 @@ public class VentanaClientes extends javax.swing.JFrame {
 
         gbc.gridwidth = 1; gbc.gridy = 1;
         txtBuscar = new JTextField(20);
-        JButton btnBuscar = crearBoton("BUSCAR");
-        btnBuscar.addActionListener(e -> buscarCliente());
+        txtBuscar.getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) { buscarCliente(); }
+            public void removeUpdate(DocumentEvent e) { buscarCliente(); }
+            public void changedUpdate(DocumentEvent e) { buscarCliente(); }
+        });
         JButton btnImportar = crearBoton("IMPORTAR DE REPARSOFT");
         btnImportar.addActionListener(e -> importarClientes());
 
         gbc.gridx = 0; panelSuperior.add(new JLabel("Buscar:"), gbc);
         gbc.gridx = 1; panelSuperior.add(txtBuscar, gbc);
-        gbc.gridx = 2; panelSuperior.add(btnBuscar, gbc);
+        gbc.gridx = 2; panelSuperior.add(btnImportar, gbc);
         gbc.gridx = 3; panelSuperior.add(btnImportar, gbc);
 
         JPanel panelForm = new JPanel(new GridBagLayout());
@@ -132,11 +137,14 @@ public class VentanaClientes extends javax.swing.JFrame {
         row++; fgc.gridx = 0; fgc.gridy = row; fgc.gridwidth = 4;
         panelForm.add(panelBotonesForm, fgc);
 
-        String[] columnas = {"ID", "Tipo Doc", "Nro Doc", "Razon Social", "Condicion IVA", "Domicilio", "Telefono", "Email", "Origen"};
+        String[] columnas = {"ID", "Razon Social", "Tipo Doc", "Nro Doc", "Condicion IVA", "Telefono", "Email"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             public boolean isCellEditable(int row, int column) { return false; }
         };
         tabla = new JTable(modeloTabla);
+        tabla.getColumnModel().getColumn(0).setMinWidth(0);
+        tabla.getColumnModel().getColumn(0).setMaxWidth(0);
+        tabla.getColumnModel().getColumn(0).setPreferredWidth(0);
         tabla.setFont(new Font("Cambria", Font.PLAIN, 10));
         tabla.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 10));
         tabla.getSelectionModel().addListSelectionListener(e -> {
@@ -153,9 +161,9 @@ public class VentanaClientes extends javax.swing.JFrame {
         List<ClienteDTO> lista = controlador.listarTodos();
         for (ClienteDTO c : lista) {
             modeloTabla.addRow(new Object[]{
-                c.getId(), c.getTipoDocumento(), c.getNroDocumento(),
-                c.getRazonSocial(), c.getCondicionIva(), c.getDomicilio(),
-                c.getTelefono(), c.getEmail(), c.getOrigen()
+                c.getId(), c.getRazonSocial(), c.getTipoDocumento(),
+                c.getNroDocumento(), c.getCondicionIva(),
+                c.getTelefono(), c.getEmail()
             });
         }
     }
@@ -167,9 +175,9 @@ public class VentanaClientes extends javax.swing.JFrame {
         List<ClienteDTO> lista = controlador.buscarPorRazonSocial(termino);
         for (ClienteDTO c : lista) {
             modeloTabla.addRow(new Object[]{
-                c.getId(), c.getTipoDocumento(), c.getNroDocumento(),
-                c.getRazonSocial(), c.getCondicionIva(), c.getDomicilio(),
-                c.getTelefono(), c.getEmail(), c.getOrigen()
+                c.getId(), c.getRazonSocial(), c.getTipoDocumento(),
+                c.getNroDocumento(), c.getCondicionIva(),
+                c.getTelefono(), c.getEmail()
             });
         }
     }
@@ -177,18 +185,17 @@ public class VentanaClientes extends javax.swing.JFrame {
     private void cargarClienteSeleccionado() {
         int row = tabla.getSelectedRow();
         if (row < 0) return;
-        cmbTipoDoc.setSelectedItem(modeloTabla.getValueAt(row, 1));
-        txtNroDoc.setText(modeloTabla.getValueAt(row, 2) != null ? modeloTabla.getValueAt(row, 2).toString() : "");
-        txtRazonSocial.setText(modeloTabla.getValueAt(row, 3) != null ? modeloTabla.getValueAt(row, 3).toString() : "");
+        txtRazonSocial.setText(modeloTabla.getValueAt(row, 1) != null ? modeloTabla.getValueAt(row, 1).toString() : "");
+        cmbTipoDoc.setSelectedItem(modeloTabla.getValueAt(row, 2));
+        txtNroDoc.setText(modeloTabla.getValueAt(row, 3) != null ? modeloTabla.getValueAt(row, 3).toString() : "");
         cmbCondicionIva.setSelectedItem(modeloTabla.getValueAt(row, 4) != null ? modeloTabla.getValueAt(row, 4).toString() : "Consumidor Final");
-        txtDomicilio.setText(modeloTabla.getValueAt(row, 5) != null ? modeloTabla.getValueAt(row, 5).toString() : "");
-        txtTelefono.setText(modeloTabla.getValueAt(row, 6) != null ? modeloTabla.getValueAt(row, 6).toString() : "");
-        txtEmail.setText(modeloTabla.getValueAt(row, 7) != null ? modeloTabla.getValueAt(row, 7).toString() : "");
+        txtTelefono.setText(modeloTabla.getValueAt(row, 5) != null ? modeloTabla.getValueAt(row, 5).toString() : "");
+        txtEmail.setText(modeloTabla.getValueAt(row, 6) != null ? modeloTabla.getValueAt(row, 6).toString() : "");
     }
 
     private void guardarCliente() {
-        if (txtRazonSocial.getText().trim().isEmpty() || txtNroDoc.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Razon Social y Nro Documento son obligatorios", "Error", JOptionPane.ERROR_MESSAGE);
+        if (txtRazonSocial.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Razon Social es obligatorio", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
         ClienteDTO cli = new ClienteDTO();
@@ -197,7 +204,8 @@ public class VentanaClientes extends javax.swing.JFrame {
             cli.setId((Integer) modeloTabla.getValueAt(row, 0));
         }
         cli.setTipoDocumento((String) cmbTipoDoc.getSelectedItem());
-        cli.setNroDocumento(txtNroDoc.getText().trim());
+        String nroDoc = txtNroDoc.getText().trim();
+        cli.setNroDocumento(nroDoc.isEmpty() ? "0" : nroDoc);
         cli.setRazonSocial(txtRazonSocial.getText().trim());
         cli.setCondicionIva((String) cmbCondicionIva.getSelectedItem());
         cli.setDomicilio(txtDomicilio.getText().trim());

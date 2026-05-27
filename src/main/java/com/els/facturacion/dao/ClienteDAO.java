@@ -7,7 +7,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ClienteDAO {
 
@@ -146,6 +148,7 @@ public class ClienteDAO {
     public List<ClienteDTO> importarDesdeReparsoft() {
         List<ClienteDTO> importados = new ArrayList<>();
         String[] bases = {"ordenesbrc", "ordenesbsas"};
+        Set<String> nombresImportados = new HashSet<>();
         for (String base : bases) {
             try {
                 com.els.facturacion.conexion.ConexionReparsoft cr = com.els.facturacion.conexion.ConexionReparsoft.getInstancia();
@@ -155,7 +158,6 @@ public class ClienteDAO {
                 String sql = "SELECT DISTINCT c.idCliente, c.nombre, c.CUIT, c.Domicilio, "
                         + "c.TelefonoEmpresa, c.CorreoElectronico "
                         + "FROM cliente c "
-                        + "WHERE c.CUIT IS NOT NULL AND c.CUIT != '' "
                         + "ORDER BY c.nombre";
                 try (PreparedStatement ps = connRep.prepareStatement(sql);
                      ResultSet rs = ps.executeQuery()) {
@@ -165,21 +167,37 @@ public class ClienteDAO {
                         String domicilio = "";
                         String telefono = "";
                         String email = "";
+                        int idCliente = 0;
+                        try { idCliente = rs.getInt("idCliente"); } catch (Exception e) {}
                         try { cuit = rs.getString("CUIT").replaceAll("[^0-9]", ""); } catch (Exception e) {}
                         try { nombre = rs.getString("nombre"); } catch (Exception e) {}
                         try { domicilio = rs.getString("Domicilio"); } catch (Exception e) {}
                         try { telefono = rs.getString("TelefonoEmpresa"); } catch (Exception e) {}
                         try { email = rs.getString("CorreoElectronico"); } catch (Exception e) {}
 
-                        if (cuit.length() < 11) continue;
+                        if (nombre == null || nombre.trim().isEmpty()) continue;
 
-                        ClienteDTO existente = buscarPorDocumento("CUIT", cuit);
+                        String nombreKey = nombre.trim().toLowerCase();
+                        if (nombresImportados.contains(nombreKey)) continue;
+                        nombresImportados.add(nombreKey);
+
+                        String tipoDoc;
+                        String nroDoc;
+                        if (cuit.length() >= 11) {
+                            tipoDoc = "CUIT";
+                            nroDoc = cuit;
+                        } else {
+                            tipoDoc = "Otro";
+                            nroDoc = String.valueOf(idCliente);
+                        }
+
+                        ClienteDTO existente = buscarPorDocumento(tipoDoc, nroDoc);
                         if (existente != null) continue;
 
                         ClienteDTO cli = new ClienteDTO();
-                        cli.setTipoDocumento("CUIT");
-                        cli.setNroDocumento(cuit);
-                        cli.setRazonSocial((nombre != null && !nombre.trim().isEmpty()) ? nombre.trim() : "Sin nombre");
+                        cli.setTipoDocumento(tipoDoc);
+                        cli.setNroDocumento(nroDoc);
+                        cli.setRazonSocial(nombre.trim());
                         cli.setCondicionIva("IVA Responsable Inscripto");
                         cli.setDomicilio(domicilio != null ? domicilio.trim() : "");
                         cli.setTelefono(telefono != null ? telefono.trim() : "");

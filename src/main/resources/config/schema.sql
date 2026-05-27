@@ -7,6 +7,21 @@ COLLATE utf8mb4_unicode_ci;
 
 USE facturacion_db;
 
+-- Eliminar tablas existentes si existen (orden inverso por FK)
+DROP TABLE IF EXISTS factura_item_pagos;
+DROP TABLE IF EXISTS recibo_facturas;
+DROP TABLE IF EXISTS recibo_pagos;
+DROP TABLE IF EXISTS factura_items;
+DROP TABLE IF EXISTS remito_items;
+DROP TABLE IF EXISTS remitos;
+DROP TABLE IF EXISTS recibos;
+DROP TABLE IF EXISTS factura_pagos;
+DROP TABLE IF EXISTS comprobantes;
+DROP TABLE IF EXISTS clientes;
+DROP TABLE IF EXISTS token_cache;
+DROP TABLE IF EXISTS configuraciones;
+DROP TABLE IF EXISTS cuit_certificados;
+
 -- Tabla: cuit_certificados
 CREATE TABLE IF NOT EXISTS cuit_certificados (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -57,9 +72,9 @@ CREATE TABLE IF NOT EXISTS comprobantes (
     periodo_vto DATE,
     condicion_iva_receptor VARCHAR(60),
     tipo_documento VARCHAR(10),
-    nro_documento VARCHAR(20),
+    nro_documento VARCHAR(50),
     domicilio_receptor VARCHAR(200),
-    email_receptor VARCHAR(100),
+    email_receptor VARCHAR(500),
     condiciones_venta VARCHAR(200),
     comprobante_asociado VARCHAR(50),
     estado_pago VARCHAR(30) DEFAULT 'pendiente',
@@ -76,12 +91,12 @@ CREATE TABLE IF NOT EXISTS comprobantes (
 CREATE TABLE IF NOT EXISTS clientes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     tipo_documento VARCHAR(10) DEFAULT 'CUIT',
-    nro_documento VARCHAR(20) NOT NULL,
+    nro_documento VARCHAR(50) NOT NULL,
     razon_social VARCHAR(200) NOT NULL,
     condicion_iva VARCHAR(60),
     domicilio VARCHAR(200),
     telefono VARCHAR(50),
-    email VARCHAR(100),
+    email VARCHAR(500),
     origen VARCHAR(20) DEFAULT 'manual',
     els_referencia INT,
     activo BOOLEAN DEFAULT TRUE,
@@ -253,11 +268,11 @@ SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN condicion_
 -- tipo_documento
 SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN tipo_documento VARCHAR(10) AFTER condicion_iva_receptor','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='tipo_documento'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 -- nro_documento
-SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN nro_documento VARCHAR(20) AFTER tipo_documento','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='nro_documento'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN nro_documento VARCHAR(50) AFTER tipo_documento','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='nro_documento'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 -- domicilio_receptor
 SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN domicilio_receptor VARCHAR(200) AFTER nro_documento','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='domicilio_receptor'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 -- email_receptor
-SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN email_receptor VARCHAR(100) AFTER domicilio_receptor','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='email_receptor'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN email_receptor VARCHAR(500) AFTER domicilio_receptor','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='email_receptor'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 -- condiciones_venta
 SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN condiciones_venta VARCHAR(200) AFTER email_receptor','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='condiciones_venta'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 -- comprobante_asociado
@@ -266,6 +281,12 @@ SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN comprobant
 SET @sql = (SELECT IF(COUNT(*)=0,"ALTER TABLE comprobantes ADD COLUMN estado_pago VARCHAR(30) DEFAULT 'pendiente' AFTER comprobante_asociado",'SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='estado_pago'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 -- otros_impuestos
 SET @sql = (SELECT IF(COUNT(*)=0,"ALTER TABLE comprobantes ADD COLUMN otros_impuestos DECIMAL(12,2) DEFAULT 0.00 AFTER estado_pago",'SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='otros_impuestos'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- Migración: asegurar tamaño suficiente en columnas para datos largos
+SET @sql = (SELECT IF(COUNT(*)>0,'ALTER TABLE clientes MODIFY COLUMN email VARCHAR(500)','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='clientes' AND COLUMN_NAME='email' AND CHARACTER_MAXIMUM_LENGTH < 500); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = (SELECT IF(COUNT(*)>0,'ALTER TABLE clientes MODIFY COLUMN nro_documento VARCHAR(50)','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='clientes' AND COLUMN_NAME='nro_documento' AND CHARACTER_MAXIMUM_LENGTH < 50); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = (SELECT IF(COUNT(*)>0,'ALTER TABLE comprobantes MODIFY COLUMN nro_documento VARCHAR(50)','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='nro_documento' AND CHARACTER_MAXIMUM_LENGTH < 50); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = (SELECT IF(COUNT(*)>0,'ALTER TABLE comprobantes MODIFY COLUMN email_receptor VARCHAR(500)','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='email_receptor' AND CHARACTER_MAXIMUM_LENGTH < 500); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 
 -- Insertar emisores de prueba
 INSERT INTO cuit_certificados (cuit, razon_social, condicion_iva, punto_venta, ruta_certificado, password_cert, activo) VALUES
