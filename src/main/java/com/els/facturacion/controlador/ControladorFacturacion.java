@@ -365,12 +365,50 @@ public class ControladorFacturacion {
                     else if (tipoStr.startsWith("Nota de Credito")) abrev = "NC";
                     else if (tipoStr.startsWith("Recibo")) abrev = "RE";
                     else if (tipoStr.contains("FCE")) abrev = "FCE";
-                    String numeroFactura = abrev + " " + view.getCmbPuntoVenta().getSelectedItem() + "-" + String.format("%05d", nroComp);
+                    String numeroFactura = String.format("%05d-%08d",
+                        Integer.parseInt((String) view.getCmbPuntoVenta().getSelectedItem()), nroComp);
 
+                    int elsActualizados = 0;
+                    int elsConError = 0;
+                    int elsEncontrados = 0;
+                    String baseReparsoft = null;
                     for (ItemFacturaDTO item : items) {
                         if (item.getElsReferencia() != null) {
-                            escribirNumeroFacturaEnReparsoft(item.getElsReferencia(), numeroFactura);
+                            elsEncontrados++;
+                            if (baseReparsoft == null) {
+                                String[] opciones = {"Bariloche (ordenesbrc)", "Buenos Aires (ordenesbsas)", "Cancelar"};
+                                int resp = JOptionPane.showOptionDialog(view,
+                                    "\u00bfA qu\u00e9 base de ReparSoft pertenece(n) el/los ELS?",
+                                    "Seleccionar base ReparSoft",
+                                    JOptionPane.YES_NO_CANCEL_OPTION,
+                                    JOptionPane.QUESTION_MESSAGE,
+                                    null, opciones, opciones[0]);
+                                if (resp == 0) baseReparsoft = "ordenesbrc";
+                                else if (resp == 1) baseReparsoft = "ordenesbsas";
+                                else break;
+                            }
+                            boolean ok = controladorReparsoft.escribirNumeroFactura(
+                                item.getElsReferencia(), numeroFactura, baseReparsoft);
+                            if (ok) elsActualizados++;
+                            else elsConError++;
                         }
+                    }
+                    if (elsEncontrados == 0) {
+                        JOptionPane.showMessageDialog(view,
+                            "Ning\u00fan item de la factura tiene un n\u00famero de ELS.\n"
+                            + "No se actualiz\u00f3 el n\u00famero de factura en ReparSoft.",
+                            "ReparSoft", JOptionPane.WARNING_MESSAGE);
+                    } else if (elsActualizados > 0) {
+                        JOptionPane.showMessageDialog(view,
+                            "N\u00famero de factura registrado en " + elsActualizados
+                            + " ELS de " + baseReparsoft + " correctamente."
+                            + (elsConError > 0 ? "\n" + elsConError + " ELS no se pudieron actualizar." : ""),
+                            "ReparSoft", JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(view,
+                            "No se pudo actualizar ning\u00fan ELS en " + baseReparsoft + ".\n"
+                            + "Verifique que los n\u00fameros de ELS existan en la base de datos seleccionada.",
+                            "ReparSoft", JOptionPane.ERROR_MESSAGE);
                     }
                 }
 
@@ -688,6 +726,12 @@ public class ControladorFacturacion {
     public void escribirNumeroFacturaEnReparsoft(Integer els, String numeroFactura) {
         if (els != null && numeroFactura != null) {
             controladorReparsoft.escribirNumeroFactura(els, numeroFactura);
+        }
+    }
+
+    public void escribirNumeroFacturaEnReparsoft(Integer els, String numeroFactura, String baseDatos) {
+        if (els != null && numeroFactura != null && baseDatos != null) {
+            controladorReparsoft.escribirNumeroFactura(els, numeroFactura, baseDatos);
         }
     }
 

@@ -1,6 +1,7 @@
 package com.els.facturacion.vista;
 
 import com.els.facturacion.controlador.ControladorPagos;
+import com.els.facturacion.controlador.ControladorReparsoft;
 import com.els.facturacion.modelo.ComprobanteDTO;
 import com.els.facturacion.modelo.FacturaPagoDTO;
 import com.els.facturacion.modelo.ItemFacturaDTO;
@@ -51,6 +52,7 @@ public class VentanaPagos extends javax.swing.JFrame {
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private ControladorPagos controlador;
+    private ControladorReparsoft controladorReparsoft;
 
     private JTable tablaFacturas;
     private DefaultTableModel modeloTablaFacturas;
@@ -77,11 +79,13 @@ public class VentanaPagos extends javax.swing.JFrame {
     private List<Integer> pagosIds;
     private List<Integer> facturaIds;
     private List<Integer> itemIds;
+    private List<Integer> itemEls;
     private List<String> reciboOriginalNums;
     private boolean txtMontoPagoUpdating = false;
 
     public VentanaPagos() {
         controlador = new ControladorPagos();
+        controladorReparsoft = new ControladorReparsoft();
         initComponents();
         cargarFacturas();
         cargarHistorialCompleto();
@@ -526,9 +530,11 @@ public class VentanaPagos extends javax.swing.JFrame {
         List<ItemFacturaDTO> items = controlador.getItemsFactura(facturaId);
         modeloTablaItems.setRowCount(0);
         itemIds = new ArrayList<>();
+        itemEls = new ArrayList<>();
         for (int i = items.size() - 1; i >= 0; i--) {
             ItemFacturaDTO item = items.get(i);
             itemIds.add(item.getId());
+            itemEls.add(item.getElsReferencia());
             String cantStr = item.getCantidad() != null ? String.valueOf(item.getCantidad().intValue()) : "";
             modeloTablaItems.addRow(new Object[]{
                 item.getCodigo(), item.getDescripcion(),
@@ -644,6 +650,14 @@ public class VentanaPagos extends javax.swing.JFrame {
             controlador.setEstadoFactura(comprobanteSeleccionadoId, "pagada_parcial");
         }
 
+        Integer els = itemEls != null && itemRow < itemEls.size() ? itemEls.get(itemRow) : null;
+        if (els != null && els > 0) {
+            String base = mostrarSelectorBaseReparsoft();
+            if (base != null) {
+                controladorReparsoft.actualizarPagoReparsoft(els, monto, base);
+            }
+        }
+
         recargarYSeleccionarFactura(comprobanteSeleccionadoId);
     }
 
@@ -657,9 +671,25 @@ public class VentanaPagos extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "La factura ya est\u00e1 totalmente pagada", "Informaci\u00f3n", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
+
+        List<ItemFacturaDTO> items = controlador.getItemsFactura(comprobanteSeleccionadoId);
+
+        String base = null;
+        for (ItemFacturaDTO item : items) {
+            if (item.getElsReferencia() != null && item.getElsReferencia() > 0) {
+                if (base == null) {
+                    base = mostrarSelectorBaseReparsoft();
+                    if (base == null) break;
+                }
+                BigDecimal montoItem = item.getSubtotal() != null ? item.getSubtotal() : BigDecimal.ZERO;
+                controladorReparsoft.actualizarPagoReparsoft(item.getElsReferencia(), montoItem, base);
+            }
+        }
+
         String formaPago = (String) cmbFormaPago.getSelectedItem();
         controlador.pagarFacturaCompleta(comprobanteSeleccionadoId, formaPago);
         JOptionPane.showMessageDialog(this, "Factura pagada completamente por $ " + DF.format(saldo), "\u00c9xito", JOptionPane.INFORMATION_MESSAGE);
+
         recargarYSeleccionarFactura(comprobanteSeleccionadoId);
     }
 
@@ -757,6 +787,58 @@ public class VentanaPagos extends javax.swing.JFrame {
         btn.setBackground(COLOR_BOTON);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setFocusPainted(false);
+    }
+
+    private String mostrarSelectorBaseReparsoft() {
+        JDialog dialog = new JDialog(this, "Base ReparSoft", true);
+        dialog.getContentPane().setBackground(COLOR_FONDO);
+
+        JComboBox<String> combo = new JComboBox<>(new String[]{"ordenesbrc (Bariloche)", "ordenesbsas (Buenos Aires)"});
+        combo.setFont(FUENTE_BOTON);
+        combo.setBackground(Color.WHITE);
+
+        JLabel lbl = new JLabel("Seleccione la base de ReparSoft donde est\u00e1 el ELS:");
+        lbl.setFont(new Font("Cambria", Font.BOLD, 13));
+        lbl.setForeground(COLOR_TEXTO);
+
+        JButton btnOk = new JButton("ACEPTAR");
+        estilizarBoton(btnOk);
+        JButton btnCancel = new JButton("CANCELAR");
+        estilizarBoton(btnCancel);
+
+        JPanel content = new JPanel(new BorderLayout(8, 12));
+        content.setBackground(COLOR_FONDO);
+        content.setBorder(BorderFactory.createEmptyBorder(14, 16, 12, 16));
+        content.add(lbl, BorderLayout.NORTH);
+        content.add(combo, BorderLayout.CENTER);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
+        btnPanel.setBackground(COLOR_FONDO);
+        btnPanel.add(btnOk);
+        btnPanel.add(btnCancel);
+        content.add(btnPanel, BorderLayout.SOUTH);
+
+        dialog.getContentPane().add(content);
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        dialog.setResizable(false);
+
+        final String[] result = new String[1];
+
+        btnOk.addActionListener(e -> {
+            String selected = (String) combo.getSelectedItem();
+            if (selected != null && selected.startsWith("ordenesbrc")) {
+                result[0] = "ordenesbrc";
+            } else {
+                result[0] = "ordenesbsas";
+            }
+            dialog.dispose();
+        });
+
+        btnCancel.addActionListener(e -> dialog.dispose());
+
+        dialog.setVisible(true);
+        return result[0];
     }
 
     private String mostrarSelectorMedioPago() {

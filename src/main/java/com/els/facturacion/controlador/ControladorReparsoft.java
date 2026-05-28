@@ -84,20 +84,14 @@ public class ControladorReparsoft {
         return comprobante;
     }
 
-    public boolean escribirNumeroFactura(int els, String numeroFactura) {
-        String base = reparacionDAO.getBaseDatosELS(els);
-        if (base == null) {
-            System.err.println("ELS no encontrada en ninguna base de datos");
-            return false;
-        }
-
-        Connection conn = ConexionReparsoft.getInstancia().getConexion(base);
+    public boolean escribirNumeroFactura(int els, String numeroFactura, String baseDatos) {
+        Connection conn = ConexionReparsoft.getInstancia().getConexion(baseDatos);
         if (conn == null) {
-            System.err.println("No hay conexión a base de datos: " + base);
+            System.err.println("No hay conexi\u00f3n a base de datos: " + baseDatos);
             return false;
         }
 
-        String sql = "UPDATE reparaciones SET numero_factura = ? WHERE els = ?";
+        String sql = "UPDATE reparaciones SET NroFactura = ? WHERE els = ?";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, numeroFactura);
@@ -105,17 +99,47 @@ public class ControladorReparsoft {
             int updated = ps.executeUpdate();
 
             if (updated > 0) {
-                System.out.println("✓ Número de factura " + numeroFactura + " escrito en ELS " + els);
+                System.out.println("\u2713 N\u00famero de factura " + numeroFactura + " escrito en ELS " + els + " (" + baseDatos + ")");
                 return true;
             }
         } catch (SQLException e) {
-            System.err.println("Error escribiendo número de factura en ReparSoft: " + e.getMessage());
+            System.err.println("Error escribiendo n\u00famero de factura en ReparSoft: " + e.getMessage());
         }
         return false;
     }
 
+    public boolean escribirNumeroFactura(int els, String numeroFactura) {
+        String base = reparacionDAO.getBaseDatosELS(els);
+        if (base == null) {
+            System.err.println("ELS no encontrada en ninguna base de datos");
+            return false;
+        }
+        return escribirNumeroFactura(els, numeroFactura, base);
+    }
+
     public String getBaseDatosELS(int els) {
         return reparacionDAO.getBaseDatosELS(els);
+    }
+
+    public boolean actualizarPagoReparsoft(int els, BigDecimal monto, String baseDatos) {
+        Connection conn = ConexionReparsoft.getInstancia().getConexion(baseDatos);
+        if (conn == null) {
+            System.err.println("No hay conexi\u00f3n a base de datos: " + baseDatos);
+            return false;
+        }
+        String sql = "UPDATE reparaciones SET Pago = ? WHERE els = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setBigDecimal(1, monto);
+            ps.setInt(2, els);
+            int updated = ps.executeUpdate();
+            if (updated > 0) {
+                System.out.println("\u2713 Pago $" + monto + " registrado en ELS " + els + " (" + baseDatos + ")");
+                return true;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error actualizando pago en ReparSoft: " + e.getMessage());
+        }
+        return false;
     }
 
     public List<RemitoReparsoftDTO> listarRemitos(String baseDatos) {
