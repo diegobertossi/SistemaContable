@@ -53,16 +53,16 @@ public class VentanaComprobantes extends javax.swing.JFrame {
 
         JPanel panelSuperior = new JPanel(new GridBagLayout());
         panelSuperior.setBackground(COLOR_FONDO);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
 
         JLabel lblTitulo = new JLabel("HISTORIAL DE COMPROBANTES", SwingConstants.CENTER);
         lblTitulo.setFont(new Font("Cambria", Font.BOLD, 18));
         lblTitulo.setForeground(COLOR_TEXTO);
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 5;
-        panelSuperior.add(lblTitulo, gbc);
+        GridBagConstraints gbc_titulo = new GridBagConstraints();
+        gbc_titulo.insets = new Insets(5, 5, 5, 5);
+        gbc_titulo.fill = GridBagConstraints.HORIZONTAL;
+        gbc_titulo.gridx = 0; gbc_titulo.gridy = 0; gbc_titulo.gridwidth = 5;
+        panelSuperior.add(lblTitulo, gbc_titulo);
 
         JLabel lblBuscar = new JLabel("Buscar por CAE:");
         lblBuscar.setFont(FUENTE_BOTON);
@@ -71,30 +71,64 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         txtBuscarCAE = new JTextField(20);
         txtBuscarCAE.setFont(new Font("Cambria", Font.PLAIN, 11));
 
-        JButton btnBuscar = crearBoton("BUSCAR");
+        JButton btnBuscar = new JButton("BUSCAR");
+        btnBuscar.setFont(FUENTE_BOTON);
+        btnBuscar.setForeground(COLOR_TEXTO);
+        btnBuscar.setBackground(COLOR_BOTON);
+        btnBuscar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnBuscar.setFocusPainted(false);
         btnBuscar.addActionListener(e -> btnBuscarAction());
 
-        JButton btnActualizar = crearBoton("ACTUALIZAR");
+        JButton btnActualizar = new JButton("ACTUALIZAR");
+        btnActualizar.setFont(FUENTE_BOTON);
+        btnActualizar.setForeground(COLOR_TEXTO);
+        btnActualizar.setBackground(COLOR_BOTON);
+        btnActualizar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnActualizar.setFocusPainted(false);
         btnActualizar.addActionListener(e -> cargarComprobantes());
 
-        JButton btnVerPDF = crearBoton("VER PDF");
+        JButton btnVerPDF = new JButton("VER PDF");
+        btnVerPDF.setFont(FUENTE_BOTON);
+        btnVerPDF.setForeground(COLOR_TEXTO);
+        btnVerPDF.setBackground(COLOR_BOTON);
+        btnVerPDF.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnVerPDF.setFocusPainted(false);
         btnVerPDF.addActionListener(e -> btnVerPDFAction());
 
-        gbc.gridwidth = 1;
-        gbc.gridx = 0; gbc.gridy = 1;
-        panelSuperior.add(lblBuscar, gbc);
+        GridBagConstraints gbc_lblBuscar = new GridBagConstraints();
+        gbc_lblBuscar.insets = new Insets(5, 5, 5, 5);
+        gbc_lblBuscar.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lblBuscar.gridwidth = 1;
+        gbc_lblBuscar.gridx = 0; gbc_lblBuscar.gridy = 1;
+        panelSuperior.add(lblBuscar, gbc_lblBuscar);
 
-        gbc.gridx = 1;
-        panelSuperior.add(txtBuscarCAE, gbc);
+        GridBagConstraints gbc_txtBuscarCAE = new GridBagConstraints();
+        gbc_txtBuscarCAE.insets = new Insets(5, 5, 5, 5);
+        gbc_txtBuscarCAE.fill = GridBagConstraints.HORIZONTAL;
+        gbc_txtBuscarCAE.gridwidth = 1;
+        gbc_txtBuscarCAE.gridx = 1; gbc_txtBuscarCAE.gridy = 1;
+        panelSuperior.add(txtBuscarCAE, gbc_txtBuscarCAE);
 
-        gbc.gridx = 2;
-        panelSuperior.add(btnBuscar, gbc);
+        GridBagConstraints gbc_btnBuscar = new GridBagConstraints();
+        gbc_btnBuscar.insets = new Insets(5, 5, 5, 5);
+        gbc_btnBuscar.fill = GridBagConstraints.HORIZONTAL;
+        gbc_btnBuscar.gridwidth = 1;
+        gbc_btnBuscar.gridx = 2; gbc_btnBuscar.gridy = 1;
+        panelSuperior.add(btnBuscar, gbc_btnBuscar);
 
-        gbc.gridx = 3;
-        panelSuperior.add(btnActualizar, gbc);
+        GridBagConstraints gbc_btnActualizar = new GridBagConstraints();
+        gbc_btnActualizar.insets = new Insets(5, 5, 5, 5);
+        gbc_btnActualizar.fill = GridBagConstraints.HORIZONTAL;
+        gbc_btnActualizar.gridwidth = 1;
+        gbc_btnActualizar.gridx = 3; gbc_btnActualizar.gridy = 1;
+        panelSuperior.add(btnActualizar, gbc_btnActualizar);
 
-        gbc.gridx = 4;
-        panelSuperior.add(btnVerPDF, gbc);
+        GridBagConstraints gbc_btnVerPDF = new GridBagConstraints();
+        gbc_btnVerPDF.insets = new Insets(5, 5, 5, 5);
+        gbc_btnVerPDF.fill = GridBagConstraints.HORIZONTAL;
+        gbc_btnVerPDF.gridwidth = 1;
+        gbc_btnVerPDF.gridx = 4; gbc_btnVerPDF.gridy = 1;
+        panelSuperior.add(btnVerPDF, gbc_btnVerPDF);
 
         String[] columnas = {"ID", "Tipo", "PtoVta", "Numero", "Fecha", "CUIT Receptor", "Total", "Estado Pago", "CAE", "Vto CAE", "Email"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
@@ -110,16 +144,6 @@ public class VentanaComprobantes extends javax.swing.JFrame {
 
         add(panelSuperior, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
-    }
-
-    private JButton crearBoton(String texto) {
-        JButton btn = new JButton(texto);
-        btn.setFont(FUENTE_BOTON);
-        btn.setForeground(COLOR_TEXTO);
-        btn.setBackground(COLOR_BOTON);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setFocusPainted(false);
-        return btn;
     }
 
     private void cargarComprobantes() {

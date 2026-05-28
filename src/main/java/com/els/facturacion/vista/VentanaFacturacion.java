@@ -87,7 +87,6 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private JTextField txtImporteIva;
     private JTextField txtImporteTotal;
     private JTextField txtOtrosImpuestos;
-    private JLabel lblEstadoPago;
     private JComboBox<String> cmbAlicuotaIva;
     private JButton btnEliminarItem;
     private JButton btnAgregarItem;
@@ -178,7 +177,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         datosWrapper.setBackground(COLOR_FONDO);
 
         JPanel centerCol = new JPanel(new GridBagLayout());
-        centerCol.setBorder(new CompoundBorder(new LineBorder(new Color(0, 0, 255), 2), new EmptyBorder(10, 10, 10, 10)));
+        centerCol.setBorder(new CompoundBorder(new LineBorder(new Color(0, 0, 160)), new EmptyBorder(10, 10, 10, 10)));
         centerCol.setBackground(COLOR_FONDO);
 
         centerCol.add(crearSeccionPuntoVenta(), new GridBagConstraints(0, 0, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(8, 0, 8, 0), 0, 0));
@@ -344,27 +343,19 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelSur.add(panelItems, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, panelIns, 0, 0));
         panelSur.add(panelTotales, new GridBagConstraints(1, 0, 1, 1, 1, 0, GridBagConstraints.EAST, GridBagConstraints.HORIZONTAL, panelIns, 0, 0));
 
-        // Row 1 - Estado + Emitir + Limpiar
+        // Row 1 - Emitir + Limpiar
         JPanel panelEmitir = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 4));
         panelEmitir.setBackground(COLOR_FONDO);
-        lblEstadoPago = new JLabel("Estado: Pendiente de pago");
-        lblEstadoPago.setFont(FUENTE_BOTON);
-        lblEstadoPago.setForeground(COLOR_TEXTO);
 
         btnEmitir = new JButton("GUARDAR / EMITIR FACTURA");
         btnEmitir.setFont(new Font("Cambria", Font.BOLD, 13));
         btnEmitir.setBackground(new Color(50, 140, 50));
         btnEmitir.setForeground(Color.WHITE);
         btnEmitir.setFocusPainted(false);
-        btnEmitir.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(30, 110, 30), 2),
-            BorderFactory.createEmptyBorder(8, 20, 8, 20)
-        ));
         btnEmitir.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnLimpiar = new JButton("LIMPIAR");
         estilizarBoton(btnLimpiar);
 
-        panelEmitir.add(lblEstadoPago);
         panelEmitir.add(btnEmitir);
         panelEmitir.add(btnLimpiar);
 
@@ -670,7 +661,6 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     public JTextField getTxtImporteIva() { return txtImporteIva; }
     public JTextField getTxtImporteTotal() { return txtImporteTotal; }
     public JTextField getTxtOtrosImpuestos() { return txtOtrosImpuestos; }
-    public JLabel getLblEstadoPago() { return lblEstadoPago; }
     public JCheckBox getChkModoPrueba() { return chkModoPrueba; }
     public JButton getBtnSiguiente() { return btnSiguiente; }
     public JButton getBtnImportarRemito() { return btnImportarRemito; }

@@ -55,14 +55,8 @@ public class VentanaMigracion extends JFrame {
         lblTitulo.setForeground(COLOR_TEXTO);
         lblTitulo.setBackground(COLOR_FONDO);
 
-        panelSuperior.add(lblTitulo);
-
         JPanel panelCentro = new JPanel(new GridBagLayout());
         panelCentro.setBackground(COLOR_FONDO);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
         JLabel lblTipo = new JLabel("Tipo de Migracion:");
         lblTipo.setFont(FUENTE_LABEL);
         lblTipo.setForeground(COLOR_TEXTO);
@@ -84,7 +78,12 @@ public class VentanaMigracion extends JFrame {
         txtRutaArchivo.setFont(new Font("Cambria", Font.PLAIN, 11));
         txtRutaArchivo.setEditable(false);
 
-        JButton btnSeleccionar = crearBoton("SELECCIONAR");
+        JButton btnSeleccionar = new JButton("SELECCIONAR");
+        btnSeleccionar.setFont(FUENTE_BOTON);
+        btnSeleccionar.setForeground(COLOR_TEXTO);
+        btnSeleccionar.setBackground(COLOR_BOTON);
+        btnSeleccionar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnSeleccionar.setFocusPainted(false);
         btnSeleccionar.addActionListener(e -> btnSeleccionarAction());
 
         JLabel lblHoja = new JLabel("Hoja a Migrar:");
@@ -95,58 +94,119 @@ public class VentanaMigracion extends JFrame {
         cmbHoja.setFont(FUENTE_BOTON);
         cmbHoja.setPreferredSize(new java.awt.Dimension(150, 25));
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 3;
-        panelCentro.add(lblTitulo, gbc);
+        GridBagConstraints gbc_titulo = new GridBagConstraints();
+        gbc_titulo.insets = new Insets(10, 10, 10, 10);
+        gbc_titulo.fill = GridBagConstraints.HORIZONTAL;
+        gbc_titulo.gridx = 0; gbc_titulo.gridy = 0; gbc_titulo.gridwidth = 3;
+        panelCentro.add(lblTitulo, gbc_titulo);
 
-        gbc.gridwidth = 1;
-        gbc.gridx = 0; gbc.gridy = 1;
-        panelCentro.add(lblTipo, gbc);
-        gbc.gridx = 1; gbc.gridwidth = 2;
-        panelCentro.add(cmbTipoMigracion, gbc);
+        GridBagConstraints gbc_tipo = new GridBagConstraints();
+        gbc_tipo.insets = new Insets(10, 10, 10, 10);
+        gbc_tipo.fill = GridBagConstraints.HORIZONTAL;
+        gbc_tipo.gridwidth = 1;
+        gbc_tipo.gridx = 0; gbc_tipo.gridy = 1;
+        panelCentro.add(lblTipo, gbc_tipo);
 
-        gbc.gridwidth = 1;
-        gbc.gridx = 0; gbc.gridy = 2;
-        panelCentro.add(lblArchivo, gbc);
-        gbc.gridx = 1;
-        panelCentro.add(txtRutaArchivo, gbc);
-        gbc.gridx = 2;
-        panelCentro.add(btnSeleccionar, gbc);
+        GridBagConstraints gbc_cmbTipo = new GridBagConstraints();
+        gbc_cmbTipo.insets = new Insets(10, 10, 10, 10);
+        gbc_cmbTipo.fill = GridBagConstraints.HORIZONTAL;
+        gbc_cmbTipo.gridx = 1; gbc_cmbTipo.gridwidth = 2;
+        panelCentro.add(cmbTipoMigracion, gbc_cmbTipo);
 
-        gbc.gridx = 0; gbc.gridy = 3;
-        panelCentro.add(lblHoja, gbc);
-        gbc.gridx = 1;
-        panelCentro.add(cmbHoja, gbc);
+        GridBagConstraints gbc_archivo = new GridBagConstraints();
+        gbc_archivo.insets = new Insets(10, 10, 10, 10);
+        gbc_archivo.fill = GridBagConstraints.HORIZONTAL;
+        gbc_archivo.gridwidth = 1;
+        gbc_archivo.gridx = 0; gbc_archivo.gridy = 2;
+        panelCentro.add(lblArchivo, gbc_archivo);
+
+        GridBagConstraints gbc_txtRuta = new GridBagConstraints();
+        gbc_txtRuta.insets = new Insets(10, 10, 10, 10);
+        gbc_txtRuta.fill = GridBagConstraints.HORIZONTAL;
+        gbc_txtRuta.gridx = 1;
+        panelCentro.add(txtRutaArchivo, gbc_txtRuta);
+
+        GridBagConstraints gbc_btnSeleccionar = new GridBagConstraints();
+        gbc_btnSeleccionar.insets = new Insets(10, 10, 10, 10);
+        gbc_btnSeleccionar.fill = GridBagConstraints.HORIZONTAL;
+        gbc_btnSeleccionar.gridx = 2;
+        panelCentro.add(btnSeleccionar, gbc_btnSeleccionar);
+
+        GridBagConstraints gbc_hoja = new GridBagConstraints();
+        gbc_hoja.insets = new Insets(10, 10, 10, 10);
+        gbc_hoja.fill = GridBagConstraints.HORIZONTAL;
+        gbc_hoja.gridx = 0; gbc_hoja.gridy = 3;
+        panelCentro.add(lblHoja, gbc_hoja);
+
+        GridBagConstraints gbc_cmbHoja = new GridBagConstraints();
+        gbc_cmbHoja.insets = new Insets(10, 10, 10, 10);
+        gbc_cmbHoja.fill = GridBagConstraints.HORIZONTAL;
+        gbc_cmbHoja.gridx = 1;
+        panelCentro.add(cmbHoja, gbc_cmbHoja);
 
         lblEstado = new JLabel("Seleccione un archivo y tipo de migracion", SwingConstants.CENTER);
         lblEstado.setFont(new Font("Cambria", Font.PLAIN, 11));
         lblEstado.setForeground(COLOR_TEXTO);
         lblEstado.setBackground(COLOR_FONDO);
 
-        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 3;
-        panelCentro.add(lblEstado, gbc);
+        GridBagConstraints gbc_estado = new GridBagConstraints();
+        gbc_estado.insets = new Insets(10, 10, 10, 10);
+        gbc_estado.fill = GridBagConstraints.HORIZONTAL;
+        gbc_estado.gridx = 0; gbc_estado.gridy = 4; gbc_estado.gridwidth = 3;
+        panelCentro.add(lblEstado, gbc_estado);
 
         JPanel panelBotones = new JPanel();
         panelBotones.setBackground(COLOR_FONDO);
 
-        JButton btnMigrar = crearBoton("MIGRAR");
+        JButton btnMigrar = new JButton("MIGRAR");
+        btnMigrar.setFont(FUENTE_BOTON);
+        btnMigrar.setForeground(COLOR_TEXTO);
+        btnMigrar.setBackground(COLOR_BOTON);
+        btnMigrar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnMigrar.setFocusPainted(false);
         btnMigrar.addActionListener(e -> btnMigrarAction());
 
-        JButton btnLimpiar = crearBoton("LIMPIAR");
+        JButton btnLimpiar = new JButton("LIMPIAR");
+        btnLimpiar.setFont(FUENTE_BOTON);
+        btnLimpiar.setForeground(COLOR_TEXTO);
+        btnLimpiar.setBackground(COLOR_BOTON);
+        btnLimpiar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnLimpiar.setFocusPainted(false);
         btnLimpiar.addActionListener(e -> {
             txtRutaArchivo.setText("");
             lblEstado.setText("Seleccione un archivo y tipo de migracion");
         });
 
-        JButton btnVerificar = crearBoton("VERIFICAR");
+        JButton btnVerificar = new JButton("VERIFICAR");
+        btnVerificar.setFont(FUENTE_BOTON);
+        btnVerificar.setForeground(COLOR_TEXTO);
+        btnVerificar.setBackground(COLOR_BOTON);
+        btnVerificar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnVerificar.setFocusPainted(false);
         btnVerificar.addActionListener(e -> btnVerificarAction());
 
-        JButton btnNuevoAnio = crearBoton("NUEVO AÑO");
+        JButton btnNuevoAnio = new JButton("NUEVO AÑO");
+        btnNuevoAnio.setFont(FUENTE_BOTON);
+        btnNuevoAnio.setForeground(COLOR_TEXTO);
+        btnNuevoAnio.setBackground(COLOR_BOTON);
+        btnNuevoAnio.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnNuevoAnio.setFocusPainted(false);
         btnNuevoAnio.addActionListener(e -> btnNuevoAnioAction());
 
-        JButton btnAgregarColumna = crearBoton("AGREGAR COLUMNA");
+        JButton btnAgregarColumna = new JButton("AGREGAR COLUMNA");
+        btnAgregarColumna.setFont(FUENTE_BOTON);
+        btnAgregarColumna.setForeground(COLOR_TEXTO);
+        btnAgregarColumna.setBackground(COLOR_BOTON);
+        btnAgregarColumna.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnAgregarColumna.setFocusPainted(false);
         btnAgregarColumna.addActionListener(e -> btnAgregarColumnaAction());
 
-        JButton btnCerrar = crearBoton("CERRAR");
+        JButton btnCerrar = new JButton("CERRAR");
+        btnCerrar.setFont(FUENTE_BOTON);
+        btnCerrar.setForeground(COLOR_TEXTO);
+        btnCerrar.setBackground(COLOR_BOTON);
+        btnCerrar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnCerrar.setFocusPainted(false);
         btnCerrar.addActionListener(e -> dispose());
 
         panelBotones.add(btnMigrar);
@@ -161,16 +221,6 @@ public class VentanaMigracion extends JFrame {
         add(panelBotones, BorderLayout.SOUTH);
 
         cmbTipoMigracion.addActionListener(e -> actualizarHojasDisponibles());
-    }
-
-    private JButton crearBoton(String texto) {
-        JButton btn = new JButton(texto);
-        btn.setFont(FUENTE_BOTON);
-        btn.setForeground(COLOR_TEXTO);
-        btn.setBackground(COLOR_BOTON);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setFocusPainted(false);
-        return btn;
     }
 
     private void actualizarHojasDisponibles() {

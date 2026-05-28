@@ -47,30 +47,73 @@ public class VentanaSeleccionCliente extends JDialog {
 
         JPanel panelSuperior = new JPanel(new GridBagLayout());
         panelSuperior.setBackground(COLOR_FONDO);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
 
         JLabel lblTitulo = new JLabel("SELECCIONAR CLIENTE");
         lblTitulo.setFont(new Font("Cambria", Font.BOLD, 16));
         lblTitulo.setForeground(COLOR_TEXTO);
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 4;
-        panelSuperior.add(lblTitulo, gbc);
 
-        gbc.gridwidth = 1; gbc.gridy = 1;
+        GridBagConstraints gbc_titulo = new GridBagConstraints();
+        gbc_titulo.insets = new Insets(5, 5, 5, 5);
+        gbc_titulo.gridx = 0; gbc_titulo.gridy = 0; gbc_titulo.gridwidth = 4;
+        panelSuperior.add(lblTitulo, gbc_titulo);
+
         txtBuscar = new JTextField(20);
-        JButton btnBuscar = crearBoton("BUSCAR");
+
+        JButton btnBuscar = new JButton("BUSCAR");
+        btnBuscar.setFont(FUENTE_BOTON);
+        btnBuscar.setForeground(COLOR_TEXTO);
+        btnBuscar.setBackground(COLOR_BOTON);
+        btnBuscar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnBuscar.setFocusPainted(false);
         btnBuscar.addActionListener(e -> buscarCliente());
-        JButton btnMostrarTodos = crearBoton("MOSTRAR TODOS");
+
+        JButton btnMostrarTodos = new JButton("MOSTRAR TODOS");
+        btnMostrarTodos.setFont(FUENTE_BOTON);
+        btnMostrarTodos.setForeground(COLOR_TEXTO);
+        btnMostrarTodos.setBackground(COLOR_BOTON);
+        btnMostrarTodos.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnMostrarTodos.setFocusPainted(false);
         btnMostrarTodos.addActionListener(e -> cargarClientes());
-        JButton btnSeleccionar = crearBoton("SELECCIONAR");
+
+        JButton btnSeleccionar = new JButton("SELECCIONAR");
+        btnSeleccionar.setFont(FUENTE_BOTON);
+        btnSeleccionar.setForeground(COLOR_TEXTO);
+        btnSeleccionar.setBackground(COLOR_BOTON);
+        btnSeleccionar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnSeleccionar.setFocusPainted(false);
         btnSeleccionar.addActionListener(e -> seleccionarCliente());
-        JButton btnCancelar = crearBoton("CANCELAR");
+
+        JButton btnCancelar = new JButton("CANCELAR");
+        btnCancelar.setFont(FUENTE_BOTON);
+        btnCancelar.setForeground(COLOR_TEXTO);
+        btnCancelar.setBackground(COLOR_BOTON);
+        btnCancelar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnCancelar.setFocusPainted(false);
         btnCancelar.addActionListener(e -> dispose());
 
-        gbc.gridx = 0; panelSuperior.add(new JLabel("Buscar:"), gbc);
-        gbc.gridx = 1; panelSuperior.add(txtBuscar, gbc);
-        gbc.gridx = 2; panelSuperior.add(btnBuscar, gbc);
-        gbc.gridx = 3; panelSuperior.add(btnMostrarTodos, gbc);
+        GridBagConstraints gbc_label = new GridBagConstraints();
+        gbc_label.insets = new Insets(5, 5, 5, 5);
+        gbc_label.gridwidth = 1; gbc_label.gridy = 1;
+        gbc_label.gridx = 0;
+        panelSuperior.add(new JLabel("Buscar:"), gbc_label);
+
+        GridBagConstraints gbc_txtBuscar = new GridBagConstraints();
+        gbc_txtBuscar.insets = new Insets(5, 5, 5, 5);
+        gbc_txtBuscar.gridwidth = 1; gbc_txtBuscar.gridy = 1;
+        gbc_txtBuscar.gridx = 1;
+        panelSuperior.add(txtBuscar, gbc_txtBuscar);
+
+        GridBagConstraints gbc_btnBuscar = new GridBagConstraints();
+        gbc_btnBuscar.insets = new Insets(5, 5, 5, 5);
+        gbc_btnBuscar.gridwidth = 1; gbc_btnBuscar.gridy = 1;
+        gbc_btnBuscar.gridx = 2;
+        panelSuperior.add(btnBuscar, gbc_btnBuscar);
+
+        GridBagConstraints gbc_btnMostrarTodos = new GridBagConstraints();
+        gbc_btnMostrarTodos.insets = new Insets(5, 5, 5, 5);
+        gbc_btnMostrarTodos.gridwidth = 1; gbc_btnMostrarTodos.gridy = 1;
+        gbc_btnMostrarTodos.gridx = 3;
+        panelSuperior.add(btnMostrarTodos, gbc_btnMostrarTodos);
 
         String[] columnas = {"ID", "Documento", "Razon Social", "Condicion IVA", "Domicilio", "Telefono"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
@@ -140,13 +183,4 @@ public class VentanaSeleccionCliente extends JDialog {
         return clienteSeleccionado;
     }
 
-    private JButton crearBoton(String texto) {
-        JButton btn = new JButton(texto);
-        btn.setFont(FUENTE_BOTON);
-        btn.setForeground(COLOR_TEXTO);
-        btn.setBackground(COLOR_BOTON);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setFocusPainted(false);
-        return btn;
-    }
 }

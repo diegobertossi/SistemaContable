@@ -76,7 +76,12 @@ public class VentanaRemitos extends javax.swing.JFrame {
             if (!e.getValueIsAdjusting()) cargarRemitoSeleccionado();
         });
 
-        JButton btnNuevo = crearBoton("NUEVO REMITO");
+        JButton btnNuevo = new JButton("NUEVO REMITO");
+        btnNuevo.setFont(FUENTE_BOTON);
+        btnNuevo.setForeground(COLOR_TEXTO);
+        btnNuevo.setBackground(COLOR_BOTON);
+        btnNuevo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnNuevo.setFocusPainted(false);
         btnNuevo.addActionListener(e -> nuevoRemito());
 
         JPanel panelListaBotones = new JPanel();
@@ -89,10 +94,6 @@ public class VentanaRemitos extends javax.swing.JFrame {
 
         JPanel panelDerecho = new JPanel(new GridBagLayout());
         panelDerecho.setBackground(COLOR_FONDO);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(3, 5, 3, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
         txtNumero = new JTextField(20);
         txtNumero.setEditable(false);
         txtFechaEmision = new JTextField(10);
@@ -101,29 +102,98 @@ public class VentanaRemitos extends javax.swing.JFrame {
         cmbEstado = new JComboBox<>(new String[]{"pendiente", "entregado", "anulado"});
 
         int row = 0;
-        gbc.gridx = 0; gbc.gridy = row;
-        panelDerecho.add(new JLabel("Numero Remito:"), gbc);
-        gbc.gridx = 1; panelDerecho.add(txtNumero, gbc);
-        gbc.gridx = 2; panelDerecho.add(new JLabel("Estado:"), gbc);
-        gbc.gridx = 3; panelDerecho.add(cmbEstado, gbc);
 
-        row++; gbc.gridx = 0; gbc.gridy = row;
-        panelDerecho.add(new JLabel("Fecha Emision:"), gbc);
-        gbc.gridx = 1; panelDerecho.add(txtFechaEmision, gbc);
-        gbc.gridx = 2; panelDerecho.add(new JLabel("Fecha Entrega:"), gbc);
-        gbc.gridx = 3; panelDerecho.add(txtFechaEntrega, gbc);
+        GridBagConstraints gbc_lblNumero = new GridBagConstraints();
+        gbc_lblNumero.insets = new Insets(3, 5, 3, 5);
+        gbc_lblNumero.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lblNumero.gridx = 0; gbc_lblNumero.gridy = row;
+        panelDerecho.add(new JLabel("Numero Remito:"), gbc_lblNumero);
 
-        row++; gbc.gridx = 0; gbc.gridy = row;
-        panelDerecho.add(new JLabel("CUIT Receptor:"), gbc);
-        gbc.gridx = 1; gbc.gridwidth = 3; panelDerecho.add(txtCuitReceptor = new JTextField(30), gbc);
+        GridBagConstraints gbc_txtNumero = new GridBagConstraints();
+        gbc_txtNumero.insets = new Insets(3, 5, 3, 5);
+        gbc_txtNumero.fill = GridBagConstraints.HORIZONTAL;
+        gbc_txtNumero.gridx = 1; gbc_txtNumero.gridy = row;
+        panelDerecho.add(txtNumero, gbc_txtNumero);
 
-        row++; gbc.gridwidth = 1; gbc.gridx = 0; gbc.gridy = row;
-        panelDerecho.add(new JLabel("Razon Social:"), gbc);
-        gbc.gridx = 1; gbc.gridwidth = 3; panelDerecho.add(txtRazonSocial = new JTextField(30), gbc);
+        GridBagConstraints gbc_lblEstado = new GridBagConstraints();
+        gbc_lblEstado.insets = new Insets(3, 5, 3, 5);
+        gbc_lblEstado.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lblEstado.gridx = 2; gbc_lblEstado.gridy = row;
+        panelDerecho.add(new JLabel("Estado:"), gbc_lblEstado);
 
-        row++; gbc.gridwidth = 1; gbc.gridx = 0; gbc.gridy = row;
-        panelDerecho.add(new JLabel("Domicilio:"), gbc);
-        gbc.gridx = 1; gbc.gridwidth = 3; panelDerecho.add(txtDomicilio = new JTextField(30), gbc);
+        GridBagConstraints gbc_cmbEstado = new GridBagConstraints();
+        gbc_cmbEstado.insets = new Insets(3, 5, 3, 5);
+        gbc_cmbEstado.fill = GridBagConstraints.HORIZONTAL;
+        gbc_cmbEstado.gridx = 3; gbc_cmbEstado.gridy = row;
+        panelDerecho.add(cmbEstado, gbc_cmbEstado);
+
+        row++;
+
+        GridBagConstraints gbc_lblFechaEmision = new GridBagConstraints();
+        gbc_lblFechaEmision.insets = new Insets(3, 5, 3, 5);
+        gbc_lblFechaEmision.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lblFechaEmision.gridx = 0; gbc_lblFechaEmision.gridy = row;
+        panelDerecho.add(new JLabel("Fecha Emision:"), gbc_lblFechaEmision);
+
+        GridBagConstraints gbc_txtFechaEmision = new GridBagConstraints();
+        gbc_txtFechaEmision.insets = new Insets(3, 5, 3, 5);
+        gbc_txtFechaEmision.fill = GridBagConstraints.HORIZONTAL;
+        gbc_txtFechaEmision.gridx = 1; gbc_txtFechaEmision.gridy = row;
+        panelDerecho.add(txtFechaEmision, gbc_txtFechaEmision);
+
+        GridBagConstraints gbc_lblFechaEntrega = new GridBagConstraints();
+        gbc_lblFechaEntrega.insets = new Insets(3, 5, 3, 5);
+        gbc_lblFechaEntrega.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lblFechaEntrega.gridx = 2; gbc_lblFechaEntrega.gridy = row;
+        panelDerecho.add(new JLabel("Fecha Entrega:"), gbc_lblFechaEntrega);
+
+        GridBagConstraints gbc_txtFechaEntrega = new GridBagConstraints();
+        gbc_txtFechaEntrega.insets = new Insets(3, 5, 3, 5);
+        gbc_txtFechaEntrega.fill = GridBagConstraints.HORIZONTAL;
+        gbc_txtFechaEntrega.gridx = 3; gbc_txtFechaEntrega.gridy = row;
+        panelDerecho.add(txtFechaEntrega, gbc_txtFechaEntrega);
+
+        row++;
+
+        GridBagConstraints gbc_lblCuit = new GridBagConstraints();
+        gbc_lblCuit.insets = new Insets(3, 5, 3, 5);
+        gbc_lblCuit.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lblCuit.gridx = 0; gbc_lblCuit.gridy = row;
+        panelDerecho.add(new JLabel("CUIT Receptor:"), gbc_lblCuit);
+
+        GridBagConstraints gbc_txtCuit = new GridBagConstraints();
+        gbc_txtCuit.insets = new Insets(3, 5, 3, 5);
+        gbc_txtCuit.fill = GridBagConstraints.HORIZONTAL;
+        gbc_txtCuit.gridx = 1; gbc_txtCuit.gridwidth = 3; gbc_txtCuit.gridy = row;
+        panelDerecho.add(txtCuitReceptor = new JTextField(30), gbc_txtCuit);
+
+        row++;
+
+        GridBagConstraints gbc_lblRazonSocial = new GridBagConstraints();
+        gbc_lblRazonSocial.insets = new Insets(3, 5, 3, 5);
+        gbc_lblRazonSocial.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lblRazonSocial.gridx = 0; gbc_lblRazonSocial.gridy = row;
+        panelDerecho.add(new JLabel("Razon Social:"), gbc_lblRazonSocial);
+
+        GridBagConstraints gbc_txtRazonSocial = new GridBagConstraints();
+        gbc_txtRazonSocial.insets = new Insets(3, 5, 3, 5);
+        gbc_txtRazonSocial.fill = GridBagConstraints.HORIZONTAL;
+        gbc_txtRazonSocial.gridx = 1; gbc_txtRazonSocial.gridwidth = 3; gbc_txtRazonSocial.gridy = row;
+        panelDerecho.add(txtRazonSocial = new JTextField(30), gbc_txtRazonSocial);
+
+        row++;
+
+        GridBagConstraints gbc_lblDomicilio = new GridBagConstraints();
+        gbc_lblDomicilio.insets = new Insets(3, 5, 3, 5);
+        gbc_lblDomicilio.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lblDomicilio.gridx = 0; gbc_lblDomicilio.gridy = row;
+        panelDerecho.add(new JLabel("Domicilio:"), gbc_lblDomicilio);
+
+        GridBagConstraints gbc_txtDomicilio = new GridBagConstraints();
+        gbc_txtDomicilio.insets = new Insets(3, 5, 3, 5);
+        gbc_txtDomicilio.fill = GridBagConstraints.HORIZONTAL;
+        gbc_txtDomicilio.gridx = 1; gbc_txtDomicilio.gridwidth = 3; gbc_txtDomicilio.gridy = row;
+        panelDerecho.add(txtDomicilio = new JTextField(30), gbc_txtDomicilio);
 
         String[] colItems = {"Codigo", "Descripcion", "Cantidad", "U. Medida"};
         modeloTablaItems = new DefaultTableModel(colItems, 0) {
@@ -138,9 +208,19 @@ public class VentanaRemitos extends javax.swing.JFrame {
         txtDescripcion = new JTextField(20);
         txtCantidad = new JTextField(5);
         txtCantidad.setText("1");
-        JButton btnAgregarItem = crearBoton("+ AGREGAR");
+        JButton btnAgregarItem = new JButton("+ AGREGAR");
+        btnAgregarItem.setFont(FUENTE_BOTON);
+        btnAgregarItem.setForeground(COLOR_TEXTO);
+        btnAgregarItem.setBackground(COLOR_BOTON);
+        btnAgregarItem.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnAgregarItem.setFocusPainted(false);
         btnAgregarItem.addActionListener(e -> agregarItem());
-        JButton btnEliminarItem = crearBoton("- ELIMINAR");
+        JButton btnEliminarItem = new JButton("- ELIMINAR");
+        btnEliminarItem.setFont(FUENTE_BOTON);
+        btnEliminarItem.setForeground(COLOR_TEXTO);
+        btnEliminarItem.setBackground(COLOR_BOTON);
+        btnEliminarItem.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnEliminarItem.setFocusPainted(false);
         btnEliminarItem.addActionListener(e -> eliminarItem());
         panelItemForm.add(new JLabel("Codigo:"));
         panelItemForm.add(txtCodigo);
@@ -151,32 +231,66 @@ public class VentanaRemitos extends javax.swing.JFrame {
         panelItemForm.add(btnAgregarItem);
         panelItemForm.add(btnEliminarItem);
 
-        row++; gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 4;
-        panelDerecho.add(scrollItems, gbc);
+        row++;
 
-        row++; gbc.gridy = row;
-        panelDerecho.add(panelItemForm, gbc);
+        GridBagConstraints gbc_scrollItems = new GridBagConstraints();
+        gbc_scrollItems.insets = new Insets(3, 5, 3, 5);
+        gbc_scrollItems.fill = GridBagConstraints.HORIZONTAL;
+        gbc_scrollItems.gridx = 0; gbc_scrollItems.gridy = row; gbc_scrollItems.gridwidth = 4;
+        panelDerecho.add(scrollItems, gbc_scrollItems);
 
-        row++; gbc.gridy = row;
+        row++;
+
+        GridBagConstraints gbc_itemForm = new GridBagConstraints();
+        gbc_itemForm.insets = new Insets(3, 5, 3, 5);
+        gbc_itemForm.fill = GridBagConstraints.HORIZONTAL;
+        gbc_itemForm.gridx = 0; gbc_itemForm.gridy = row; gbc_itemForm.gridwidth = 4;
+        panelDerecho.add(panelItemForm, gbc_itemForm);
+
+        row++;
+
+        GridBagConstraints gbc_lblObs = new GridBagConstraints();
+        gbc_lblObs.insets = new Insets(3, 5, 3, 5);
+        gbc_lblObs.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lblObs.gridx = 0; gbc_lblObs.gridy = row; gbc_lblObs.gridwidth = 4;
         JLabel lblObs = new JLabel("Observaciones:");
         txtObservaciones = new JTextArea(3, 30);
         JScrollPane scrollObs = new JScrollPane(txtObservaciones);
-        panelDerecho.add(lblObs, gbc);
-        row++; gbc.gridy = row;
-        panelDerecho.add(scrollObs, gbc);
+        panelDerecho.add(lblObs, gbc_lblObs);
 
-        row++; gbc.gridy = row;
+        row++;
+
+        GridBagConstraints gbc_scrollObs = new GridBagConstraints();
+        gbc_scrollObs.insets = new Insets(3, 5, 3, 5);
+        gbc_scrollObs.fill = GridBagConstraints.HORIZONTAL;
+        gbc_scrollObs.gridx = 0; gbc_scrollObs.gridy = row; gbc_scrollObs.gridwidth = 4;
+        panelDerecho.add(scrollObs, gbc_scrollObs);
+
+        row++;
+
+        GridBagConstraints gbc_panelBotones = new GridBagConstraints();
+        gbc_panelBotones.insets = new Insets(3, 5, 3, 5);
+        gbc_panelBotones.fill = GridBagConstraints.HORIZONTAL;
+        gbc_panelBotones.gridx = 0; gbc_panelBotones.gridy = row; gbc_panelBotones.gridwidth = 4;
         JPanel panelBotones = new JPanel();
         panelBotones.setBackground(COLOR_FONDO);
-        JButton btnGuardar = crearBoton("GUARDAR REMITO");
+        JButton btnGuardar = new JButton("GUARDAR REMITO");
+        btnGuardar.setFont(FUENTE_BOTON);
+        btnGuardar.setForeground(COLOR_TEXTO);
+        btnGuardar.setBackground(COLOR_BOTON);
+        btnGuardar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnGuardar.setFocusPainted(false);
         btnGuardar.addActionListener(e -> guardarRemito());
-        JButton btnCambiarEstado = crearBoton("CAMBIAR ESTADO");
+        JButton btnCambiarEstado = new JButton("CAMBIAR ESTADO");
+        btnCambiarEstado.setFont(FUENTE_BOTON);
+        btnCambiarEstado.setForeground(COLOR_TEXTO);
+        btnCambiarEstado.setBackground(COLOR_BOTON);
+        btnCambiarEstado.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnCambiarEstado.setFocusPainted(false);
         btnCambiarEstado.addActionListener(e -> cambiarEstado());
         panelBotones.add(btnGuardar);
         panelBotones.add(btnCambiarEstado);
-
-        row++; gbc.gridy = row;
-        panelDerecho.add(panelBotones, gbc);
+        panelDerecho.add(panelBotones, gbc_panelBotones);
 
         add(panelIzquierdo, BorderLayout.WEST);
         add(panelDerecho, BorderLayout.CENTER);
@@ -309,13 +423,5 @@ public class VentanaRemitos extends javax.swing.JFrame {
         }
     }
 
-    private JButton crearBoton(String texto) {
-        JButton btn = new JButton(texto);
-        btn.setFont(FUENTE_BOTON);
-        btn.setForeground(COLOR_TEXTO);
-        btn.setBackground(COLOR_BOTON);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setFocusPainted(false);
-        return btn;
-    }
+
 }

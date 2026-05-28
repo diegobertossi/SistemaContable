@@ -106,7 +106,12 @@ public class VentanaGastos extends javax.swing.JFrame {
         lblAnio.setFont(FUENTE_BOTON);
         lblAnio.setForeground(COLOR_TEXTO);
 
-        JButton btnFiltrar = crearBoton("FILTRAR");
+        JButton btnFiltrar = new JButton("FILTRAR");
+        btnFiltrar.setFont(FUENTE_BOTON);
+        btnFiltrar.setForeground(COLOR_TEXTO);
+        btnFiltrar.setBackground(COLOR_BOTON);
+        btnFiltrar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnFiltrar.setFocusPainted(false);
         btnFiltrar.addActionListener(e -> {
             cargarGastos();
             actualizarTotal();
@@ -120,10 +125,6 @@ public class VentanaGastos extends javax.swing.JFrame {
 
         JPanel panelFormulario = new JPanel(new GridBagLayout());
         panelFormulario.setBackground(COLOR_FONDO);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 8, 5, 8);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
         JLabel lblCat = new JLabel("Categoria:");
         lblCat.setFont(FUENTE_BOTON);
         lblCat.setForeground(COLOR_TEXTO);
@@ -142,31 +143,67 @@ public class VentanaGastos extends javax.swing.JFrame {
         txtMonto = new JTextField(10);
         txtMonto.setFont(new Font("Cambria", Font.PLAIN, 11));
 
-        gbc.gridx = 0; gbc.gridy = 0;
-        panelFormulario.add(lblCat, gbc);
-        gbc.gridx = 1;
-        panelFormulario.add(cmbCategoria, gbc);
+        GridBagConstraints gbc_lblCat = new GridBagConstraints();
+        gbc_lblCat.insets = new Insets(5, 8, 5, 8);
+        gbc_lblCat.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lblCat.gridx = 0; gbc_lblCat.gridy = 0;
+        panelFormulario.add(lblCat, gbc_lblCat);
 
-        gbc.gridx = 2;
-        panelFormulario.add(lblDesc, gbc);
-        gbc.gridx = 3;
-        panelFormulario.add(txtDescripcion, gbc);
+        GridBagConstraints gbc_cmbCategoria = new GridBagConstraints();
+        gbc_cmbCategoria.insets = new Insets(5, 8, 5, 8);
+        gbc_cmbCategoria.fill = GridBagConstraints.HORIZONTAL;
+        gbc_cmbCategoria.gridx = 1; gbc_cmbCategoria.gridy = 0;
+        panelFormulario.add(cmbCategoria, gbc_cmbCategoria);
 
-        gbc.gridx = 4;
-        panelFormulario.add(lblMonto, gbc);
-        gbc.gridx = 5;
-        panelFormulario.add(txtMonto, gbc);
+        GridBagConstraints gbc_lblDesc = new GridBagConstraints();
+        gbc_lblDesc.insets = new Insets(5, 8, 5, 8);
+        gbc_lblDesc.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lblDesc.gridx = 2; gbc_lblDesc.gridy = 0;
+        panelFormulario.add(lblDesc, gbc_lblDesc);
+
+        GridBagConstraints gbc_txtDescripcion = new GridBagConstraints();
+        gbc_txtDescripcion.insets = new Insets(5, 8, 5, 8);
+        gbc_txtDescripcion.fill = GridBagConstraints.HORIZONTAL;
+        gbc_txtDescripcion.gridx = 3; gbc_txtDescripcion.gridy = 0;
+        panelFormulario.add(txtDescripcion, gbc_txtDescripcion);
+
+        GridBagConstraints gbc_lblMonto = new GridBagConstraints();
+        gbc_lblMonto.insets = new Insets(5, 8, 5, 8);
+        gbc_lblMonto.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lblMonto.gridx = 4; gbc_lblMonto.gridy = 0;
+        panelFormulario.add(lblMonto, gbc_lblMonto);
+
+        GridBagConstraints gbc_txtMonto = new GridBagConstraints();
+        gbc_txtMonto.insets = new Insets(5, 8, 5, 8);
+        gbc_txtMonto.fill = GridBagConstraints.HORIZONTAL;
+        gbc_txtMonto.gridx = 5; gbc_txtMonto.gridy = 0;
+        panelFormulario.add(txtMonto, gbc_txtMonto);
 
         JPanel panelBotones = new JPanel();
         panelBotones.setBackground(COLOR_FONDO);
 
-        JButton btnAgregar = crearBoton("AGREGAR");
+        JButton btnAgregar = new JButton("AGREGAR");
+        btnAgregar.setFont(FUENTE_BOTON);
+        btnAgregar.setForeground(COLOR_TEXTO);
+        btnAgregar.setBackground(COLOR_BOTON);
+        btnAgregar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnAgregar.setFocusPainted(false);
         btnAgregar.addActionListener(e -> btnAgregarAction());
 
-        JButton btnEliminar = crearBoton("ELIMINAR");
+        JButton btnEliminar = new JButton("ELIMINAR");
+        btnEliminar.setFont(FUENTE_BOTON);
+        btnEliminar.setForeground(COLOR_TEXTO);
+        btnEliminar.setBackground(COLOR_BOTON);
+        btnEliminar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnEliminar.setFocusPainted(false);
         btnEliminar.addActionListener(e -> btnEliminarAction());
 
-        JButton btnLimpiar = crearBoton("LIMPIAR");
+        JButton btnLimpiar = new JButton("LIMPIAR");
+        btnLimpiar.setFont(FUENTE_BOTON);
+        btnLimpiar.setForeground(COLOR_TEXTO);
+        btnLimpiar.setBackground(COLOR_BOTON);
+        btnLimpiar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnLimpiar.setFocusPainted(false);
         btnLimpiar.addActionListener(e -> {
             txtDescripcion.setText("");
             txtMonto.setText("");
@@ -180,16 +217,6 @@ public class VentanaGastos extends javax.swing.JFrame {
         add(scrollPane, BorderLayout.CENTER);
         add(panelFiltro, BorderLayout.BEFORE_FIRST_LINE);
         add(panelFormulario, BorderLayout.SOUTH);
-    }
-
-    private JButton crearBoton(String texto) {
-        JButton btn = new JButton(texto);
-        btn.setFont(FUENTE_BOTON);
-        btn.setForeground(COLOR_TEXTO);
-        btn.setBackground(COLOR_BOTON);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setFocusPainted(false);
-        return btn;
     }
 
     private void cargarCategorias() {

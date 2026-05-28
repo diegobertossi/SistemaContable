@@ -110,10 +110,6 @@ public class VentanaConfigCertificados extends JFrame {
 
         JPanel panelFormulario = new JPanel(new GridBagLayout());
         panelFormulario.setBackground(COLOR_FONDO);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
         txtCuit = new JTextField(15);
         txtCuit.setFont(new Font("Cambria", Font.PLAIN, 11));
 
@@ -132,67 +128,143 @@ public class VentanaConfigCertificados extends JFrame {
         txtPassword = new JPasswordField(15);
         txtPassword.setFont(new Font("Cambria", Font.PLAIN, 11));
 
-        btnSeleccionarArchivo = crearBoton("SELECCIONAR");
+        btnSeleccionarArchivo = new JButton("SELECCIONAR");
+        btnSeleccionarArchivo.setFont(FUENTE_BOTON);
+        btnSeleccionarArchivo.setForeground(COLOR_TEXTO);
+        btnSeleccionarArchivo.setBackground(COLOR_BOTON);
+        btnSeleccionarArchivo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnSeleccionarArchivo.setFocusPainted(false);
 
         int row = 0;
 
-        gbc.gridx = 0; gbc.gridy = row;
-        JLabel lbl1 = crearLabel("CUIT:");
-        panelFormulario.add(lbl1, gbc);
-        gbc.gridx = 1;
-        panelFormulario.add(txtCuit, gbc);
+        GridBagConstraints gbc_lbl1 = new GridBagConstraints();
+        gbc_lbl1.insets = new Insets(5, 5, 5, 5);
+        gbc_lbl1.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lbl1.gridx = 0; gbc_lbl1.gridy = row;
+        JLabel lbl1 = new JLabel("CUIT:");
+        lbl1.setFont(FUENTE_LABEL);
+        lbl1.setForeground(COLOR_TEXTO);
+        panelFormulario.add(lbl1, gbc_lbl1);
+        GridBagConstraints gbc_txtCuit = new GridBagConstraints();
+        gbc_txtCuit.insets = new Insets(5, 5, 5, 5);
+        gbc_txtCuit.fill = GridBagConstraints.HORIZONTAL;
+        gbc_txtCuit.gridx = 1; gbc_txtCuit.gridy = row;
+        panelFormulario.add(txtCuit, gbc_txtCuit);
 
         row++;
-        gbc.gridx = 0; gbc.gridy = row;
-        JLabel lbl2 = crearLabel("Razon Social:");
-        panelFormulario.add(lbl2, gbc);
-        gbc.gridx = 1; gbc.gridwidth = 2;
-        panelFormulario.add(txtRazonSocial, gbc);
+        GridBagConstraints gbc_lbl2 = new GridBagConstraints();
+        gbc_lbl2.insets = new Insets(5, 5, 5, 5);
+        gbc_lbl2.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lbl2.gridx = 0; gbc_lbl2.gridy = row;
+        JLabel lbl2 = new JLabel("Razon Social:");
+        lbl2.setFont(FUENTE_LABEL);
+        lbl2.setForeground(COLOR_TEXTO);
+        panelFormulario.add(lbl2, gbc_lbl2);
+        GridBagConstraints gbc_txtRazonSocial = new GridBagConstraints();
+        gbc_txtRazonSocial.insets = new Insets(5, 5, 5, 5);
+        gbc_txtRazonSocial.fill = GridBagConstraints.HORIZONTAL;
+        gbc_txtRazonSocial.gridx = 1; gbc_txtRazonSocial.gridy = row;
+        gbc_txtRazonSocial.gridwidth = 2;
+        panelFormulario.add(txtRazonSocial, gbc_txtRazonSocial);
 
         row++;
-        gbc.gridwidth = 1;
-        gbc.gridx = 0; gbc.gridy = row;
-        JLabel lbl3 = crearLabel("Condicion IVA:");
-        panelFormulario.add(lbl3, gbc);
-        gbc.gridx = 1;
-        panelFormulario.add(cmbCondicionIva, gbc);
+        GridBagConstraints gbc_lbl3 = new GridBagConstraints();
+        gbc_lbl3.insets = new Insets(5, 5, 5, 5);
+        gbc_lbl3.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lbl3.gridx = 0; gbc_lbl3.gridy = row;
+        JLabel lbl3 = new JLabel("Condicion IVA:");
+        lbl3.setFont(FUENTE_LABEL);
+        lbl3.setForeground(COLOR_TEXTO);
+        panelFormulario.add(lbl3, gbc_lbl3);
+        GridBagConstraints gbc_cmbCondicionIva = new GridBagConstraints();
+        gbc_cmbCondicionIva.insets = new Insets(5, 5, 5, 5);
+        gbc_cmbCondicionIva.fill = GridBagConstraints.HORIZONTAL;
+        gbc_cmbCondicionIva.gridx = 1; gbc_cmbCondicionIva.gridy = row;
+        panelFormulario.add(cmbCondicionIva, gbc_cmbCondicionIva);
 
         row++;
-        gbc.gridx = 0; gbc.gridy = row;
-        JLabel lbl4 = crearLabel("Punto de Venta:");
-        panelFormulario.add(lbl4, gbc);
-        gbc.gridx = 1;
-        panelFormulario.add(txtPuntoVenta, gbc);
+        GridBagConstraints gbc_lbl4 = new GridBagConstraints();
+        gbc_lbl4.insets = new Insets(5, 5, 5, 5);
+        gbc_lbl4.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lbl4.gridx = 0; gbc_lbl4.gridy = row;
+        JLabel lbl4 = new JLabel("Punto de Venta:");
+        lbl4.setFont(FUENTE_LABEL);
+        lbl4.setForeground(COLOR_TEXTO);
+        panelFormulario.add(lbl4, gbc_lbl4);
+        GridBagConstraints gbc_txtPuntoVenta = new GridBagConstraints();
+        gbc_txtPuntoVenta.insets = new Insets(5, 5, 5, 5);
+        gbc_txtPuntoVenta.fill = GridBagConstraints.HORIZONTAL;
+        gbc_txtPuntoVenta.gridx = 1; gbc_txtPuntoVenta.gridy = row;
+        panelFormulario.add(txtPuntoVenta, gbc_txtPuntoVenta);
 
         row++;
-        gbc.gridx = 0; gbc.gridy = row;
-        JLabel lbl5 = crearLabel("Certificado .p12:");
-        panelFormulario.add(lbl5, gbc);
-        gbc.gridx = 1;
-        panelFormulario.add(txtRutaCertificado, gbc);
-        gbc.gridx = 2;
-        panelFormulario.add(btnSeleccionarArchivo, gbc);
+        GridBagConstraints gbc_lbl5 = new GridBagConstraints();
+        gbc_lbl5.insets = new Insets(5, 5, 5, 5);
+        gbc_lbl5.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lbl5.gridx = 0; gbc_lbl5.gridy = row;
+        JLabel lbl5 = new JLabel("Certificado .p12:");
+        lbl5.setFont(FUENTE_LABEL);
+        lbl5.setForeground(COLOR_TEXTO);
+        panelFormulario.add(lbl5, gbc_lbl5);
+        GridBagConstraints gbc_txtRutaCertificado = new GridBagConstraints();
+        gbc_txtRutaCertificado.insets = new Insets(5, 5, 5, 5);
+        gbc_txtRutaCertificado.fill = GridBagConstraints.HORIZONTAL;
+        gbc_txtRutaCertificado.gridx = 1; gbc_txtRutaCertificado.gridy = row;
+        panelFormulario.add(txtRutaCertificado, gbc_txtRutaCertificado);
+        GridBagConstraints gbc_btnSeleccionarArchivo = new GridBagConstraints();
+        gbc_btnSeleccionarArchivo.insets = new Insets(5, 5, 5, 5);
+        gbc_btnSeleccionarArchivo.fill = GridBagConstraints.HORIZONTAL;
+        gbc_btnSeleccionarArchivo.gridx = 2; gbc_btnSeleccionarArchivo.gridy = row;
+        panelFormulario.add(btnSeleccionarArchivo, gbc_btnSeleccionarArchivo);
 
         row++;
-        gbc.gridx = 0; gbc.gridy = row;
-        JLabel lbl6 = crearLabel("Password:");
-        panelFormulario.add(lbl6, gbc);
-        gbc.gridx = 1;
-        panelFormulario.add(txtPassword, gbc);
+        GridBagConstraints gbc_lbl6 = new GridBagConstraints();
+        gbc_lbl6.insets = new Insets(5, 5, 5, 5);
+        gbc_lbl6.fill = GridBagConstraints.HORIZONTAL;
+        gbc_lbl6.gridx = 0; gbc_lbl6.gridy = row;
+        JLabel lbl6 = new JLabel("Password:");
+        lbl6.setFont(FUENTE_LABEL);
+        lbl6.setForeground(COLOR_TEXTO);
+        panelFormulario.add(lbl6, gbc_lbl6);
+        GridBagConstraints gbc_txtPassword = new GridBagConstraints();
+        gbc_txtPassword.insets = new Insets(5, 5, 5, 5);
+        gbc_txtPassword.fill = GridBagConstraints.HORIZONTAL;
+        gbc_txtPassword.gridx = 1; gbc_txtPassword.gridy = row;
+        panelFormulario.add(txtPassword, gbc_txtPassword);
 
         JPanel panelBotones = new JPanel();
         panelBotones.setBackground(COLOR_FONDO);
 
-        JButton btnAgregar = crearBoton("AGREGAR");
+        JButton btnAgregar = new JButton("AGREGAR");
+        btnAgregar.setFont(FUENTE_BOTON);
+        btnAgregar.setForeground(COLOR_TEXTO);
+        btnAgregar.setBackground(COLOR_BOTON);
+        btnAgregar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnAgregar.setFocusPainted(false);
         btnAgregar.addActionListener(this::btnAgregarAction);
 
-        JButton btnModificar = crearBoton("MODIFICAR");
+        JButton btnModificar = new JButton("MODIFICAR");
+        btnModificar.setFont(FUENTE_BOTON);
+        btnModificar.setForeground(COLOR_TEXTO);
+        btnModificar.setBackground(COLOR_BOTON);
+        btnModificar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnModificar.setFocusPainted(false);
         btnModificar.addActionListener(this::btnModificarAction);
 
-        JButton btnEliminar = crearBoton("ELIMINAR");
+        JButton btnEliminar = new JButton("ELIMINAR");
+        btnEliminar.setFont(FUENTE_BOTON);
+        btnEliminar.setForeground(COLOR_TEXTO);
+        btnEliminar.setBackground(COLOR_BOTON);
+        btnEliminar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnEliminar.setFocusPainted(false);
         btnEliminar.addActionListener(this::btnEliminarAction);
 
-        JButton btnLimpiar = crearBoton("LIMPIAR");
+        JButton btnLimpiar = new JButton("LIMPIAR");
+        btnLimpiar.setFont(FUENTE_BOTON);
+        btnLimpiar.setForeground(COLOR_TEXTO);
+        btnLimpiar.setBackground(COLOR_BOTON);
+        btnLimpiar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnLimpiar.setFocusPainted(false);
         btnLimpiar.addActionListener(this::btnLimpiarAction);
 
         btnSeleccionarArchivo.addActionListener(this::btnSeleccionarAction);
@@ -215,23 +287,6 @@ public class VentanaConfigCertificados extends JFrame {
         add(panelSuperior, BorderLayout.NORTH);
         add(scrollTabla, BorderLayout.CENTER);
         add(panelSur, BorderLayout.SOUTH);
-    }
-
-    private JLabel crearLabel(String texto) {
-        JLabel lbl = new JLabel(texto);
-        lbl.setFont(FUENTE_LABEL);
-        lbl.setForeground(COLOR_TEXTO);
-        return lbl;
-    }
-
-    private JButton crearBoton(String texto) {
-        JButton btn = new JButton(texto);
-        btn.setFont(FUENTE_BOTON);
-        btn.setForeground(COLOR_TEXTO);
-        btn.setBackground(COLOR_BOTON);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setFocusPainted(false);
-        return btn;
     }
 
     private void cargarTabla() {

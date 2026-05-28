@@ -56,36 +56,51 @@ public class VentanaClientes extends javax.swing.JFrame {
 
         JPanel panelSuperior = new JPanel(new GridBagLayout());
         panelSuperior.setBackground(COLOR_FONDO);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        GridBagConstraints gbc_titulo = new GridBagConstraints();
+        gbc_titulo.insets = new Insets(5, 5, 5, 5);
+        gbc_titulo.fill = GridBagConstraints.HORIZONTAL;
+        gbc_titulo.gridx = 0; gbc_titulo.gridy = 0; gbc_titulo.gridwidth = 5;
 
         JLabel lblTitulo = new JLabel("MODULO DE CLIENTES");
         lblTitulo.setFont(new Font("Cambria", Font.BOLD, 18));
         lblTitulo.setForeground(COLOR_TEXTO);
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 5;
-        panelSuperior.add(lblTitulo, gbc);
+        panelSuperior.add(lblTitulo, gbc_titulo);
 
-        gbc.gridwidth = 1; gbc.gridy = 1;
         txtBuscar = new JTextField(20);
         txtBuscar.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) { buscarCliente(); }
             public void removeUpdate(DocumentEvent e) { buscarCliente(); }
             public void changedUpdate(DocumentEvent e) { buscarCliente(); }
         });
-        JButton btnImportar = crearBoton("IMPORTAR DE REPARSOFT");
+        JButton btnImportar = new JButton("IMPORTAR DE REPARSOFT");
+        btnImportar.setFont(FUENTE_BOTON);
+        btnImportar.setForeground(COLOR_TEXTO);
+        btnImportar.setBackground(COLOR_BOTON);
+        btnImportar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnImportar.setFocusPainted(false);
         btnImportar.addActionListener(e -> importarClientes());
 
-        gbc.gridx = 0; panelSuperior.add(new JLabel("Buscar:"), gbc);
-        gbc.gridx = 1; panelSuperior.add(txtBuscar, gbc);
-        gbc.gridx = 2; panelSuperior.add(btnImportar, gbc);
-        gbc.gridx = 3; panelSuperior.add(btnImportar, gbc);
+        GridBagConstraints gbc_buscar_label = new GridBagConstraints();
+        gbc_buscar_label.insets = new Insets(5, 5, 5, 5);
+        gbc_buscar_label.fill = GridBagConstraints.HORIZONTAL;
+        gbc_buscar_label.gridwidth = 1; gbc_buscar_label.gridx = 0; gbc_buscar_label.gridy = 1;
+
+        GridBagConstraints gbc_txtBuscar = new GridBagConstraints();
+        gbc_txtBuscar.insets = new Insets(5, 5, 5, 5);
+        gbc_txtBuscar.fill = GridBagConstraints.HORIZONTAL;
+        gbc_txtBuscar.gridwidth = 1; gbc_txtBuscar.gridx = 1; gbc_txtBuscar.gridy = 1;
+
+        GridBagConstraints gbc_btnImportar = new GridBagConstraints();
+        gbc_btnImportar.insets = new Insets(5, 5, 5, 5);
+        gbc_btnImportar.fill = GridBagConstraints.HORIZONTAL;
+        gbc_btnImportar.gridwidth = 1; gbc_btnImportar.gridx = 2; gbc_btnImportar.gridy = 1;
+
+        panelSuperior.add(new JLabel("Buscar:"), gbc_buscar_label);
+        panelSuperior.add(txtBuscar, gbc_txtBuscar);
+        panelSuperior.add(btnImportar, gbc_btnImportar);
 
         JPanel panelForm = new JPanel(new GridBagLayout());
         panelForm.setBackground(COLOR_FONDO);
-        GridBagConstraints fgc = new GridBagConstraints();
-        fgc.insets = new Insets(3, 5, 3, 5);
-        fgc.fill = GridBagConstraints.HORIZONTAL;
 
         cmbTipoDoc = new JComboBox<>(new String[]{"CUIT", "DNI"});
         cmbCondicionIva = new JComboBox<>(new String[]{
@@ -101,41 +116,125 @@ public class VentanaClientes extends javax.swing.JFrame {
         txtEmail = new JTextField(20);
 
         int row = 0;
-        fgc.gridx = 0; fgc.gridy = row;
-        panelForm.add(new JLabel("Tipo Doc:"), fgc);
-        fgc.gridx = 1; panelForm.add(cmbTipoDoc, fgc);
-        fgc.gridx = 2; panelForm.add(new JLabel("Nro Documento:"), fgc);
-        fgc.gridx = 3; panelForm.add(txtNroDoc, fgc);
 
-        row++; fgc.gridx = 0; fgc.gridy = row;
-        panelForm.add(new JLabel("Razon Social:"), fgc);
-        fgc.gridx = 1; fgc.gridwidth = 3; panelForm.add(txtRazonSocial, fgc);
+        GridBagConstraints fgc_tipoDoc_label = new GridBagConstraints();
+        fgc_tipoDoc_label.insets = new Insets(3, 5, 3, 5);
+        fgc_tipoDoc_label.fill = GridBagConstraints.HORIZONTAL;
+        fgc_tipoDoc_label.gridx = 0; fgc_tipoDoc_label.gridy = row;
+        panelForm.add(new JLabel("Tipo Doc:"), fgc_tipoDoc_label);
 
-        row++; fgc.gridwidth = 1; fgc.gridx = 0; fgc.gridy = row;
-        panelForm.add(new JLabel("Condicion IVA:"), fgc);
-        fgc.gridx = 1; fgc.gridwidth = 3; panelForm.add(cmbCondicionIva, fgc);
+        GridBagConstraints fgc_cmbTipoDoc = new GridBagConstraints();
+        fgc_cmbTipoDoc.insets = new Insets(3, 5, 3, 5);
+        fgc_cmbTipoDoc.fill = GridBagConstraints.HORIZONTAL;
+        fgc_cmbTipoDoc.gridx = 1; fgc_cmbTipoDoc.gridy = row;
+        panelForm.add(cmbTipoDoc, fgc_cmbTipoDoc);
 
-        row++; fgc.gridwidth = 1; fgc.gridx = 0; fgc.gridy = row;
-        panelForm.add(new JLabel("Domicilio:"), fgc);
-        fgc.gridx = 1; panelForm.add(txtDomicilio, fgc);
-        fgc.gridx = 2; panelForm.add(new JLabel("Telefono:"), fgc);
-        fgc.gridx = 3; panelForm.add(txtTelefono, fgc);
+        GridBagConstraints fgc_nroDoc_label = new GridBagConstraints();
+        fgc_nroDoc_label.insets = new Insets(3, 5, 3, 5);
+        fgc_nroDoc_label.fill = GridBagConstraints.HORIZONTAL;
+        fgc_nroDoc_label.gridx = 2; fgc_nroDoc_label.gridy = row;
+        panelForm.add(new JLabel("Nro Documento:"), fgc_nroDoc_label);
 
-        row++; fgc.gridx = 0; fgc.gridy = row;
-        panelForm.add(new JLabel("Email:"), fgc);
-        fgc.gridx = 1; panelForm.add(txtEmail, fgc);
+        GridBagConstraints fgc_txtNroDoc = new GridBagConstraints();
+        fgc_txtNroDoc.insets = new Insets(3, 5, 3, 5);
+        fgc_txtNroDoc.fill = GridBagConstraints.HORIZONTAL;
+        fgc_txtNroDoc.gridx = 3; fgc_txtNroDoc.gridy = row;
+        panelForm.add(txtNroDoc, fgc_txtNroDoc);
+
+        row++;
+
+        GridBagConstraints fgc_razonSocial_label = new GridBagConstraints();
+        fgc_razonSocial_label.insets = new Insets(3, 5, 3, 5);
+        fgc_razonSocial_label.fill = GridBagConstraints.HORIZONTAL;
+        fgc_razonSocial_label.gridx = 0; fgc_razonSocial_label.gridy = row;
+        panelForm.add(new JLabel("Razon Social:"), fgc_razonSocial_label);
+
+        GridBagConstraints fgc_txtRazonSocial = new GridBagConstraints();
+        fgc_txtRazonSocial.insets = new Insets(3, 5, 3, 5);
+        fgc_txtRazonSocial.fill = GridBagConstraints.HORIZONTAL;
+        fgc_txtRazonSocial.gridx = 1; fgc_txtRazonSocial.gridwidth = 3; fgc_txtRazonSocial.gridy = row;
+        panelForm.add(txtRazonSocial, fgc_txtRazonSocial);
+
+        row++;
+
+        GridBagConstraints fgc_condIva_label = new GridBagConstraints();
+        fgc_condIva_label.insets = new Insets(3, 5, 3, 5);
+        fgc_condIva_label.fill = GridBagConstraints.HORIZONTAL;
+        fgc_condIva_label.gridx = 0; fgc_condIva_label.gridwidth = 1; fgc_condIva_label.gridy = row;
+        panelForm.add(new JLabel("Condicion IVA:"), fgc_condIva_label);
+
+        GridBagConstraints fgc_cmbCondIva = new GridBagConstraints();
+        fgc_cmbCondIva.insets = new Insets(3, 5, 3, 5);
+        fgc_cmbCondIva.fill = GridBagConstraints.HORIZONTAL;
+        fgc_cmbCondIva.gridx = 1; fgc_cmbCondIva.gridwidth = 3; fgc_cmbCondIva.gridy = row;
+        panelForm.add(cmbCondicionIva, fgc_cmbCondIva);
+
+        row++;
+
+        GridBagConstraints fgc_domicilio_label = new GridBagConstraints();
+        fgc_domicilio_label.insets = new Insets(3, 5, 3, 5);
+        fgc_domicilio_label.fill = GridBagConstraints.HORIZONTAL;
+        fgc_domicilio_label.gridx = 0; fgc_domicilio_label.gridwidth = 1; fgc_domicilio_label.gridy = row;
+        panelForm.add(new JLabel("Domicilio:"), fgc_domicilio_label);
+
+        GridBagConstraints fgc_txtDomicilio = new GridBagConstraints();
+        fgc_txtDomicilio.insets = new Insets(3, 5, 3, 5);
+        fgc_txtDomicilio.fill = GridBagConstraints.HORIZONTAL;
+        fgc_txtDomicilio.gridx = 1; fgc_txtDomicilio.gridy = row;
+        panelForm.add(txtDomicilio, fgc_txtDomicilio);
+
+        GridBagConstraints fgc_telefono_label = new GridBagConstraints();
+        fgc_telefono_label.insets = new Insets(3, 5, 3, 5);
+        fgc_telefono_label.fill = GridBagConstraints.HORIZONTAL;
+        fgc_telefono_label.gridx = 2; fgc_telefono_label.gridy = row;
+        panelForm.add(new JLabel("Telefono:"), fgc_telefono_label);
+
+        GridBagConstraints fgc_txtTelefono = new GridBagConstraints();
+        fgc_txtTelefono.insets = new Insets(3, 5, 3, 5);
+        fgc_txtTelefono.fill = GridBagConstraints.HORIZONTAL;
+        fgc_txtTelefono.gridx = 3; fgc_txtTelefono.gridy = row;
+        panelForm.add(txtTelefono, fgc_txtTelefono);
+
+        row++;
+
+        GridBagConstraints fgc_email_label = new GridBagConstraints();
+        fgc_email_label.insets = new Insets(3, 5, 3, 5);
+        fgc_email_label.fill = GridBagConstraints.HORIZONTAL;
+        fgc_email_label.gridx = 0; fgc_email_label.gridy = row;
+        panelForm.add(new JLabel("Email:"), fgc_email_label);
+
+        GridBagConstraints fgc_txtEmail = new GridBagConstraints();
+        fgc_txtEmail.insets = new Insets(3, 5, 3, 5);
+        fgc_txtEmail.fill = GridBagConstraints.HORIZONTAL;
+        fgc_txtEmail.gridx = 1; fgc_txtEmail.gridy = row;
+        panelForm.add(txtEmail, fgc_txtEmail);
 
         JPanel panelBotonesForm = new JPanel();
         panelBotonesForm.setBackground(COLOR_FONDO);
-        JButton btnGuardar = crearBoton("GUARDAR CLIENTE");
+        JButton btnGuardar = new JButton("GUARDAR CLIENTE");
+        btnGuardar.setFont(FUENTE_BOTON);
+        btnGuardar.setForeground(COLOR_TEXTO);
+        btnGuardar.setBackground(COLOR_BOTON);
+        btnGuardar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnGuardar.setFocusPainted(false);
         btnGuardar.addActionListener(e -> guardarCliente());
-        JButton btnNuevo = crearBoton("NUEVO");
+        JButton btnNuevo = new JButton("NUEVO");
+        btnNuevo.setFont(FUENTE_BOTON);
+        btnNuevo.setForeground(COLOR_TEXTO);
+        btnNuevo.setBackground(COLOR_BOTON);
+        btnNuevo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnNuevo.setFocusPainted(false);
         btnNuevo.addActionListener(e -> limpiarFormulario());
         panelBotonesForm.add(btnNuevo);
         panelBotonesForm.add(btnGuardar);
 
-        row++; fgc.gridx = 0; fgc.gridy = row; fgc.gridwidth = 4;
-        panelForm.add(panelBotonesForm, fgc);
+        row++;
+
+        GridBagConstraints fgc_panelBotones = new GridBagConstraints();
+        fgc_panelBotones.insets = new Insets(3, 5, 3, 5);
+        fgc_panelBotones.fill = GridBagConstraints.HORIZONTAL;
+        fgc_panelBotones.gridx = 0; fgc_panelBotones.gridy = row; fgc_panelBotones.gridwidth = 4;
+        panelForm.add(panelBotonesForm, fgc_panelBotones);
 
         String[] columnas = {"ID", "Razon Social", "Tipo Doc", "Nro Doc", "Condicion IVA", "Telefono", "Email"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
@@ -245,13 +344,4 @@ public class VentanaClientes extends javax.swing.JFrame {
         txtEmail.setText("");
     }
 
-    private JButton crearBoton(String texto) {
-        JButton btn = new JButton(texto);
-        btn.setFont(FUENTE_BOTON);
-        btn.setForeground(COLOR_TEXTO);
-        btn.setBackground(COLOR_BOTON);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setFocusPainted(false);
-        return btn;
-    }
 }

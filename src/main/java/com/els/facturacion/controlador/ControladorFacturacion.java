@@ -418,7 +418,7 @@ public class ControladorFacturacion {
                     + (respuesta.getVencimiento() != null ? "Vto CAE: " + respuesta.getVencimiento() : "")
                     + modo;
                 JOptionPane.showMessageDialog(view, msg, "Exito", JOptionPane.INFORMATION_MESSAGE);
-                view.getLblEstadoPago().setText("Estado: Emitida" + modo);
+               //view.getLblEstadoPago().setText("Estado: Emitida" + modo);
                 limpiarTodo();
             } else {
                 JOptionPane.showMessageDialog(view, "Error: " + respuesta.getMensaje(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -628,7 +628,6 @@ public class ControladorFacturacion {
         view.getTxtImporteTotal().setText("");
         view.getTxtOtrosImpuestos().setText("0,00");
         view.getLblTotal().setText("$ 0,00");
-        view.getLblEstadoPago().setText("Estado: Pendiente de pago");
     }
 
     // ===================== EMITIR FACTURA (existing) =====================
