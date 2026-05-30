@@ -1,7 +1,9 @@
 package com.els.facturacion.dao;
 
 import com.els.facturacion.conexion.ConexionFacturacion;
+import com.els.facturacion.conexion.ConexionReparsoft;
 import com.els.facturacion.modelo.ClienteDTO;
+import com.els.facturacion.util.UbicacionSistema;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -147,72 +149,70 @@ public class ClienteDAO {
 
     public List<ClienteDTO> importarDesdeReparsoft() {
         List<ClienteDTO> importados = new ArrayList<>();
-        String[] bases = {"ordenesbrc", "ordenesbsas"};
+        String base = UbicacionSistema.getNombreDbReparsoft();
         Set<String> nombresImportados = new HashSet<>();
-        for (String base : bases) {
-            try {
-                com.els.facturacion.conexion.ConexionReparsoft cr = com.els.facturacion.conexion.ConexionReparsoft.getInstancia();
-                java.sql.Connection connRep = cr.getConexion(base);
-                if (connRep == null) continue;
+        try {
+            ConexionReparsoft cr = ConexionReparsoft.getInstancia();
+            java.sql.Connection connRep = cr.getConexion(base);
+            if (connRep == null) return importados;
 
-                String sql = "SELECT DISTINCT c.idCliente, c.nombre, c.CUIT, c.Domicilio, "
-                        + "c.TelefonoEmpresa, c.CorreoElectronico "
-                        + "FROM cliente c "
-                        + "ORDER BY c.nombre";
-                try (PreparedStatement ps = connRep.prepareStatement(sql);
-                     ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        String cuit = "";
-                        String nombre = "";
-                        String domicilio = "";
-                        String telefono = "";
-                        String email = "";
-                        int idCliente = 0;
-                        try { idCliente = rs.getInt("idCliente"); } catch (Exception e) {}
-                        try { cuit = rs.getString("CUIT").replaceAll("[^0-9]", ""); } catch (Exception e) {}
-                        try { nombre = rs.getString("nombre"); } catch (Exception e) {}
-                        try { domicilio = rs.getString("Domicilio"); } catch (Exception e) {}
-                        try { telefono = rs.getString("TelefonoEmpresa"); } catch (Exception e) {}
-                        try { email = rs.getString("CorreoElectronico"); } catch (Exception e) {}
+            String sql = "SELECT DISTINCT c.idCliente, c.nombre, c.CUIT, c.Domicilio, "
+                    + "c.TelefonoEmpresa, c.CorreoElectronico "
+                    + "FROM cliente c "
+                    + "ORDER BY c.nombre";
+            try (PreparedStatement ps = connRep.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String cuit = "";
+                    String nombre = "";
+                    String domicilio = "";
+                    String telefono = "";
+                    String email = "";
+                    int idCliente = 0;
+                    try { idCliente = rs.getInt("idCliente"); } catch (Exception e) {}
+                    try { cuit = rs.getString("CUIT").replaceAll("[^0-9]", ""); } catch (Exception e) {}
+                    try { nombre = rs.getString("nombre"); } catch (Exception e) {}
+                    try { domicilio = rs.getString("Domicilio"); } catch (Exception e) {}
+                    try { telefono = rs.getString("TelefonoEmpresa"); } catch (Exception e) {}
+                    try { email = rs.getString("CorreoElectronico"); } catch (Exception e) {}
 
-                        if (nombre == null || nombre.trim().isEmpty()) continue;
+                    if (nombre == null || nombre.trim().isEmpty()) continue;
 
-                        String nombreKey = nombre.trim().toLowerCase();
-                        if (nombresImportados.contains(nombreKey)) continue;
-                        nombresImportados.add(nombreKey);
+                    String nombreKey = nombre.trim().toLowerCase();
+                    if (nombresImportados.contains(nombreKey)) continue;
+                    nombresImportados.add(nombreKey);
 
-                        String tipoDoc;
-                        String nroDoc;
-                        if (cuit.length() >= 11) {
-                            tipoDoc = "CUIT";
-                            nroDoc = cuit;
-                        } else {
-                            tipoDoc = "Otro";
-                            nroDoc = String.valueOf(idCliente);
-                        }
+                    String tipoDoc;
+                    String nroDoc;
+                    if (cuit.length() >= 11) {
+                        tipoDoc = "CUIT";
+                        nroDoc = cuit;
+                    } else {
+                        tipoDoc = "Otro";
+                        nroDoc = String.valueOf(idCliente);
+                    }
 
-                        ClienteDTO existente = buscarPorDocumento(tipoDoc, nroDoc);
-                        if (existente != null) continue;
+                    ClienteDTO existente = buscarPorDocumento(tipoDoc, nroDoc);
+                    if (existente != null) continue;
 
-                        ClienteDTO cli = new ClienteDTO();
-                        cli.setTipoDocumento(tipoDoc);
-                        cli.setNroDocumento(nroDoc);
-                        cli.setRazonSocial(nombre.trim());
-                        cli.setCondicionIva("IVA Responsable Inscripto");
-                        cli.setDomicilio(domicilio != null ? domicilio.trim() : "");
-                        cli.setTelefono(telefono != null ? telefono.trim() : "");
-                        cli.setEmail(email != null ? email.trim() : "");
-                        cli.setOrigen("reparsoft");
-                        int id = insertar(cli);
-                        if (id > 0) {
-                            cli.setId(id);
-                            importados.add(cli);
-                        }
+                    ClienteDTO cli = new ClienteDTO();
+                    cli.setTipoDocumento(tipoDoc);
+                    cli.setNroDocumento(nroDoc);
+                    cli.setRazonSocial(nombre.trim());
+                    cli.setCondicionIva("IVA Responsable Inscripto");
+                    cli.setDomicilio(domicilio != null ? domicilio.trim() : "");
+                    cli.setTelefono(telefono != null ? telefono.trim() : "");
+                    cli.setEmail(email != null ? email.trim() : "");
+                    cli.setOrigen("reparsoft");
+                    int id = insertar(cli);
+                    if (id > 0) {
+                        cli.setId(id);
+                        importados.add(cli);
                     }
                 }
-            } catch (Exception e) {
-                System.err.println("Error importando desde " + base + ": " + e.getMessage());
             }
+        } catch (Exception e) {
+            System.err.println("Error importando desde " + base + ": " + e.getMessage());
         }
         return importados;
     }

@@ -6,6 +6,8 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.els.facturacion.util.UbicacionSistema;
+
 public class ConexionReparsoft {
 
     private static ConexionReparsoft instancia;
@@ -53,6 +55,10 @@ public class ConexionReparsoft {
             System.err.println("✗ Error conectando a " + baseDatos + ": " + e.getMessage());
         }
         return null;
+    }
+
+    public Connection getConexionActual() {
+        return getConexion(UbicacionSistema.getNombreDbReparsoft());
     }
 
     public Connection getOrdenesBRC() {

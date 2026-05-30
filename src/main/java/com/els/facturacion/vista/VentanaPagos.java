@@ -790,55 +790,7 @@ public class VentanaPagos extends javax.swing.JFrame {
     }
 
     private String mostrarSelectorBaseReparsoft() {
-        JDialog dialog = new JDialog(this, "Base ReparSoft", true);
-        dialog.getContentPane().setBackground(COLOR_FONDO);
-
-        JComboBox<String> combo = new JComboBox<>(new String[]{"ordenesbrc (Bariloche)", "ordenesbsas (Buenos Aires)"});
-        combo.setFont(FUENTE_BOTON);
-        combo.setBackground(Color.WHITE);
-
-        JLabel lbl = new JLabel("Seleccione la base de ReparSoft donde est\u00e1 el ELS:");
-        lbl.setFont(new Font("Cambria", Font.BOLD, 13));
-        lbl.setForeground(COLOR_TEXTO);
-
-        JButton btnOk = new JButton("ACEPTAR");
-        estilizarBoton(btnOk);
-        JButton btnCancel = new JButton("CANCELAR");
-        estilizarBoton(btnCancel);
-
-        JPanel content = new JPanel(new BorderLayout(8, 12));
-        content.setBackground(COLOR_FONDO);
-        content.setBorder(BorderFactory.createEmptyBorder(14, 16, 12, 16));
-        content.add(lbl, BorderLayout.NORTH);
-        content.add(combo, BorderLayout.CENTER);
-
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
-        btnPanel.setBackground(COLOR_FONDO);
-        btnPanel.add(btnOk);
-        btnPanel.add(btnCancel);
-        content.add(btnPanel, BorderLayout.SOUTH);
-
-        dialog.getContentPane().add(content);
-        dialog.pack();
-        dialog.setLocationRelativeTo(this);
-        dialog.setResizable(false);
-
-        final String[] result = new String[1];
-
-        btnOk.addActionListener(e -> {
-            String selected = (String) combo.getSelectedItem();
-            if (selected != null && selected.startsWith("ordenesbrc")) {
-                result[0] = "ordenesbrc";
-            } else {
-                result[0] = "ordenesbsas";
-            }
-            dialog.dispose();
-        });
-
-        btnCancel.addActionListener(e -> dialog.dispose());
-
-        dialog.setVisible(true);
-        return result[0];
+        return com.els.facturacion.util.UbicacionSistema.getNombreDbReparsoft();
     }
 
     private String mostrarSelectorMedioPago() {

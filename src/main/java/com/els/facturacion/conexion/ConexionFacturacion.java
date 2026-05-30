@@ -4,25 +4,20 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+import com.els.facturacion.util.UbicacionSistema;
+
 public class ConexionFacturacion {
 
     private static ConexionFacturacion instancia;
     private Connection conexion;
+    private String dbConectada;
 
     private static final String HOST = "localhost";
     private static final String PORT = "3306";
-    private static final String DB = "facturacion_db";
     private static final String USER = "root";
     private static final String PASS = "root";
 
-    private static final String URL = "jdbc:mysql://" + HOST + ":" + PORT + "/" + DB
-            + "?useUnicode=true&characterEncoding=UTF-8"
-            + "&connectionCollation=utf8mb4_unicode_ci"
-            + "&serverTimezone=UTC&useSSL=false"
-            + "&allowPublicKeyRetrieval=true";
-
     private ConexionFacturacion() {
-        conectar();
     }
 
     public static ConexionFacturacion getInstancia() {
@@ -37,27 +32,36 @@ public class ConexionFacturacion {
     }
 
     public Connection getConexion() {
+        String dbActual = UbicacionSistema.getNombreDbFacturacion();
         try {
-            if (conexion == null || conexion.isClosed()) {
-                System.out.println("Reconectando a facturacion_db...");
-                conectar();
+            if (conexion == null || conexion.isClosed() || !dbActual.equals(dbConectada)) {
+                conectar(dbActual);
             }
         } catch (SQLException e) {
             System.err.println("Error verificando conexión: " + e.getMessage());
-            conectar();
+            conectar(dbActual);
         }
         return conexion;
     }
 
-    private void conectar() {
+    private void conectar(String db) {
         try {
+            String url = "jdbc:mysql://" + HOST + ":" + PORT + "/" + db
+                    + "?useUnicode=true&characterEncoding=UTF-8"
+                    + "&connectionCollation=utf8mb4_unicode_ci"
+                    + "&serverTimezone=UTC&useSSL=false"
+                    + "&allowPublicKeyRetrieval=true";
             Class.forName("com.mysql.cj.jdbc.Driver");
-            conexion = DriverManager.getConnection(URL, USER, PASS);
-            System.out.println("✓ Conexión a facturacion_db establecida");
+            if (conexion != null && !conexion.isClosed()) {
+                conexion.close();
+            }
+            conexion = DriverManager.getConnection(url, USER, PASS);
+            dbConectada = db;
+            System.out.println("✓ Conexión a " + db + " establecida");
         } catch (ClassNotFoundException e) {
             System.err.println("✗ Driver MySQL no encontrado: " + e.getMessage());
         } catch (SQLException e) {
-            System.err.println("✗ Error conectando a facturacion_db: " + e.getMessage());
+            System.err.println("✗ Error conectando a " + db + ": " + e.getMessage());
         }
     }
 
@@ -65,7 +69,7 @@ public class ConexionFacturacion {
         if (conexion != null) {
             try {
                 conexion.close();
-                System.out.println("✓ Conexión facturacion_db cerrada");
+                System.out.println("✓ Conexión cerrada");
             } catch (SQLException e) {
                 System.err.println("✗ Error cerrando conexión: " + e.getMessage());
             }

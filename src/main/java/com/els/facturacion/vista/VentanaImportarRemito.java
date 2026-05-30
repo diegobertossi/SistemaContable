@@ -3,7 +3,7 @@ package com.els.facturacion.vista;
 import com.els.facturacion.controlador.ControladorReparsoft;
 import com.els.facturacion.modelo.RemitoReparsoftDTO;
 import com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem;
-
+import com.els.facturacion.util.UbicacionSistema;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
@@ -22,7 +22,6 @@ public class VentanaImportarRemito extends JDialog {
     private static final Font FUENTE_LABEL = new Font("Cambria", Font.BOLD, 11);
 
     private ControladorReparsoft controlador;
-    private JComboBox<String> cmbBaseDatos;
     private JTable tablaRemitos;
     private DefaultTableModel modeloTablaRemitos;
     private JTable tablaItems;
@@ -53,11 +52,10 @@ public class VentanaImportarRemito extends JDialog {
 
         JPanel panelSuperior = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         panelSuperior.setBackground(COLOR_FONDO);
-        panelSuperior.add(new JLabel("Base de datos:"));
-        cmbBaseDatos = new JComboBox<>(new String[]{"ordenesbrc", "ordenesbsas"});
-        cmbBaseDatos.setFont(FUENTE_BOTON);
-        cmbBaseDatos.addActionListener(e -> cargarRemitos());
-        panelSuperior.add(cmbBaseDatos);
+        JLabel lblBase = new JLabel("Base: " + UbicacionSistema.getNombreDbReparsoft());
+        lblBase.setFont(FUENTE_LABEL);
+        lblBase.setForeground(COLOR_TEXTO);
+        panelSuperior.add(lblBase);
 
         JButton btnRefrescar = new JButton("Refrescar");
         btnRefrescar.setFont(FUENTE_BOTON);
@@ -174,7 +172,7 @@ public class VentanaImportarRemito extends JDialog {
     }
 
     private void cargarRemitos() {
-        String base = (String) cmbBaseDatos.getSelectedItem();
+        String base = UbicacionSistema.getNombreDbReparsoft();
         if (base == null) return;
 
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));

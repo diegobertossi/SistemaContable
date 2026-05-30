@@ -1,6 +1,7 @@
 package com.els.facturacion.dao;
 
 import com.els.facturacion.conexion.ConexionReparsoft;
+import com.els.facturacion.util.UbicacionSistema;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -39,6 +40,10 @@ public class ReparacionLecturaDAO {
             System.err.println("Error buscando orden ELS " + els + ": " + e.getMessage());
         }
         return null;
+    }
+
+    public Map<String, Object> buscarOrdenPorELS_Actual(int els) {
+        return buscarOrdenPorELS(els, UbicacionSistema.getNombreDbReparsoft());
     }
 
     public Map<String, Object> buscarOrdenPorELS_BRC(int els) {
@@ -151,6 +156,10 @@ public class ReparacionLecturaDAO {
         datos.put("descripcion", descripcion);
 
         return datos;
+    }
+
+    public List<com.els.facturacion.modelo.RemitoReparsoftDTO> listarRemitosActual() {
+        return listarRemitos(UbicacionSistema.getNombreDbReparsoft());
     }
 
     public List<com.els.facturacion.modelo.RemitoReparsoftDTO> listarRemitos(String baseDatos) {

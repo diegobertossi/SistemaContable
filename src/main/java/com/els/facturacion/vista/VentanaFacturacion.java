@@ -7,9 +7,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -97,18 +94,6 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private JCheckBox chkModoPrueba;
     private JButton btnSiguiente;
 
-    // Menu items (needed for controller to wire actions)
-    private JMenuItem itemSalir;
-    private JMenuItem itemConfig;
-    private JMenuItem itemHistorial;
-    private JMenuItem itemCaja;
-    private JMenuItem itemGastos;
-    private JMenuItem itemMigrar;
-    private JMenuItem itemClientes;
-    private JMenuItem itemRemitos;
-    private JMenuItem itemRecibos;
-    private JMenuItem itemPagos;
-
     public VentanaFacturacion() {
         initComponents();
     }
@@ -117,55 +102,9 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         setTitle("FacturaSoft v1.0 \u2014 Sistema de Facturaci\u00f3n Electr\u00f3nica");
         setSize(1024, 720);
         setMinimumSize(new Dimension(900, 650));
-        setDefaultCloseOperation(javax.swing.JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(COLOR_FONDO);
-
-        // ===================== MENU BAR =====================
-        JMenuBar menuBar = new JMenuBar();
-        menuBar.setBackground(new Color(240, 240, 245));
-
-        JMenu menuArchivo = new JMenu("Archivo");
-        itemSalir = new JMenuItem("Salir");
-        menuArchivo.add(itemSalir);
-
-        JMenu menuClientes = new JMenu("Clientes");
-        itemClientes = new JMenuItem("Gestion de Clientes");
-        menuClientes.add(itemClientes);
-
-        JMenu menuRemitos = new JMenu("Remitos");
-        itemRemitos = new JMenuItem("Gestion de Remitos");
-        menuRemitos.add(itemRemitos);
-
-        JMenu menuRecibos = new JMenu("Recibos");
-        itemRecibos = new JMenuItem("Gestion de Recibos");
-        menuRecibos.add(itemRecibos);
-
-        JMenu menuPagos = new JMenu("Pagos");
-        itemPagos = new JMenuItem("Pagos / Cobranzas");
-        menuPagos.add(itemPagos);
-
-        JMenu menuHerramientas = new JMenu("Herramientas");
-        itemConfig = new JMenuItem("Configurar Certificados");
-        itemHistorial = new JMenuItem("Ver Comprobantes");
-        itemCaja = new JMenuItem("Caja");
-        itemGastos = new JMenuItem("Gastos");
-        itemMigrar = new JMenuItem("Migrar desde Excel");
-        menuHerramientas.add(itemConfig);
-        menuHerramientas.add(itemHistorial);
-        menuHerramientas.addSeparator();
-        menuHerramientas.add(itemCaja);
-        menuHerramientas.add(itemGastos);
-        menuHerramientas.addSeparator();
-        menuHerramientas.add(itemMigrar);
-
-        menuBar.add(menuArchivo);
-        menuBar.add(menuClientes);
-        menuBar.add(menuRemitos);
-        menuBar.add(menuRecibos);
-        menuBar.add(menuPagos);
-        menuBar.add(menuHerramientas);
-        setJMenuBar(menuBar);
 
         // ===================== CARD LAYOUT =====================
         cardLayout = new CardLayout();
@@ -669,16 +608,6 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     public JComboBox<String> getCmbAlicuotaIva() { return cmbAlicuotaIva; }
     public JButton getBtnEmitir() { return btnEmitir; }
     public JButton getBtnLimpiar() { return btnLimpiar; }
-    public JMenuItem getItemSalir() { return itemSalir; }
-    public JMenuItem getItemConfig() { return itemConfig; }
-    public JMenuItem getItemHistorial() { return itemHistorial; }
-    public JMenuItem getItemCaja() { return itemCaja; }
-    public JMenuItem getItemGastos() { return itemGastos; }
-    public JMenuItem getItemMigrar() { return itemMigrar; }
-    public JMenuItem getItemClientes() { return itemClientes; }
-    public JMenuItem getItemRemitos() { return itemRemitos; }
-    public JMenuItem getItemRecibos() { return itemRecibos; }
-    public JMenuItem getItemPagos() { return itemPagos; }
 
     // ===================== SETTERS / MUTATORS =====================
 

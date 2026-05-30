@@ -12,15 +12,9 @@ import com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem;
 import com.els.facturacion.modelo.RespuestaCAE;
 import com.els.facturacion.pdf.GestorPDF;
 import com.els.facturacion.vista.VentanaFacturacion;
-import com.els.facturacion.vista.VentanaCaja;
 import com.els.facturacion.vista.VentanaClientes;
-import com.els.facturacion.vista.VentanaComprobantes;
-import com.els.facturacion.vista.VentanaConfigCertificados;
-import com.els.facturacion.vista.VentanaGastos;
 import com.els.facturacion.vista.VentanaImportarRemito;
-import com.els.facturacion.vista.VentanaMigracion;
-import com.els.facturacion.vista.VentanaPagos;
-import com.els.facturacion.vista.VentanaRecibos;
+import com.els.facturacion.util.UbicacionSistema;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Connection;
@@ -108,35 +102,7 @@ public class ControladorFacturacion {
         JTextField editorND = (JTextField) view.getCmbNroDoc().getEditor().getEditorComponent();
         editorND.addActionListener(e -> autocompletarPorDocumento());
 
-        // Menu actions
-        view.getItemSalir().addActionListener(e -> System.exit(0));
-        view.getItemConfig().addActionListener(e -> {
-            VentanaConfigCertificados configWindow = new VentanaConfigCertificados();
-            configWindow.addWindowListener(new java.awt.event.WindowAdapter() {
-                @Override
-                public void windowClosed(java.awt.event.WindowEvent e) {
-                    cargarEmisorActivo();
-                }
-            });
-            configWindow.setVisible(true);
-        });
-        view.getItemHistorial().addActionListener(e -> new VentanaComprobantes().setVisible(true));
-        view.getItemCaja().addActionListener(e -> new VentanaCaja().setVisible(true));
-        view.getItemGastos().addActionListener(e -> new VentanaGastos().setVisible(true));
-        view.getItemMigrar().addActionListener(e -> new VentanaMigracion().setVisible(true));
-        view.getItemClientes().addActionListener(e -> {
-            VentanaClientes vc = new VentanaClientes();
-            vc.addWindowListener(new java.awt.event.WindowAdapter() {
-                @Override
-                public void windowClosed(java.awt.event.WindowEvent ev) {
-                    cargarClientes();
-                }
-            });
-            vc.setVisible(true);
-        });
-        view.getItemRemitos().addActionListener(e -> JOptionPane.showMessageDialog(view, "Funcionalidad en desarrollo"));
-        view.getItemRecibos().addActionListener(e -> new VentanaRecibos().setVisible(true));
-        view.getItemPagos().addActionListener(e -> new VentanaPagos().setVisible(true));
+        // Menu actions removed - now handled by VentanaPrincipal
     }
 
     private void cargarEmisorActivo() {
@@ -371,22 +337,10 @@ public class ControladorFacturacion {
                     int elsActualizados = 0;
                     int elsConError = 0;
                     int elsEncontrados = 0;
-                    String baseReparsoft = null;
+                    String baseReparsoft = UbicacionSistema.getNombreDbReparsoft();
                     for (ItemFacturaDTO item : items) {
                         if (item.getElsReferencia() != null) {
                             elsEncontrados++;
-                            if (baseReparsoft == null) {
-                                String[] opciones = {"Bariloche (ordenesbrc)", "Buenos Aires (ordenesbsas)", "Cancelar"};
-                                int resp = JOptionPane.showOptionDialog(view,
-                                    "\u00bfA qu\u00e9 base de ReparSoft pertenece(n) el/los ELS?",
-                                    "Seleccionar base ReparSoft",
-                                    JOptionPane.YES_NO_CANCEL_OPTION,
-                                    JOptionPane.QUESTION_MESSAGE,
-                                    null, opciones, opciones[0]);
-                                if (resp == 0) baseReparsoft = "ordenesbrc";
-                                else if (resp == 1) baseReparsoft = "ordenesbsas";
-                                else break;
-                            }
                             boolean ok = controladorReparsoft.escribirNumeroFactura(
                                 item.getElsReferencia(), numeroFactura, baseReparsoft);
                             if (ok) elsActualizados++;
