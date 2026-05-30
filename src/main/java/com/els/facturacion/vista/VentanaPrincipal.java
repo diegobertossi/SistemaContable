@@ -157,13 +157,14 @@ public class VentanaPrincipal extends JFrame {
         });
         panelDeControl.add(btnComprobantes);
 
-        btnClientes = crearBoton("CLIENTES");
+        btnClientes = crearBoton("             CLIENTES");
         btnClientes.setBounds(col2X, row1Y, btnW, btnH);
         btnClientes.setIcon(new ImageIcon(this.getClass().getResource("/img/Clientes.png")));
+       // btnClientes.setHorizontalAlignment(SwingConstants.LEFT);
         btnClientes.addActionListener(e -> new VentanaClientes().setVisible(true));
         panelDeControl.add(btnClientes);
 
-        btnRemitos = crearBoton("REMITOS");
+        btnRemitos = crearBoton("            REMITOS");
         btnRemitos.setBounds(col1X, row2Y, btnW, btnH);
         btnRemitos.setIcon(new ImageIcon(this.getClass().getResource("/img/Remitos.png")));
         btnRemitos.addActionListener(e ->
@@ -180,7 +181,7 @@ public class VentanaPrincipal extends JFrame {
         });
         panelDeControl.add(btnPagosRecibos);
 
-        btnHerramientas = crearBoton("HERRAMIENTAS");
+        btnHerramientas = crearBoton(" HERRAMIENTAS");
         btnHerramientas.setBounds(col1X, row3Y, btnW, btnH);
         btnHerramientas.setIcon(new ImageIcon(this.getClass().getResource("/img/Herramientas.png")));
         btnHerramientas.addActionListener(e -> {
@@ -189,7 +190,7 @@ public class VentanaPrincipal extends JFrame {
         });
         panelDeControl.add(btnHerramientas);
 
-        btnCajaGastos = crearBoton("CAJA Y GASTOS");
+        btnCajaGastos = crearBoton("      CAJA Y GASTOS");
         btnCajaGastos.setBounds(col2X, row3Y, btnW, btnH);
         btnCajaGastos.setIcon(new ImageIcon(this.getClass().getResource("/img/Caja y gastos.png")));
         btnCajaGastos.addActionListener(e -> {
