@@ -14,20 +14,13 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Cursor;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.util.List;
 
 public class VentanaClientes extends javax.swing.JFrame {
-
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
 
     private ControladorClientes controlador;
     private JTable tabla;
@@ -52,18 +45,18 @@ public class VentanaClientes extends javax.swing.JFrame {
         setSize(900, 600);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(COLOR_FONDO);
+        getContentPane().setBackground(TemaFacturaSoft.BG_APP);
 
         JPanel panelSuperior = new JPanel(new GridBagLayout());
-        panelSuperior.setBackground(COLOR_FONDO);
+        panelSuperior.setBackground(TemaFacturaSoft.BG_APP);
         GridBagConstraints gbc_titulo = new GridBagConstraints();
         gbc_titulo.insets = new Insets(5, 5, 5, 5);
         gbc_titulo.fill = GridBagConstraints.HORIZONTAL;
         gbc_titulo.gridx = 0; gbc_titulo.gridy = 0; gbc_titulo.gridwidth = 5;
 
         JLabel lblTitulo = new JLabel("MODULO DE CLIENTES");
-        lblTitulo.setFont(new Font("Cambria", Font.BOLD, 18));
-        lblTitulo.setForeground(COLOR_TEXTO);
+        lblTitulo.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(18f));
+        lblTitulo.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
         panelSuperior.add(lblTitulo, gbc_titulo);
 
         txtBuscar = new JTextField(20);
@@ -73,9 +66,9 @@ public class VentanaClientes extends javax.swing.JFrame {
             public void changedUpdate(DocumentEvent e) { buscarCliente(); }
         });
         JButton btnImportar = new JButton("IMPORTAR DE REPARSOFT");
-        btnImportar.setFont(FUENTE_BOTON);
-        btnImportar.setForeground(COLOR_TEXTO);
-        btnImportar.setBackground(COLOR_BOTON);
+        btnImportar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnImportar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnImportar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnImportar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnImportar.setFocusPainted(false);
         btnImportar.addActionListener(e -> importarClientes());
@@ -100,7 +93,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         panelSuperior.add(btnImportar, gbc_btnImportar);
 
         JPanel panelForm = new JPanel(new GridBagLayout());
-        panelForm.setBackground(COLOR_FONDO);
+        panelForm.setBackground(TemaFacturaSoft.BG_APP);
 
         cmbTipoDoc = new JComboBox<>(new String[]{"CUIT", "DNI"});
         cmbCondicionIva = new JComboBox<>(new String[]{
@@ -210,18 +203,18 @@ public class VentanaClientes extends javax.swing.JFrame {
         panelForm.add(txtEmail, fgc_txtEmail);
 
         JPanel panelBotonesForm = new JPanel();
-        panelBotonesForm.setBackground(COLOR_FONDO);
+        panelBotonesForm.setBackground(TemaFacturaSoft.BG_APP);
         JButton btnGuardar = new JButton("GUARDAR CLIENTE");
-        btnGuardar.setFont(FUENTE_BOTON);
-        btnGuardar.setForeground(COLOR_TEXTO);
-        btnGuardar.setBackground(COLOR_BOTON);
+        btnGuardar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnGuardar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnGuardar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnGuardar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnGuardar.setFocusPainted(false);
         btnGuardar.addActionListener(e -> guardarCliente());
         JButton btnNuevo = new JButton("NUEVO");
-        btnNuevo.setFont(FUENTE_BOTON);
-        btnNuevo.setForeground(COLOR_TEXTO);
-        btnNuevo.setBackground(COLOR_BOTON);
+        btnNuevo.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnNuevo.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnNuevo.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnNuevo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnNuevo.setFocusPainted(false);
         btnNuevo.addActionListener(e -> limpiarFormulario());
@@ -244,8 +237,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         tabla.getColumnModel().getColumn(0).setMinWidth(0);
         tabla.getColumnModel().getColumn(0).setMaxWidth(0);
         tabla.getColumnModel().getColumn(0).setPreferredWidth(0);
-        tabla.setFont(new Font("Cambria", Font.PLAIN, 10));
-        tabla.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 10));
+        TemaFacturaSoft.aplicarEstiloTabla(tabla);
         tabla.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) cargarClienteSeleccionado();
         });

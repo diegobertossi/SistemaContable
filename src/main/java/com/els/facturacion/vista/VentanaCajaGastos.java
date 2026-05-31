@@ -1,7 +1,7 @@
 package com.els.facturacion.vista;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
+
 import java.awt.Container;
 import java.awt.Dimension;
 import javax.swing.JFrame;
@@ -19,10 +19,10 @@ public class VentanaCajaGastos extends JFrame {
         setMinimumSize(new Dimension(800, 500));
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(new Color(219, 227, 246));
+        getContentPane().setBackground(TemaFacturaSoft.BG_APP);
 
         JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.setFont(new java.awt.Font("Cambria", java.awt.Font.BOLD, 12));
+        tabbedPane.setFont(TemaFacturaSoft.FONT_UI_SEMIBOLD.deriveFont(12f));
 
         // Tab Caja
         VentanaCaja cajaView = new VentanaCaja();

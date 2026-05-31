@@ -16,22 +16,13 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Cursor;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.util.List;
 
 public class VentanaConfigCertificados extends JFrame {
-
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Color COLOR_TITULO = new Color(65, 105, 225);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
-    private static final Font FUENTE_LABEL = new Font("Cambria", Font.BOLD, 11);
 
     private JTable tabla;
     private DefaultTableModel modeloTabla;
@@ -50,7 +41,7 @@ public class VentanaConfigCertificados extends JFrame {
         setSize(950, 620);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(COLOR_FONDO);
+        getContentPane().setBackground(TemaFacturaSoft.BG_APP);
 
         dao = new CuitDAO();
         initComponents();
@@ -59,12 +50,12 @@ public class VentanaConfigCertificados extends JFrame {
 
     private void initComponents() {
         JPanel panelSuperior = new JPanel(new BorderLayout());
-        panelSuperior.setBackground(COLOR_FONDO);
+        panelSuperior.setBackground(TemaFacturaSoft.BG_APP);
 
         JLabel lblTitulo = new JLabel("GESTION DE CERTIFICADOS Y CUITs", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Cambria", Font.BOLD, 18));
-        lblTitulo.setForeground(COLOR_TEXTO);
-        lblTitulo.setBackground(COLOR_FONDO);
+        lblTitulo.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(18f));
+        lblTitulo.setForeground(TemaFacturaSoft.ACCENT_PRIMARY);
+        lblTitulo.setBackground(TemaFacturaSoft.BG_APP);
 
         panelSuperior.add(lblTitulo, BorderLayout.NORTH);
 
@@ -105,33 +96,33 @@ public class VentanaConfigCertificados extends JFrame {
         };
 
         tabla = new JTable(modeloTabla);
-        tabla.setFont(new Font("Cambria", Font.PLAIN, 11));
+        tabla.setFont(TemaFacturaSoft.FONT_UI.deriveFont(11f));
         JScrollPane scrollTabla = new JScrollPane(tabla);
 
         JPanel panelFormulario = new JPanel(new GridBagLayout());
-        panelFormulario.setBackground(COLOR_FONDO);
+        panelFormulario.setBackground(TemaFacturaSoft.BG_APP);
         txtCuit = new JTextField(15);
-        txtCuit.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtCuit.setFont(TemaFacturaSoft.FONT_UI.deriveFont(11f));
 
         txtRazonSocial = new JTextField(20);
-        txtRazonSocial.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtRazonSocial.setFont(TemaFacturaSoft.FONT_UI.deriveFont(11f));
 
         cmbCondicionIva = new JComboBox<>(new String[]{"RI", "Monotributista", "Exento", "Consumidor Final"});
-        cmbCondicionIva.setFont(FUENTE_BOTON);
+        cmbCondicionIva.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
 
         txtPuntoVenta = new JTextField(10);
-        txtPuntoVenta.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtPuntoVenta.setFont(TemaFacturaSoft.FONT_UI.deriveFont(11f));
 
         txtRutaCertificado = new JTextField(25);
-        txtRutaCertificado.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtRutaCertificado.setFont(TemaFacturaSoft.FONT_UI.deriveFont(11f));
 
         txtPassword = new JPasswordField(15);
-        txtPassword.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtPassword.setFont(TemaFacturaSoft.FONT_UI.deriveFont(11f));
 
         btnSeleccionarArchivo = new JButton("SELECCIONAR");
-        btnSeleccionarArchivo.setFont(FUENTE_BOTON);
-        btnSeleccionarArchivo.setForeground(COLOR_TEXTO);
-        btnSeleccionarArchivo.setBackground(COLOR_BOTON);
+        btnSeleccionarArchivo.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnSeleccionarArchivo.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnSeleccionarArchivo.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnSeleccionarArchivo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnSeleccionarArchivo.setFocusPainted(false);
 
@@ -142,8 +133,8 @@ public class VentanaConfigCertificados extends JFrame {
         gbc_lbl1.fill = GridBagConstraints.HORIZONTAL;
         gbc_lbl1.gridx = 0; gbc_lbl1.gridy = row;
         JLabel lbl1 = new JLabel("CUIT:");
-        lbl1.setFont(FUENTE_LABEL);
-        lbl1.setForeground(COLOR_TEXTO);
+        lbl1.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        lbl1.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
         panelFormulario.add(lbl1, gbc_lbl1);
         GridBagConstraints gbc_txtCuit = new GridBagConstraints();
         gbc_txtCuit.insets = new Insets(5, 5, 5, 5);
@@ -157,8 +148,8 @@ public class VentanaConfigCertificados extends JFrame {
         gbc_lbl2.fill = GridBagConstraints.HORIZONTAL;
         gbc_lbl2.gridx = 0; gbc_lbl2.gridy = row;
         JLabel lbl2 = new JLabel("Razon Social:");
-        lbl2.setFont(FUENTE_LABEL);
-        lbl2.setForeground(COLOR_TEXTO);
+        lbl2.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        lbl2.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
         panelFormulario.add(lbl2, gbc_lbl2);
         GridBagConstraints gbc_txtRazonSocial = new GridBagConstraints();
         gbc_txtRazonSocial.insets = new Insets(5, 5, 5, 5);
@@ -173,8 +164,8 @@ public class VentanaConfigCertificados extends JFrame {
         gbc_lbl3.fill = GridBagConstraints.HORIZONTAL;
         gbc_lbl3.gridx = 0; gbc_lbl3.gridy = row;
         JLabel lbl3 = new JLabel("Condicion IVA:");
-        lbl3.setFont(FUENTE_LABEL);
-        lbl3.setForeground(COLOR_TEXTO);
+        lbl3.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        lbl3.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
         panelFormulario.add(lbl3, gbc_lbl3);
         GridBagConstraints gbc_cmbCondicionIva = new GridBagConstraints();
         gbc_cmbCondicionIva.insets = new Insets(5, 5, 5, 5);
@@ -188,8 +179,8 @@ public class VentanaConfigCertificados extends JFrame {
         gbc_lbl4.fill = GridBagConstraints.HORIZONTAL;
         gbc_lbl4.gridx = 0; gbc_lbl4.gridy = row;
         JLabel lbl4 = new JLabel("Punto de Venta:");
-        lbl4.setFont(FUENTE_LABEL);
-        lbl4.setForeground(COLOR_TEXTO);
+        lbl4.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        lbl4.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
         panelFormulario.add(lbl4, gbc_lbl4);
         GridBagConstraints gbc_txtPuntoVenta = new GridBagConstraints();
         gbc_txtPuntoVenta.insets = new Insets(5, 5, 5, 5);
@@ -203,8 +194,8 @@ public class VentanaConfigCertificados extends JFrame {
         gbc_lbl5.fill = GridBagConstraints.HORIZONTAL;
         gbc_lbl5.gridx = 0; gbc_lbl5.gridy = row;
         JLabel lbl5 = new JLabel("Certificado .p12:");
-        lbl5.setFont(FUENTE_LABEL);
-        lbl5.setForeground(COLOR_TEXTO);
+        lbl5.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        lbl5.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
         panelFormulario.add(lbl5, gbc_lbl5);
         GridBagConstraints gbc_txtRutaCertificado = new GridBagConstraints();
         gbc_txtRutaCertificado.insets = new Insets(5, 5, 5, 5);
@@ -223,8 +214,8 @@ public class VentanaConfigCertificados extends JFrame {
         gbc_lbl6.fill = GridBagConstraints.HORIZONTAL;
         gbc_lbl6.gridx = 0; gbc_lbl6.gridy = row;
         JLabel lbl6 = new JLabel("Password:");
-        lbl6.setFont(FUENTE_LABEL);
-        lbl6.setForeground(COLOR_TEXTO);
+        lbl6.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        lbl6.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
         panelFormulario.add(lbl6, gbc_lbl6);
         GridBagConstraints gbc_txtPassword = new GridBagConstraints();
         gbc_txtPassword.insets = new Insets(5, 5, 5, 5);
@@ -233,36 +224,36 @@ public class VentanaConfigCertificados extends JFrame {
         panelFormulario.add(txtPassword, gbc_txtPassword);
 
         JPanel panelBotones = new JPanel();
-        panelBotones.setBackground(COLOR_FONDO);
+        panelBotones.setBackground(TemaFacturaSoft.BG_APP);
 
         JButton btnAgregar = new JButton("AGREGAR");
-        btnAgregar.setFont(FUENTE_BOTON);
-        btnAgregar.setForeground(COLOR_TEXTO);
-        btnAgregar.setBackground(COLOR_BOTON);
+        btnAgregar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnAgregar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnAgregar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnAgregar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnAgregar.setFocusPainted(false);
         btnAgregar.addActionListener(this::btnAgregarAction);
 
         JButton btnModificar = new JButton("MODIFICAR");
-        btnModificar.setFont(FUENTE_BOTON);
-        btnModificar.setForeground(COLOR_TEXTO);
-        btnModificar.setBackground(COLOR_BOTON);
+        btnModificar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnModificar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnModificar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnModificar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnModificar.setFocusPainted(false);
         btnModificar.addActionListener(this::btnModificarAction);
 
         JButton btnEliminar = new JButton("ELIMINAR");
-        btnEliminar.setFont(FUENTE_BOTON);
-        btnEliminar.setForeground(COLOR_TEXTO);
-        btnEliminar.setBackground(COLOR_BOTON);
+        btnEliminar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnEliminar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnEliminar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnEliminar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnEliminar.setFocusPainted(false);
         btnEliminar.addActionListener(this::btnEliminarAction);
 
         JButton btnLimpiar = new JButton("LIMPIAR");
-        btnLimpiar.setFont(FUENTE_BOTON);
-        btnLimpiar.setForeground(COLOR_TEXTO);
-        btnLimpiar.setBackground(COLOR_BOTON);
+        btnLimpiar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnLimpiar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnLimpiar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnLimpiar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnLimpiar.setFocusPainted(false);
         btnLimpiar.addActionListener(this::btnLimpiarAction);
@@ -280,7 +271,7 @@ public class VentanaConfigCertificados extends JFrame {
         panelBotones.add(btnLimpiar);
 
         JPanel panelSur = new JPanel(new BorderLayout());
-        panelSur.setBackground(COLOR_FONDO);
+        panelSur.setBackground(TemaFacturaSoft.BG_APP);
         panelSur.add(panelFormulario, BorderLayout.NORTH);
         panelSur.add(panelBotones, BorderLayout.SOUTH);
 

@@ -12,10 +12,8 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Desktop;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -24,13 +22,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class VentanaComprobantes extends javax.swing.JFrame {
-
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Color COLOR_TITULO = new Color(65, 105, 225);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
-    private static final Font FUENTE_TITULO = new Font("Cambria", Font.BOLD, 14);
 
     private ControladorFacturacion controlador;
     private JTable tabla;
@@ -49,14 +40,13 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         setSize(950, 520);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(COLOR_FONDO);
+        getContentPane().setBackground(TemaFacturaSoft.BG_APP);
 
         JPanel panelSuperior = new JPanel(new GridBagLayout());
-        panelSuperior.setBackground(COLOR_FONDO);
+        panelSuperior.setBackground(TemaFacturaSoft.BG_APP);
 
         JLabel lblTitulo = new JLabel("HISTORIAL DE COMPROBANTES", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Cambria", Font.BOLD, 18));
-        lblTitulo.setForeground(COLOR_TEXTO);
+        TemaFacturaSoft.aplicarEstilo(lblTitulo, 18, true);
 
         GridBagConstraints gbc_titulo = new GridBagConstraints();
         gbc_titulo.insets = new Insets(5, 5, 5, 5);
@@ -65,32 +55,31 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         panelSuperior.add(lblTitulo, gbc_titulo);
 
         JLabel lblBuscar = new JLabel("Buscar por CAE:");
-        lblBuscar.setFont(FUENTE_BOTON);
-        lblBuscar.setForeground(COLOR_TEXTO);
+        TemaFacturaSoft.aplicarEstiloLabel(lblBuscar, "Buscar por CAE:");
 
         txtBuscarCAE = new JTextField(20);
-        txtBuscarCAE.setFont(new Font("Cambria", Font.PLAIN, 11));
+        TemaFacturaSoft.aplicarEstiloInput(txtBuscarCAE);
 
         JButton btnBuscar = new JButton("BUSCAR");
-        btnBuscar.setFont(FUENTE_BOTON);
-        btnBuscar.setForeground(COLOR_TEXTO);
-        btnBuscar.setBackground(COLOR_BOTON);
+        btnBuscar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnBuscar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnBuscar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnBuscar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnBuscar.setFocusPainted(false);
         btnBuscar.addActionListener(e -> btnBuscarAction());
 
         JButton btnActualizar = new JButton("ACTUALIZAR");
-        btnActualizar.setFont(FUENTE_BOTON);
-        btnActualizar.setForeground(COLOR_TEXTO);
-        btnActualizar.setBackground(COLOR_BOTON);
+        btnActualizar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnActualizar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnActualizar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnActualizar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnActualizar.setFocusPainted(false);
         btnActualizar.addActionListener(e -> cargarComprobantes());
 
         JButton btnVerPDF = new JButton("VER PDF");
-        btnVerPDF.setFont(FUENTE_BOTON);
-        btnVerPDF.setForeground(COLOR_TEXTO);
-        btnVerPDF.setBackground(COLOR_BOTON);
+        btnVerPDF.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnVerPDF.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnVerPDF.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnVerPDF.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnVerPDF.setFocusPainted(false);
         btnVerPDF.addActionListener(e -> btnVerPDFAction());
@@ -139,7 +128,7 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         };
 
         tabla = new JTable(modeloTabla);
-        tabla.setFont(new Font("Cambria", Font.PLAIN, 10));
+        TemaFacturaSoft.aplicarEstiloTabla(tabla);
         JScrollPane scrollPane = new JScrollPane(tabla);
 
         add(panelSuperior, BorderLayout.NORTH);

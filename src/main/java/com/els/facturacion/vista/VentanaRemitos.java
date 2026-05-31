@@ -15,9 +15,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Cursor;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -29,10 +27,6 @@ import java.util.List;
 
 public class VentanaRemitos extends javax.swing.JFrame {
 
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private ControladorRemitos controlador;
@@ -57,14 +51,14 @@ public class VentanaRemitos extends javax.swing.JFrame {
         setSize(1000, 700);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(COLOR_FONDO);
+        getContentPane().setBackground(TemaFacturaSoft.BG_APP);
 
         JPanel panelIzquierdo = new JPanel(new BorderLayout(5, 5));
-        panelIzquierdo.setBackground(COLOR_FONDO);
+        panelIzquierdo.setBackground(TemaFacturaSoft.BG_APP);
 
         JLabel lblTitulo = new JLabel("REMITOS");
-        lblTitulo.setFont(new Font("Cambria", Font.BOLD, 16));
-        lblTitulo.setForeground(COLOR_TEXTO);
+        lblTitulo.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(16f));
+        lblTitulo.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
         lblTitulo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
 
         String[] colRemitos = {"ID", "Numero", "Fecha Emision", "Receptor", "Estado"};
@@ -72,20 +66,21 @@ public class VentanaRemitos extends javax.swing.JFrame {
             public boolean isCellEditable(int row, int col) { return false; }
         };
         tablaRemitos = new JTable(modeloTablaRemitos);
+        TemaFacturaSoft.aplicarEstiloTabla(tablaRemitos);
         tablaRemitos.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) cargarRemitoSeleccionado();
         });
 
         JButton btnNuevo = new JButton("NUEVO REMITO");
-        btnNuevo.setFont(FUENTE_BOTON);
-        btnNuevo.setForeground(COLOR_TEXTO);
-        btnNuevo.setBackground(COLOR_BOTON);
+        btnNuevo.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnNuevo.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnNuevo.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnNuevo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnNuevo.setFocusPainted(false);
         btnNuevo.addActionListener(e -> nuevoRemito());
 
         JPanel panelListaBotones = new JPanel();
-        panelListaBotones.setBackground(COLOR_FONDO);
+        panelListaBotones.setBackground(TemaFacturaSoft.BG_APP);
         panelListaBotones.add(btnNuevo);
 
         panelIzquierdo.add(lblTitulo, BorderLayout.NORTH);
@@ -93,7 +88,7 @@ public class VentanaRemitos extends javax.swing.JFrame {
         panelIzquierdo.add(panelListaBotones, BorderLayout.SOUTH);
 
         JPanel panelDerecho = new JPanel(new GridBagLayout());
-        panelDerecho.setBackground(COLOR_FONDO);
+        panelDerecho.setBackground(TemaFacturaSoft.BG_APP);
         txtNumero = new JTextField(20);
         txtNumero.setEditable(false);
         txtFechaEmision = new JTextField(10);
@@ -200,25 +195,26 @@ public class VentanaRemitos extends javax.swing.JFrame {
             public boolean isCellEditable(int row, int col) { return false; }
         };
         tablaItems = new JTable(modeloTablaItems);
+        TemaFacturaSoft.aplicarEstiloTabla(tablaItems);
         JScrollPane scrollItems = new JScrollPane(tablaItems);
 
         JPanel panelItemForm = new JPanel();
-        panelItemForm.setBackground(COLOR_FONDO);
+        panelItemForm.setBackground(TemaFacturaSoft.BG_APP);
         txtCodigo = new JTextField(8);
         txtDescripcion = new JTextField(20);
         txtCantidad = new JTextField(5);
         txtCantidad.setText("1");
         JButton btnAgregarItem = new JButton("+ AGREGAR");
-        btnAgregarItem.setFont(FUENTE_BOTON);
-        btnAgregarItem.setForeground(COLOR_TEXTO);
-        btnAgregarItem.setBackground(COLOR_BOTON);
+        btnAgregarItem.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnAgregarItem.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnAgregarItem.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnAgregarItem.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnAgregarItem.setFocusPainted(false);
         btnAgregarItem.addActionListener(e -> agregarItem());
         JButton btnEliminarItem = new JButton("- ELIMINAR");
-        btnEliminarItem.setFont(FUENTE_BOTON);
-        btnEliminarItem.setForeground(COLOR_TEXTO);
-        btnEliminarItem.setBackground(COLOR_BOTON);
+        btnEliminarItem.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnEliminarItem.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnEliminarItem.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnEliminarItem.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnEliminarItem.setFocusPainted(false);
         btnEliminarItem.addActionListener(e -> eliminarItem());
@@ -273,18 +269,18 @@ public class VentanaRemitos extends javax.swing.JFrame {
         gbc_panelBotones.fill = GridBagConstraints.HORIZONTAL;
         gbc_panelBotones.gridx = 0; gbc_panelBotones.gridy = row; gbc_panelBotones.gridwidth = 4;
         JPanel panelBotones = new JPanel();
-        panelBotones.setBackground(COLOR_FONDO);
+        panelBotones.setBackground(TemaFacturaSoft.BG_APP);
         JButton btnGuardar = new JButton("GUARDAR REMITO");
-        btnGuardar.setFont(FUENTE_BOTON);
-        btnGuardar.setForeground(COLOR_TEXTO);
-        btnGuardar.setBackground(COLOR_BOTON);
+        btnGuardar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnGuardar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnGuardar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnGuardar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnGuardar.setFocusPainted(false);
         btnGuardar.addActionListener(e -> guardarRemito());
         JButton btnCambiarEstado = new JButton("CAMBIAR ESTADO");
-        btnCambiarEstado.setFont(FUENTE_BOTON);
-        btnCambiarEstado.setForeground(COLOR_TEXTO);
-        btnCambiarEstado.setBackground(COLOR_BOTON);
+        btnCambiarEstado.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnCambiarEstado.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnCambiarEstado.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnCambiarEstado.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnCambiarEstado.setFocusPainted(false);
         btnCambiarEstado.addActionListener(e -> cambiarEstado());

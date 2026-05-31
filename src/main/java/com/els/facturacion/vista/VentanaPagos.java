@@ -32,7 +32,6 @@ import java.awt.Cursor;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Font;
 import java.io.File;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -42,12 +41,6 @@ import java.util.List;
 
 public class VentanaPagos extends javax.swing.JFrame {
 
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Color COLOR_TITULO = new Color(65, 105, 225);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
-    private static final Font FUENTE_LABEL = new Font("Cambria", Font.BOLD, 12);
     private static final DecimalFormat DF = new DecimalFormat("#,##0.00");
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -96,11 +89,11 @@ public class VentanaPagos extends javax.swing.JFrame {
         setSize(1024, 750);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(COLOR_FONDO);
+        getContentPane().setBackground(TemaFacturaSoft.BG_APP);
 
         JSplitPane splitHorizontal = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitHorizontal.setBorder(null);
-        splitHorizontal.setBackground(COLOR_FONDO);
+        splitHorizontal.setBackground(TemaFacturaSoft.BG_APP);
 
         btnPagarItem = new JButton("PAGAR ITEM");
         estilizarBoton(btnPagarItem);
@@ -179,16 +172,10 @@ public class VentanaPagos extends javax.swing.JFrame {
 
     private JPanel crearPanelFacturas() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBackground(COLOR_FONDO);
+        panel.setBackground(TemaFacturaSoft.BG_APP);
         panel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createEmptyBorder(10, 10, 10, 5),
-            BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(COLOR_TITULO),
-                "FACTURAS PENDIENTES",
-                javax.swing.border.TitledBorder.LEFT,
-                javax.swing.border.TitledBorder.TOP,
-                new Font("Cambria", Font.BOLD, 13), COLOR_TEXTO
-            )
+            TemaFacturaSoft.crearSeccion("FACTURAS PENDIENTES")
         ));
 
         String[] colFacturas = {"Tipo", "N\u00famero", "Fecha", "Cliente", "Total", "Estado"};
@@ -197,10 +184,7 @@ public class VentanaPagos extends javax.swing.JFrame {
             public boolean isCellEditable(int row, int col) { return false; }
         };
         tablaFacturas = new JTable(modeloTablaFacturas);
-        tablaFacturas.setFont(new Font("Cambria", Font.PLAIN, 11));
-        tablaFacturas.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 11));
-        tablaFacturas.getTableHeader().setBackground(COLOR_BOTON);
-        tablaFacturas.setRowHeight(22);
+        TemaFacturaSoft.aplicarEstiloTabla(tablaFacturas);
         tablaFacturas.setAutoCreateRowSorter(true);
         tablaFacturas.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) cargarFacturaSeleccionada();
@@ -216,7 +200,7 @@ public class VentanaPagos extends javax.swing.JFrame {
         panel.add(new JScrollPane(tablaFacturas), BorderLayout.CENTER);
 
         JPanel panelInferior = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-        panelInferior.setBackground(COLOR_FONDO);
+        panelInferior.setBackground(TemaFacturaSoft.BG_APP);
         panelInferior.add(btnRefresh);
         panel.add(panelInferior, BorderLayout.SOUTH);
 
@@ -225,16 +209,10 @@ public class VentanaPagos extends javax.swing.JFrame {
 
     private JPanel crearPanelDetalle() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBackground(COLOR_FONDO);
+        panel.setBackground(TemaFacturaSoft.BG_APP);
         panel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createEmptyBorder(10, 5, 10, 10),
-            BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(COLOR_TITULO),
-                "DETALLE DE FACTURA",
-                javax.swing.border.TitledBorder.LEFT,
-                javax.swing.border.TitledBorder.TOP,
-                new Font("Cambria", Font.BOLD, 13), COLOR_TEXTO
-            )
+            TemaFacturaSoft.crearSeccion("DETALLE DE FACTURA")
         ));
 
         panel.add(crearPanelHeader(), BorderLayout.NORTH);
@@ -246,26 +224,26 @@ public class VentanaPagos extends javax.swing.JFrame {
     private JPanel crearPanelHeader() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(COLOR_FONDO);
+        panel.setBackground(TemaFacturaSoft.BG_APP);
         panel.setBorder(BorderFactory.createEmptyBorder(6, 8, 10, 8));
 
         lblSaldoPendiente = new JLabel("Saldo Pendiente: $ 0,00");
-        lblSaldoPendiente.setFont(new Font("Cambria", Font.BOLD, 15));
-        lblSaldoPendiente.setForeground(new Color(180, 0, 0));
+        lblSaldoPendiente.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(15f));
+        lblSaldoPendiente.setForeground(TemaFacturaSoft.ACCENT_DANGER);
         lblSaldoPendiente.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(lblSaldoPendiente);
 
         panel.add(Box.createVerticalStrut(4));
 
         lblInfoFactura = new JLabel("Seleccione una factura de la lista");
-        lblInfoFactura.setFont(new Font("Cambria", Font.BOLD, 15));
-        lblInfoFactura.setForeground(COLOR_TEXTO);
+        lblInfoFactura.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(15f));
+        lblInfoFactura.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
         lblInfoFactura.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(lblInfoFactura);
 
         lblTotalFactura = new JLabel("");
-        lblTotalFactura.setFont(new Font("Cambria", Font.BOLD, 15));
-        lblTotalFactura.setForeground(COLOR_TEXTO);
+        lblTotalFactura.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(15f));
+        lblTotalFactura.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
         lblTotalFactura.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(lblTotalFactura);
 
@@ -276,28 +254,22 @@ public class VentanaPagos extends javax.swing.JFrame {
         JSplitPane splitVertical = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         splitVertical.setResizeWeight(0.4);
         splitVertical.setBorder(null);
-        splitVertical.setBackground(COLOR_FONDO);
+        splitVertical.setBackground(TemaFacturaSoft.BG_APP);
 
         splitVertical.setTopComponent(crearPanelItems());
         splitVertical.setBottomComponent(crearPanelHistorial());
         javax.swing.SwingUtilities.invokeLater(() -> splitVertical.setDividerLocation(0.4));
 
         JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setBackground(COLOR_FONDO);
+        wrapper.setBackground(TemaFacturaSoft.BG_APP);
         wrapper.add(splitVertical);
         return wrapper;
     }
 
     private JPanel crearPanelItems() {
         JPanel panel = new JPanel(new BorderLayout(3, 3));
-        panel.setBackground(COLOR_FONDO);
-        panel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(COLOR_TITULO),
-            "ITEMS DE LA FACTURA",
-            javax.swing.border.TitledBorder.LEFT,
-            javax.swing.border.TitledBorder.TOP,
-            new Font("Cambria", Font.BOLD, 11), COLOR_TEXTO
-        ));
+        panel.setBackground(TemaFacturaSoft.BG_APP);
+        panel.setBorder(TemaFacturaSoft.crearSeccion("ITEMS DE LA FACTURA"));
 
         String[] colItems = {"ELS", "Descripci\u00f3n", "Cant.", "P. Unitario", "Subtotal", "Estado"};
         modeloTablaItems = new DefaultTableModel(colItems, 0) {
@@ -305,10 +277,7 @@ public class VentanaPagos extends javax.swing.JFrame {
             public boolean isCellEditable(int row, int col) { return false; }
         };
         tablaItems = new JTable(modeloTablaItems);
-        tablaItems.setFont(new Font("Cambria", Font.PLAIN, 10));
-        tablaItems.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 10));
-        tablaItems.getTableHeader().setBackground(COLOR_BOTON);
-        tablaItems.setRowHeight(18);
+        TemaFacturaSoft.aplicarEstiloTabla(tablaItems);
 
         tablaItems.getColumnModel().getColumn(0).setPreferredWidth(55);
         tablaItems.getColumnModel().getColumn(1).setPreferredWidth(220);
@@ -317,16 +286,12 @@ public class VentanaPagos extends javax.swing.JFrame {
         tablaItems.getColumnModel().getColumn(4).setPreferredWidth(75);
         tablaItems.getColumnModel().getColumn(5).setPreferredWidth(55);
 
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        for (int c = 0; c < tablaItems.getColumnCount(); c++) {
-            if (c != 1) tablaItems.getColumnModel().getColumn(c).setCellRenderer(centerRenderer);
-        }
+        TemaFacturaSoft.centrarColumnas(tablaItems, 0, 2, 3, 4, 5);
 
         panel.add(new JScrollPane(tablaItems), BorderLayout.CENTER);
 
         txtMontoPago = new JTextField();
-        txtMontoPago.setFont(new Font("Cambria", Font.BOLD, 14));
+        txtMontoPago.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(14f));
         txtMontoPago.setHorizontalAlignment(JTextField.RIGHT);
         txtMontoPago.setPreferredSize(new Dimension(130, 28));
         txtMontoPago.setMinimumSize(new Dimension(130, 28));
@@ -380,22 +345,22 @@ public class VentanaPagos extends javax.swing.JFrame {
         });
 
         cmbFormaPago = new JComboBox<>(new String[]{"Efectivo", "Transferencia", "Cheque", "Tarjeta", "Mercado Pago", "Otra"});
-        cmbFormaPago.setFont(FUENTE_BOTON);
+        cmbFormaPago.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         cmbFormaPago.setPreferredSize(new Dimension(90, 28));
 
         JPanel box1 = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 6));
-        box1.setBackground(COLOR_FONDO);
+        box1.setBackground(TemaFacturaSoft.BG_APP);
         box1.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(COLOR_TITULO),
+            BorderFactory.createLineBorder(TemaFacturaSoft.BORDER_SECTION),
             BorderFactory.createEmptyBorder(4, 8, 4, 8)
         ));
         box1.add(btnPagarItem);
         box1.add(btnPagarCompleta);
 
         JPanel box2 = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 6));
-        box2.setBackground(COLOR_FONDO);
+        box2.setBackground(TemaFacturaSoft.BG_APP);
         box2.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(COLOR_TITULO),
+            BorderFactory.createLineBorder(TemaFacturaSoft.BORDER_SECTION),
             BorderFactory.createEmptyBorder(4, 8, 4, 8)
         ));
         box2.add(new JLabel("Importe:"));
@@ -404,7 +369,7 @@ public class VentanaPagos extends javax.swing.JFrame {
 
         JPanel panelAcciones = new JPanel();
         panelAcciones.setLayout(new BoxLayout(panelAcciones, BoxLayout.Y_AXIS));
-        panelAcciones.setBackground(COLOR_FONDO);
+        panelAcciones.setBackground(TemaFacturaSoft.BG_APP);
         panelAcciones.setBorder(BorderFactory.createEmptyBorder(8, 4, 6, 4));
         panelAcciones.add(box1);
         panelAcciones.add(Box.createVerticalStrut(6));
@@ -417,14 +382,8 @@ public class VentanaPagos extends javax.swing.JFrame {
 
     private JPanel crearPanelHistorial() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBackground(COLOR_FONDO);
-        panel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(COLOR_TITULO),
-            "HISTORIAL DE PAGOS",
-            javax.swing.border.TitledBorder.LEFT,
-            javax.swing.border.TitledBorder.TOP,
-            new Font("Cambria", Font.BOLD, 12), COLOR_TEXTO
-        ));
+        panel.setBackground(TemaFacturaSoft.BG_APP);
+        panel.setBorder(TemaFacturaSoft.crearSeccion("HISTORIAL DE PAGOS"));
 
         String[] colPagos = {"Monto", "Fecha", "Forma de Pago", "Factura", "Recibo N\u00b0", "Seleccionar"};
         modeloTablaPagos = new DefaultTableModel(colPagos, 0) {
@@ -440,30 +399,20 @@ public class VentanaPagos extends javax.swing.JFrame {
             }
         };
         tablaPagos = new JTable(modeloTablaPagos);
-        tablaPagos.setFont(new Font("Cambria", Font.PLAIN, 11));
-        tablaPagos.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 11));
-        tablaPagos.getTableHeader().setBackground(COLOR_BOTON);
-        tablaPagos.setRowHeight(22);
+        TemaFacturaSoft.aplicarEstiloTabla(tablaPagos);
 
         int[] pagosAnchos = {75, 65, 80, 85, 80, 40};
         for (int i = 0; i < pagosAnchos.length; i++) {
             tablaPagos.getColumnModel().getColumn(i).setPreferredWidth(pagosAnchos[i]);
         }
 
-        DefaultTableCellRenderer centerPagosRenderer = new DefaultTableCellRenderer();
-        centerPagosRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        for (int i = 0; i < tablaPagos.getColumnCount(); i++) {
-            if (i == 5) continue;
-            tablaPagos.getColumnModel().getColumn(i).setCellRenderer(centerPagosRenderer);
-        }
-
-        DefaultTableCellRenderer headerPagosRenderer = (DefaultTableCellRenderer) tablaPagos.getTableHeader().getDefaultRenderer();
-        headerPagosRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        TemaFacturaSoft.centrarColumnas(tablaPagos, 0, 1, 2, 3, 4);
+        TemaFacturaSoft.aplicarEstiloTablaHeaderCentrado(tablaPagos);
 
         panel.add(new JScrollPane(tablaPagos), BorderLayout.CENTER);
 
         JPanel panelAcciones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-        panelAcciones.setBackground(COLOR_FONDO);
+        panelAcciones.setBackground(TemaFacturaSoft.BG_APP);
         panelAcciones.add(btnGenerarRecibo);
         panelAcciones.add(btnVerRecibo);
         panel.add(panelAcciones, BorderLayout.SOUTH);
@@ -782,9 +731,9 @@ public class VentanaPagos extends javax.swing.JFrame {
     }
 
     private void estilizarBoton(JButton btn) {
-        btn.setFont(FUENTE_BOTON);
-        btn.setForeground(COLOR_TEXTO);
-        btn.setBackground(COLOR_BOTON);
+        btn.setFont(TemaFacturaSoft.FONT_UI_BOLD);
+        btn.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btn.setBackground(TemaFacturaSoft.BG_SURFACE);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setFocusPainted(false);
     }
@@ -795,15 +744,15 @@ public class VentanaPagos extends javax.swing.JFrame {
 
     private String mostrarSelectorMedioPago() {
         JDialog dialog = new JDialog(this, "Medio de pago", true);
-        dialog.getContentPane().setBackground(COLOR_FONDO);
+        dialog.getContentPane().setBackground(TemaFacturaSoft.BG_APP);
 
         JComboBox<String> combo = new JComboBox<>(new String[]{"Efectivo", "Transferencia", "Cheque", "Tarjeta", "Mercado Pago", "Otra"});
-        combo.setFont(FUENTE_BOTON);
+        combo.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         combo.setBackground(Color.WHITE);
 
         JLabel lbl = new JLabel("Seleccione el medio de pago:");
-        lbl.setFont(new Font("Cambria", Font.BOLD, 13));
-        lbl.setForeground(COLOR_TEXTO);
+        lbl.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(13f));
+        lbl.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
 
         JButton btnOk = new JButton("ACEPTAR");
         estilizarBoton(btnOk);
@@ -811,13 +760,13 @@ public class VentanaPagos extends javax.swing.JFrame {
         estilizarBoton(btnCancel);
 
         JPanel content = new JPanel(new BorderLayout(8, 12));
-        content.setBackground(COLOR_FONDO);
+        content.setBackground(TemaFacturaSoft.BG_APP);
         content.setBorder(BorderFactory.createEmptyBorder(14, 16, 12, 16));
         content.add(lbl, BorderLayout.NORTH);
         content.add(combo, BorderLayout.CENTER);
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
-        btnPanel.setBackground(COLOR_FONDO);
+        btnPanel.setBackground(TemaFacturaSoft.BG_APP);
         btnPanel.add(btnOk);
         btnPanel.add(btnCancel);
         content.add(btnPanel, BorderLayout.SOUTH);

@@ -11,21 +11,13 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Cursor;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.io.File;
 
 public class VentanaMigracion extends JFrame {
-
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
-    private static final Font FUENTE_LABEL = new Font("Cambria", Font.BOLD, 12);
 
     private MigracionExcelController migracionController;
     private JTextField txtRutaArchivo;
@@ -37,6 +29,7 @@ public class VentanaMigracion extends JFrame {
 
     public VentanaMigracion() {
         migracionController = new MigracionExcelController();
+        getContentPane().setBackground(TemaFacturaSoft.BG_APP);
         initComponents();
     }
 
@@ -45,21 +38,21 @@ public class VentanaMigracion extends JFrame {
         setSize(600, 400);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(COLOR_FONDO);
+        getContentPane().setBackground(TemaFacturaSoft.BG_APP);
 
         JPanel panelSuperior = new JPanel();
-        panelSuperior.setBackground(COLOR_FONDO);
+        panelSuperior.setBackground(TemaFacturaSoft.BG_APP);
 
         JLabel lblTitulo = new JLabel("MIGRACION DE DATOS DESDE EXCEL", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Cambria", Font.BOLD, 18));
-        lblTitulo.setForeground(COLOR_TEXTO);
-        lblTitulo.setBackground(COLOR_FONDO);
+        lblTitulo.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(18f));
+        lblTitulo.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        lblTitulo.setBackground(TemaFacturaSoft.BG_APP);
 
         JPanel panelCentro = new JPanel(new GridBagLayout());
-        panelCentro.setBackground(COLOR_FONDO);
+        panelCentro.setBackground(TemaFacturaSoft.BG_APP);
         JLabel lblTipo = new JLabel("Tipo de Migracion:");
-        lblTipo.setFont(FUENTE_LABEL);
-        lblTipo.setForeground(COLOR_TEXTO);
+        lblTipo.setFont(TemaFacturaSoft.FONT_UI_SEMIBOLD.deriveFont(12f));
+        lblTipo.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
 
         cmbTipoMigracion = new JComboBox<>(new String[]{
             "Caja BRC",
@@ -67,31 +60,31 @@ public class VentanaMigracion extends JFrame {
             "Ordenes 2026 (Costos Fijos)",
             "Ordenes 2026 (Resumen)"
         });
-        cmbTipoMigracion.setFont(FUENTE_BOTON);
+        TemaFacturaSoft.aplicarEstiloCombo(cmbTipoMigracion, 11);
         cmbTipoMigracion.setPreferredSize(new java.awt.Dimension(250, 25));
 
         JLabel lblArchivo = new JLabel("Archivo Excel:");
-        lblArchivo.setFont(FUENTE_LABEL);
-        lblArchivo.setForeground(COLOR_TEXTO);
+        lblArchivo.setFont(TemaFacturaSoft.FONT_UI_SEMIBOLD.deriveFont(12f));
+        lblArchivo.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
 
         txtRutaArchivo = new JTextField(30);
-        txtRutaArchivo.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtRutaArchivo.setFont(TemaFacturaSoft.FONT_UI.deriveFont(11f));
         txtRutaArchivo.setEditable(false);
 
         JButton btnSeleccionar = new JButton("SELECCIONAR");
-        btnSeleccionar.setFont(FUENTE_BOTON);
-        btnSeleccionar.setForeground(COLOR_TEXTO);
-        btnSeleccionar.setBackground(COLOR_BOTON);
+        btnSeleccionar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnSeleccionar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnSeleccionar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnSeleccionar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnSeleccionar.setFocusPainted(false);
         btnSeleccionar.addActionListener(e -> btnSeleccionarAction());
 
         JLabel lblHoja = new JLabel("Hoja a Migrar:");
-        lblHoja.setFont(FUENTE_LABEL);
-        lblHoja.setForeground(COLOR_TEXTO);
+        lblHoja.setFont(TemaFacturaSoft.FONT_UI_SEMIBOLD.deriveFont(12f));
+        lblHoja.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
 
         cmbHoja = new JComboBox<>(new String[]{"Hoja1", "Hoja2", "Costos Fijos", "Resumen"});
-        cmbHoja.setFont(FUENTE_BOTON);
+        TemaFacturaSoft.aplicarEstiloCombo(cmbHoja, 11);
         cmbHoja.setPreferredSize(new java.awt.Dimension(150, 25));
 
         GridBagConstraints gbc_titulo = new GridBagConstraints();
@@ -145,9 +138,9 @@ public class VentanaMigracion extends JFrame {
         panelCentro.add(cmbHoja, gbc_cmbHoja);
 
         lblEstado = new JLabel("Seleccione un archivo y tipo de migracion", SwingConstants.CENTER);
-        lblEstado.setFont(new Font("Cambria", Font.PLAIN, 11));
-        lblEstado.setForeground(COLOR_TEXTO);
-        lblEstado.setBackground(COLOR_FONDO);
+        lblEstado.setFont(TemaFacturaSoft.FONT_UI.deriveFont(11f));
+        lblEstado.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        lblEstado.setBackground(TemaFacturaSoft.BG_APP);
 
         GridBagConstraints gbc_estado = new GridBagConstraints();
         gbc_estado.insets = new Insets(10, 10, 10, 10);
@@ -156,20 +149,20 @@ public class VentanaMigracion extends JFrame {
         panelCentro.add(lblEstado, gbc_estado);
 
         JPanel panelBotones = new JPanel();
-        panelBotones.setBackground(COLOR_FONDO);
+        panelBotones.setBackground(TemaFacturaSoft.BG_APP);
 
         JButton btnMigrar = new JButton("MIGRAR");
-        btnMigrar.setFont(FUENTE_BOTON);
-        btnMigrar.setForeground(COLOR_TEXTO);
-        btnMigrar.setBackground(COLOR_BOTON);
+        btnMigrar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnMigrar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnMigrar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnMigrar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnMigrar.setFocusPainted(false);
         btnMigrar.addActionListener(e -> btnMigrarAction());
 
         JButton btnLimpiar = new JButton("LIMPIAR");
-        btnLimpiar.setFont(FUENTE_BOTON);
-        btnLimpiar.setForeground(COLOR_TEXTO);
-        btnLimpiar.setBackground(COLOR_BOTON);
+        btnLimpiar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnLimpiar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnLimpiar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnLimpiar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnLimpiar.setFocusPainted(false);
         btnLimpiar.addActionListener(e -> {
@@ -178,33 +171,33 @@ public class VentanaMigracion extends JFrame {
         });
 
         JButton btnVerificar = new JButton("VERIFICAR");
-        btnVerificar.setFont(FUENTE_BOTON);
-        btnVerificar.setForeground(COLOR_TEXTO);
-        btnVerificar.setBackground(COLOR_BOTON);
+        btnVerificar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnVerificar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnVerificar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnVerificar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnVerificar.setFocusPainted(false);
         btnVerificar.addActionListener(e -> btnVerificarAction());
 
         JButton btnNuevoAnio = new JButton("NUEVO AÑO");
-        btnNuevoAnio.setFont(FUENTE_BOTON);
-        btnNuevoAnio.setForeground(COLOR_TEXTO);
-        btnNuevoAnio.setBackground(COLOR_BOTON);
+        btnNuevoAnio.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnNuevoAnio.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnNuevoAnio.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnNuevoAnio.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnNuevoAnio.setFocusPainted(false);
         btnNuevoAnio.addActionListener(e -> btnNuevoAnioAction());
 
         JButton btnAgregarColumna = new JButton("AGREGAR COLUMNA");
-        btnAgregarColumna.setFont(FUENTE_BOTON);
-        btnAgregarColumna.setForeground(COLOR_TEXTO);
-        btnAgregarColumna.setBackground(COLOR_BOTON);
+        btnAgregarColumna.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnAgregarColumna.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnAgregarColumna.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnAgregarColumna.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnAgregarColumna.setFocusPainted(false);
         btnAgregarColumna.addActionListener(e -> btnAgregarColumnaAction());
 
         JButton btnCerrar = new JButton("CERRAR");
-        btnCerrar.setFont(FUENTE_BOTON);
-        btnCerrar.setForeground(COLOR_TEXTO);
-        btnCerrar.setBackground(COLOR_BOTON);
+        btnCerrar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnCerrar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnCerrar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnCerrar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnCerrar.setFocusPainted(false);
         btnCerrar.addActionListener(e -> dispose());
@@ -317,7 +310,7 @@ public class VentanaMigracion extends JFrame {
 
         String tipo = (String) cmbTipoMigracion.getSelectedItem();
         lblEstado.setText("Migrando...");
-        lblEstado.setForeground(COLOR_TEXTO);
+        lblEstado.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
 
         try {
             int count = 0;

@@ -12,20 +12,13 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Cursor;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.util.List;
 
 public class VentanaSeleccionCliente extends JDialog {
-
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
 
     private ControladorClientes controlador;
     private JTable tabla;
@@ -43,14 +36,13 @@ public class VentanaSeleccionCliente extends JDialog {
     private void initComponents() {
         setSize(700, 500);
         setLocationRelativeTo(getOwner());
-        getContentPane().setBackground(COLOR_FONDO);
+        getContentPane().setBackground(TemaFacturaSoft.BG_APP);
 
         JPanel panelSuperior = new JPanel(new GridBagLayout());
-        panelSuperior.setBackground(COLOR_FONDO);
+        panelSuperior.setBackground(TemaFacturaSoft.BG_APP);
 
         JLabel lblTitulo = new JLabel("SELECCIONAR CLIENTE");
-        lblTitulo.setFont(new Font("Cambria", Font.BOLD, 16));
-        lblTitulo.setForeground(COLOR_TEXTO);
+        TemaFacturaSoft.aplicarEstilo(lblTitulo, 16, true);
 
         GridBagConstraints gbc_titulo = new GridBagConstraints();
         gbc_titulo.insets = new Insets(5, 5, 5, 5);
@@ -58,35 +50,36 @@ public class VentanaSeleccionCliente extends JDialog {
         panelSuperior.add(lblTitulo, gbc_titulo);
 
         txtBuscar = new JTextField(20);
+        TemaFacturaSoft.aplicarEstiloInput(txtBuscar);
 
         JButton btnBuscar = new JButton("BUSCAR");
-        btnBuscar.setFont(FUENTE_BOTON);
-        btnBuscar.setForeground(COLOR_TEXTO);
-        btnBuscar.setBackground(COLOR_BOTON);
+        btnBuscar.setFont(TemaFacturaSoft.FONT_UI_BOLD);
+        btnBuscar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnBuscar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnBuscar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnBuscar.setFocusPainted(false);
         btnBuscar.addActionListener(e -> buscarCliente());
 
         JButton btnMostrarTodos = new JButton("MOSTRAR TODOS");
-        btnMostrarTodos.setFont(FUENTE_BOTON);
-        btnMostrarTodos.setForeground(COLOR_TEXTO);
-        btnMostrarTodos.setBackground(COLOR_BOTON);
+        btnMostrarTodos.setFont(TemaFacturaSoft.FONT_UI_BOLD);
+        btnMostrarTodos.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnMostrarTodos.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnMostrarTodos.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnMostrarTodos.setFocusPainted(false);
         btnMostrarTodos.addActionListener(e -> cargarClientes());
 
         JButton btnSeleccionar = new JButton("SELECCIONAR");
-        btnSeleccionar.setFont(FUENTE_BOTON);
-        btnSeleccionar.setForeground(COLOR_TEXTO);
-        btnSeleccionar.setBackground(COLOR_BOTON);
+        btnSeleccionar.setFont(TemaFacturaSoft.FONT_UI_BOLD);
+        btnSeleccionar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnSeleccionar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnSeleccionar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnSeleccionar.setFocusPainted(false);
         btnSeleccionar.addActionListener(e -> seleccionarCliente());
 
         JButton btnCancelar = new JButton("CANCELAR");
-        btnCancelar.setFont(FUENTE_BOTON);
-        btnCancelar.setForeground(COLOR_TEXTO);
-        btnCancelar.setBackground(COLOR_BOTON);
+        btnCancelar.setFont(TemaFacturaSoft.FONT_UI_BOLD);
+        btnCancelar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnCancelar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnCancelar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnCancelar.setFocusPainted(false);
         btnCancelar.addActionListener(e -> dispose());
@@ -120,8 +113,7 @@ public class VentanaSeleccionCliente extends JDialog {
             public boolean isCellEditable(int row, int column) { return false; }
         };
         tabla = new JTable(modeloTabla);
-        tabla.setFont(new Font("Cambria", Font.PLAIN, 11));
-        tabla.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 11));
+        TemaFacturaSoft.aplicarEstiloTabla(tabla);
         tabla.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (e.getClickCount() == 2) seleccionarCliente();
@@ -129,7 +121,7 @@ public class VentanaSeleccionCliente extends JDialog {
         });
 
         JPanel panelBotones = new JPanel();
-        panelBotones.setBackground(COLOR_FONDO);
+        panelBotones.setBackground(TemaFacturaSoft.BG_APP);
         panelBotones.add(btnSeleccionar);
         panelBotones.add(btnCancelar);
 

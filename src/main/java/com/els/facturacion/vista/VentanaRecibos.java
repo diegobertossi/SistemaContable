@@ -16,10 +16,8 @@ import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.FlowLayout;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -32,12 +30,6 @@ import java.util.List;
 
 public class VentanaRecibos extends javax.swing.JFrame {
 
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Color COLOR_TITULO = new Color(65, 105, 225);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
-    private static final Font FUENTE_LABEL = new Font("Cambria", Font.BOLD, 12);
     private static final DecimalFormat DF = new DecimalFormat("#,##0.00");
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -65,12 +57,12 @@ public class VentanaRecibos extends javax.swing.JFrame {
         setSize(1100, 700);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(COLOR_FONDO);
+        getContentPane().setBackground(TemaFacturaSoft.BG_APP);
 
         JSplitPane splitHorizontal = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitHorizontal.setResizeWeight(0.35);
         splitHorizontal.setBorder(null);
-        splitHorizontal.setBackground(COLOR_FONDO);
+        splitHorizontal.setBackground(TemaFacturaSoft.BG_APP);
 
         splitHorizontal.setLeftComponent(crearPanelLista());
         splitHorizontal.setRightComponent(crearPanelDetalle());
@@ -80,16 +72,10 @@ public class VentanaRecibos extends javax.swing.JFrame {
 
     private JPanel crearPanelLista() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBackground(COLOR_FONDO);
+        panel.setBackground(TemaFacturaSoft.BG_APP);
         panel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createEmptyBorder(10, 10, 10, 5),
-            BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(COLOR_TITULO),
-                "RECIBOS",
-                javax.swing.border.TitledBorder.LEFT,
-                javax.swing.border.TitledBorder.TOP,
-                new Font("Cambria", Font.BOLD, 13), COLOR_TEXTO
-            )
+            TemaFacturaSoft.crearSeccion("RECIBOS")
         ));
 
         String[] colRecibos = {"ID", "N\u00famero", "Fecha", "Cliente", "Total"};
@@ -98,9 +84,7 @@ public class VentanaRecibos extends javax.swing.JFrame {
             public boolean isCellEditable(int row, int col) { return false; }
         };
         tablaRecibos = new JTable(modeloTablaRecibos);
-        tablaRecibos.setFont(new Font("Cambria", Font.PLAIN, 11));
-        tablaRecibos.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 11));
-        tablaRecibos.getTableHeader().setBackground(COLOR_BOTON);
+        TemaFacturaSoft.aplicarEstiloTabla(tablaRecibos);
         tablaRecibos.setRowHeight(22);
         tablaRecibos.setAutoCreateRowSorter(true);
         tablaRecibos.getSelectionModel().addListSelectionListener(e -> {
@@ -116,20 +100,20 @@ public class VentanaRecibos extends javax.swing.JFrame {
         panel.add(new JScrollPane(tablaRecibos), BorderLayout.CENTER);
 
         JPanel panelInferior = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-        panelInferior.setBackground(COLOR_FONDO);
+        panelInferior.setBackground(TemaFacturaSoft.BG_APP);
         JButton btnRefrescar = new JButton("REFRESCAR");
-        btnRefrescar.setFont(FUENTE_BOTON);
-        btnRefrescar.setForeground(COLOR_TEXTO);
-        btnRefrescar.setBackground(COLOR_BOTON);
-        btnRefrescar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnRefrescar.setFont(TemaFacturaSoft.FONT_UI_BOLD);
+        btnRefrescar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnRefrescar.setBackground(TemaFacturaSoft.BG_SURFACE);
+        TemaFacturaSoft.aplicarCursorMano(btnRefrescar);
         btnRefrescar.setFocusPainted(false);
         btnRefrescar.addActionListener(e -> cargarRecibos());
         panelInferior.add(btnRefrescar);
         JButton btnVerRecibo = new JButton("VER RECIBO");
-        btnVerRecibo.setFont(FUENTE_BOTON);
-        btnVerRecibo.setForeground(COLOR_TEXTO);
-        btnVerRecibo.setBackground(COLOR_BOTON);
-        btnVerRecibo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnVerRecibo.setFont(TemaFacturaSoft.FONT_UI_BOLD);
+        btnVerRecibo.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnVerRecibo.setBackground(TemaFacturaSoft.BG_SURFACE);
+        TemaFacturaSoft.aplicarCursorMano(btnVerRecibo);
         btnVerRecibo.setFocusPainted(false);
         btnVerRecibo.addActionListener(e -> verReciboSeleccionado());
         panelInferior.add(btnVerRecibo);
@@ -140,16 +124,10 @@ public class VentanaRecibos extends javax.swing.JFrame {
 
     private JPanel crearPanelDetalle() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBackground(COLOR_FONDO);
+        panel.setBackground(TemaFacturaSoft.BG_APP);
         panel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createEmptyBorder(10, 5, 10, 10),
-            BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(COLOR_TITULO),
-                "DETALLE DEL RECIBO",
-                javax.swing.border.TitledBorder.LEFT,
-                javax.swing.border.TitledBorder.TOP,
-                new Font("Cambria", Font.BOLD, 13), COLOR_TEXTO
-            )
+            TemaFacturaSoft.crearSeccion("DETALLE DEL RECIBO")
         ));
 
         panel.add(crearPanelHeader(), BorderLayout.NORTH);
@@ -160,15 +138,14 @@ public class VentanaRecibos extends javax.swing.JFrame {
 
     private JPanel crearPanelHeader() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(COLOR_FONDO);
+        panel.setBackground(TemaFacturaSoft.BG_APP);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 10, 5, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
 
         lblInfoRecibo = new JLabel("Seleccione un recibo de la lista");
-        lblInfoRecibo.setFont(FUENTE_LABEL);
-        lblInfoRecibo.setForeground(COLOR_TEXTO);
+        TemaFacturaSoft.aplicarEstiloLabelSecundario(lblInfoRecibo, lblInfoRecibo.getText());
         gbc.gridx = 0; gbc.gridy = 0;
         panel.add(lblInfoRecibo, gbc);
 
@@ -179,27 +156,21 @@ public class VentanaRecibos extends javax.swing.JFrame {
         JSplitPane splitVertical = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         splitVertical.setResizeWeight(0.5);
         splitVertical.setBorder(null);
-        splitVertical.setBackground(COLOR_FONDO);
+        splitVertical.setBackground(TemaFacturaSoft.BG_APP);
 
         splitVertical.setTopComponent(crearPanelFormasPago());
         splitVertical.setBottomComponent(crearPanelFacturas());
 
         JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setBackground(COLOR_FONDO);
+        wrapper.setBackground(TemaFacturaSoft.BG_APP);
         wrapper.add(splitVertical);
         return wrapper;
     }
 
     private JPanel crearPanelFormasPago() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBackground(COLOR_FONDO);
-        panel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(COLOR_TITULO),
-            "FORMAS DE PAGO",
-            javax.swing.border.TitledBorder.LEFT,
-            javax.swing.border.TitledBorder.TOP,
-            new Font("Cambria", Font.BOLD, 12), COLOR_TEXTO
-        ));
+        panel.setBackground(TemaFacturaSoft.BG_APP);
+        panel.setBorder(TemaFacturaSoft.crearSeccion("FORMAS DE PAGO"));
 
         String[] colPagos = {"Forma de Pago", "Monto", "Referencia"};
         modeloTablaPagos = new DefaultTableModel(colPagos, 0) {
@@ -207,9 +178,7 @@ public class VentanaRecibos extends javax.swing.JFrame {
             public boolean isCellEditable(int row, int col) { return false; }
         };
         tablaPagos = new JTable(modeloTablaPagos);
-        tablaPagos.setFont(new Font("Cambria", Font.PLAIN, 11));
-        tablaPagos.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 11));
-        tablaPagos.getTableHeader().setBackground(COLOR_BOTON);
+        TemaFacturaSoft.aplicarEstiloTabla(tablaPagos);
         tablaPagos.setRowHeight(22);
 
         tablaPagos.getColumnModel().getColumn(0).setPreferredWidth(150);
@@ -227,14 +196,8 @@ public class VentanaRecibos extends javax.swing.JFrame {
 
     private JPanel crearPanelFacturas() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBackground(COLOR_FONDO);
-        panel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(COLOR_TITULO),
-            "FACTURAS ASOCIADAS",
-            javax.swing.border.TitledBorder.LEFT,
-            javax.swing.border.TitledBorder.TOP,
-            new Font("Cambria", Font.BOLD, 12), COLOR_TEXTO
-        ));
+        panel.setBackground(TemaFacturaSoft.BG_APP);
+        panel.setBorder(TemaFacturaSoft.crearSeccion("FACTURAS ASOCIADAS"));
 
         String[] colFacturas = {"Factura ID", "Nro Factura", "Monto Aplicado"};
         modeloTablaFacturas = new DefaultTableModel(colFacturas, 0) {
@@ -242,9 +205,7 @@ public class VentanaRecibos extends javax.swing.JFrame {
             public boolean isCellEditable(int row, int col) { return false; }
         };
         tablaFacturas = new JTable(modeloTablaFacturas);
-        tablaFacturas.setFont(new Font("Cambria", Font.PLAIN, 11));
-        tablaFacturas.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 11));
-        tablaFacturas.getTableHeader().setBackground(COLOR_BOTON);
+        TemaFacturaSoft.aplicarEstiloTabla(tablaFacturas);
         tablaFacturas.setRowHeight(22);
 
         tablaFacturas.getColumnModel().getColumn(0).setPreferredWidth(80);

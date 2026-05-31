@@ -5,7 +5,6 @@ import com.els.facturacion.modelo.RemitoReparsoftDTO;
 import com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem;
 import com.els.facturacion.util.UbicacionSistema;
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -13,13 +12,6 @@ import java.awt.event.MouseEvent;
 import java.util.List;
 
 public class VentanaImportarRemito extends JDialog {
-
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Color COLOR_TITULO = new Color(65, 105, 225);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
-    private static final Font FUENTE_LABEL = new Font("Cambria", Font.BOLD, 11);
 
     private ControladorReparsoft controlador;
     private JTable tablaRemitos;
@@ -44,31 +36,29 @@ public class VentanaImportarRemito extends JDialog {
     private void initComponents() {
         setSize(800, 600);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        getContentPane().setBackground(COLOR_FONDO);
+        getContentPane().setBackground(TemaFacturaSoft.BG_APP);
 
         JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(COLOR_FONDO);
+        panel.setBackground(TemaFacturaSoft.BG_APP);
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JPanel panelSuperior = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        panelSuperior.setBackground(COLOR_FONDO);
+        panelSuperior.setBackground(TemaFacturaSoft.BG_APP);
         JLabel lblBase = new JLabel("Base: " + UbicacionSistema.getNombreDbReparsoft());
-        lblBase.setFont(FUENTE_LABEL);
-        lblBase.setForeground(COLOR_TEXTO);
+        TemaFacturaSoft.aplicarEstiloLabel(lblBase, lblBase.getText());
         panelSuperior.add(lblBase);
 
         JButton btnRefrescar = new JButton("Refrescar");
-        btnRefrescar.setFont(FUENTE_BOTON);
-        btnRefrescar.setForeground(COLOR_TEXTO);
-        btnRefrescar.setBackground(COLOR_BOTON);
-        btnRefrescar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnRefrescar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnRefrescar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnRefrescar.setBackground(TemaFacturaSoft.BG_SURFACE);
+        TemaFacturaSoft.aplicarCursorMano(btnRefrescar);
         btnRefrescar.setFocusPainted(false);
         btnRefrescar.addActionListener(e -> cargarRemitos());
         panelSuperior.add(btnRefrescar);
 
         lblCliente = new JLabel("Seleccione un remito");
-        lblCliente.setFont(FUENTE_LABEL);
-        lblCliente.setForeground(COLOR_TEXTO);
+        TemaFacturaSoft.aplicarEstiloLabel(lblCliente, lblCliente.getText());
         panelSuperior.add(lblCliente);
 
         panel.add(panelSuperior, BorderLayout.NORTH);
@@ -83,10 +73,7 @@ public class VentanaImportarRemito extends JDialog {
             public boolean isCellEditable(int row, int column) { return false; }
         };
         tablaRemitos = new JTable(modeloTablaRemitos);
-        tablaRemitos.setFont(new Font("Cambria", Font.PLAIN, 11));
-        tablaRemitos.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 11));
-        tablaRemitos.getTableHeader().setBackground(COLOR_BOTON);
-        tablaRemitos.setRowHeight(22);
+        TemaFacturaSoft.aplicarEstiloTabla(tablaRemitos);
         tablaRemitos.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) mostrarDetalleRemito();
         });
@@ -99,12 +86,7 @@ public class VentanaImportarRemito extends JDialog {
             }
         });
         JScrollPane scrollRemitos = new JScrollPane(tablaRemitos);
-        scrollRemitos.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(COLOR_TITULO),
-            "REMITOS",
-            TitledBorder.LEFT, TitledBorder.TOP,
-            new Font("Cambria", Font.BOLD, 12), COLOR_TEXTO
-        ));
+        scrollRemitos.setBorder(TemaFacturaSoft.crearSeccion("REMITOS"));
 
         String[] colItems = {"Seleccionar", "ELS", "Equipo", "Nro Serie", "Modelo", "Marca", "Precio"};
         modeloTablaItems = new DefaultTableModel(colItems, 0) {
@@ -122,10 +104,7 @@ public class VentanaImportarRemito extends JDialog {
             }
         };
         tablaItems = new JTable(modeloTablaItems);
-        tablaItems.setFont(new Font("Cambria", Font.PLAIN, 11));
-        tablaItems.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 11));
-        tablaItems.getTableHeader().setBackground(COLOR_BOTON);
-        tablaItems.setRowHeight(22);
+        TemaFacturaSoft.aplicarEstiloTabla(tablaItems);
         tablaItems.getColumnModel().getColumn(0).setPreferredWidth(20);
         tablaItems.getColumnModel().getColumn(1).setPreferredWidth(60);
         tablaItems.getColumnModel().getColumn(2).setPreferredWidth(140);
@@ -134,34 +113,29 @@ public class VentanaImportarRemito extends JDialog {
         tablaItems.getColumnModel().getColumn(5).setPreferredWidth(80);
         tablaItems.getColumnModel().getColumn(6).setPreferredWidth(80);
         JScrollPane scrollItems = new JScrollPane(tablaItems);
-        scrollItems.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(COLOR_TITULO),
-            "ITEMS DEL REMITO",
-            TitledBorder.LEFT, TitledBorder.TOP,
-            new Font("Cambria", Font.BOLD, 12), COLOR_TEXTO
-        ));
+        scrollItems.setBorder(TemaFacturaSoft.crearSeccion("ITEMS DEL REMITO"));
 
         splitPane.setTopComponent(scrollRemitos);
         splitPane.setBottomComponent(scrollItems);
         panel.add(splitPane, BorderLayout.CENTER);
 
         JPanel panelInferior = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
-        panelInferior.setBackground(COLOR_FONDO);
+        panelInferior.setBackground(TemaFacturaSoft.BG_APP);
 
         btnImportar = new JButton("IMPORTAR REMITO");
-        btnImportar.setFont(new Font("Cambria", Font.BOLD, 12));
-        btnImportar.setForeground(Color.WHITE);
-        btnImportar.setBackground(new Color(0, 120, 0));
-        btnImportar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnImportar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(12f));
+        btnImportar.setForeground(TemaFacturaSoft.TEXT_ON_PRIMARY);
+        btnImportar.setBackground(TemaFacturaSoft.ACCENT_SUCCESS);
+        TemaFacturaSoft.aplicarCursorMano(btnImportar);
         btnImportar.setFocusPainted(false);
         btnImportar.addActionListener(e -> importarRemito());
         panelInferior.add(btnImportar);
 
         btnCancelar = new JButton("Cancelar");
-        btnCancelar.setFont(FUENTE_BOTON);
-        btnCancelar.setForeground(COLOR_TEXTO);
-        btnCancelar.setBackground(COLOR_BOTON);
-        btnCancelar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnCancelar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnCancelar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnCancelar.setBackground(TemaFacturaSoft.BG_SURFACE);
+        TemaFacturaSoft.aplicarCursorMano(btnCancelar);
         btnCancelar.setFocusPainted(false);
         btnCancelar.addActionListener(e -> dispose());
         panelInferior.add(btnCancelar);

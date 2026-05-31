@@ -39,11 +39,6 @@ import javax.swing.border.EmptyBorder;
 
 public class VentanaFacturacion extends javax.swing.JFrame {
 
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_TITULO = new Color(65, 105, 225);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private CardLayout cardLayout;
@@ -104,34 +99,34 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         setMinimumSize(new Dimension(900, 650));
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(COLOR_FONDO);
+        getContentPane().setBackground(TemaFacturaSoft.BG_APP);
 
         // ===================== CARD LAYOUT =====================
         cardLayout = new CardLayout();
         panelPrincipal = new JPanel(cardLayout);
-        panelPrincipal.setBackground(COLOR_FONDO);
+        panelPrincipal.setBackground(TemaFacturaSoft.BG_APP);
 
         // ===================== DATOS CARD =====================
         JPanel datosWrapper = new JPanel(new GridBagLayout());
-        datosWrapper.setBackground(COLOR_FONDO);
+        datosWrapper.setBackground(TemaFacturaSoft.BG_APP);
 
         JPanel centerCol = new JPanel(new GridBagLayout());
         centerCol.setBorder(new CompoundBorder(new LineBorder(new Color(0, 0, 160)), new EmptyBorder(10, 10, 10, 10)));
-        centerCol.setBackground(COLOR_FONDO);
+        centerCol.setBackground(TemaFacturaSoft.BG_APP);
 
         centerCol.add(crearSeccionPuntoVenta(), new GridBagConstraints(0, 0, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(8, 0, 8, 0), 0, 0));
         centerCol.add(crearSeccionEmision(), new GridBagConstraints(0, 1, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(8, 0, 8, 0), 0, 0));
         centerCol.add(crearSeccionReceptor(), new GridBagConstraints(0, 2, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(8, 0, 8, 0), 0, 0));
 
         chkModoPrueba = new JCheckBox("MODO PRUEBA");
-        chkModoPrueba.setFont(new Font("Cambria", Font.BOLD, 12));
+        chkModoPrueba.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(12f));
         chkModoPrueba.setForeground(new Color(200, 0, 0));
-        chkModoPrueba.setBackground(COLOR_FONDO);
+        chkModoPrueba.setBackground(TemaFacturaSoft.BG_APP);
 
         btnSiguiente = new JButton("SIGUIENTE >>");
         estilizarBoton(btnSiguiente);
         JPanel panelNav = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 3));
-        panelNav.setBackground(COLOR_FONDO);
+        panelNav.setBackground(TemaFacturaSoft.BG_APP);
         panelNav.add(chkModoPrueba);
         panelNav.add(btnSiguiente);
         centerCol.add(panelNav, new GridBagConstraints(0, 3, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(5, 0, 0, 0), 0, 0));
@@ -142,21 +137,21 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         scroll.setBorder(null);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
         JPanel datosCard = new JPanel(new BorderLayout());
-        datosCard.setBackground(COLOR_FONDO);
+        datosCard.setBackground(TemaFacturaSoft.BG_APP);
         datosCard.add(scroll);
 
         // ===================== OPERACION CARD =====================
         JPanel panelOperacion = new JPanel(new BorderLayout(5, 5));
-        panelOperacion.setBackground(COLOR_FONDO);
+        panelOperacion.setBackground(TemaFacturaSoft.BG_APP);
         panelOperacion.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         JPanel panelSuperior = new JPanel(new BorderLayout());
-        panelSuperior.setBackground(COLOR_FONDO);
+        panelSuperior.setBackground(TemaFacturaSoft.BG_APP);
         btnAnterior = new JButton("<< ANTERIOR");
         estilizarBoton(btnAnterior);
         JLabel lblTitulo = new JLabel("DATOS DE LA OPERACION", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Cambria", Font.BOLD, 15));
-        lblTitulo.setForeground(COLOR_TEXTO);
+        lblTitulo.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(15f));
+        lblTitulo.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
         panelSuperior.add(btnAnterior, BorderLayout.WEST);
         panelSuperior.add(lblTitulo, BorderLayout.CENTER);
 
@@ -172,12 +167,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             }
         };
         tablaItems = new JTable(modeloTablaItems);
-        tablaItems.setFont(new Font("Cambria", Font.PLAIN, 11));
-        tablaItems.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 11));
-        tablaItems.getTableHeader().setBackground(COLOR_BOTON);
-        tablaItems.setRowHeight(22);
-        tablaItems.setShowGrid(true);
-        tablaItems.setGridColor(new Color(200, 210, 230));
+        TemaFacturaSoft.aplicarEstiloTabla(tablaItems);
         tablaItems.getColumnModel().getColumn(0).setPreferredWidth(60);
         tablaItems.getColumnModel().getColumn(1).setPreferredWidth(200);
         tablaItems.getColumnModel().getColumn(2).setPreferredWidth(50);
@@ -185,17 +175,6 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         tablaItems.getColumnModel().getColumn(4).setPreferredWidth(80);
         tablaItems.getColumnModel().getColumn(5).setPreferredWidth(80);
         tablaItems.getColumnModel().getColumn(6).setPreferredWidth(40);
-
-        // Centered headers
-        DefaultTableCellRenderer headerRenderer = (DefaultTableCellRenderer) tablaItems.getTableHeader().getDefaultRenderer();
-        headerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-
-        // Center renderer for ELS, CANTIDAD, U. MEDIDA
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        tablaItems.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
-        tablaItems.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
-        tablaItems.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
 
         // Currency renderer for P. UNITARIO and SUBTOTAL
         DecimalFormat currencyFormat = new DecimalFormat("$ #,##0.00");
@@ -220,6 +199,10 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         tablaItems.getColumnModel().getColumn(4).setCellRenderer(currencyRenderer);
         tablaItems.getColumnModel().getColumn(5).setCellRenderer(currencyRenderer);
 
+        TemaFacturaSoft.centrarColumnas(tablaItems, 0, 2, 3);
+
+        TemaFacturaSoft.aplicarEstiloTablaHeaderCentrado(tablaItems);
+
         JScrollPane scrollTabla = new JScrollPane(tablaItems);
 
         btnAgregarItem = new JButton("+ AGREGAR ITEM");
@@ -231,45 +214,45 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         cmbAlicuotaIva.setPrototypeDisplayValue("21%");
 
         JPanel panelSur = new JPanel(new GridBagLayout());
-        panelSur.setBackground(COLOR_FONDO);
+        panelSur.setBackground(TemaFacturaSoft.BG_APP);
         Insets panelIns = new Insets(2, 5, 2, 5);
 
         // Row 0 - Items management + Totals
         JPanel panelItems = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
-        panelItems.setBackground(COLOR_FONDO);
+        panelItems.setBackground(TemaFacturaSoft.BG_APP);
         panelItems.add(new JLabel("IVA:"));
         panelItems.add(cmbAlicuotaIva);
         panelItems.add(btnAgregarItem);
         panelItems.add(btnEliminarItem);
 
         JPanel panelTotales = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
-        panelTotales.setBackground(COLOR_FONDO);
+        panelTotales.setBackground(TemaFacturaSoft.BG_APP);
 
         lblTotal = new JLabel("$ 0,00");
-        lblTotal.setFont(new Font("Cambria", Font.BOLD, 16));
-        lblTotal.setForeground(new Color(0, 100, 0));
+        lblTotal.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(16f));
+        lblTotal.setForeground(TemaFacturaSoft.ACCENT_SUCCESS);
 
         txtImporteNeto = new JTextField(10);
         txtImporteNeto.setEditable(false);
-        txtImporteNeto.setFont(FUENTE_BOTON);
+        txtImporteNeto.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         txtImporteNeto.setPreferredSize(new Dimension(90, 24));
         txtImporteNeto.setHorizontalAlignment(JTextField.RIGHT);
         txtImporteIva = new JTextField(10);
         txtImporteIva.setEditable(false);
-        txtImporteIva.setFont(FUENTE_BOTON);
+        txtImporteIva.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         txtImporteIva.setPreferredSize(new Dimension(90, 24));
         txtImporteIva.setHorizontalAlignment(JTextField.RIGHT);
         txtOtrosImpuestos = new JTextField(8);
         txtOtrosImpuestos.setText("0,00");
         txtOtrosImpuestos.setPreferredSize(new Dimension(80, 24));
         txtOtrosImpuestos.setHorizontalAlignment(JTextField.RIGHT);
-        txtOtrosImpuestos.setFont(FUENTE_BOTON);
+        txtOtrosImpuestos.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         txtImporteTotal = new JTextField(10);
         txtImporteTotal.setEditable(false);
-        txtImporteTotal.setFont(FUENTE_BOTON);
+        txtImporteTotal.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         txtImporteTotal.setPreferredSize(new Dimension(100, 24));
         txtImporteTotal.setHorizontalAlignment(JTextField.RIGHT);
-        txtImporteTotal.setForeground(new Color(0, 100, 0));
+        txtImporteTotal.setForeground(TemaFacturaSoft.ACCENT_SUCCESS);
 
         panelTotales.add(new JLabel("Neto:"));
         panelTotales.add(txtImporteNeto);
@@ -284,11 +267,11 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
         // Row 1 - Emitir + Limpiar
         JPanel panelEmitir = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 4));
-        panelEmitir.setBackground(COLOR_FONDO);
+        panelEmitir.setBackground(TemaFacturaSoft.BG_APP);
 
         btnEmitir = new JButton("GUARDAR / EMITIR FACTURA");
-        btnEmitir.setFont(new Font("Cambria", Font.BOLD, 13));
-        btnEmitir.setBackground(new Color(50, 140, 50));
+        btnEmitir.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(13f));
+        btnEmitir.setBackground(TemaFacturaSoft.ACCENT_SUCCESS);
         btnEmitir.setForeground(Color.WHITE);
         btnEmitir.setFocusPainted(false);
         btnEmitir.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -309,14 +292,14 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
         // ===================== WRAPPER + STATUS BAR =====================
         JPanel panelPrincipalWrapper = new JPanel(new BorderLayout());
-        panelPrincipalWrapper.setBackground(COLOR_FONDO);
+        panelPrincipalWrapper.setBackground(TemaFacturaSoft.BG_APP);
         panelPrincipalWrapper.add(panelPrincipal, BorderLayout.CENTER);
 
         JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
-        statusBar.setBackground(new Color(50, 50, 80));
+        statusBar.setBackground(TemaFacturaSoft.BG_STATUS_BAR);
         JLabel lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica");
-        lblStatus.setFont(new Font("Cambria", Font.PLAIN, 11));
-        lblStatus.setForeground(new Color(200, 200, 220));
+        lblStatus.setFont(TemaFacturaSoft.FONT_UI.deriveFont(11f));
+        lblStatus.setForeground(TemaFacturaSoft.TEXT_MUTED);
         statusBar.add(lblStatus);
         panelPrincipalWrapper.add(statusBar, BorderLayout.SOUTH);
 
@@ -327,18 +310,13 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
     private JPanel crearSeccionPuntoVenta() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(COLOR_TITULO),
-            "PUNTO DE VENTA Y TIPO DE COMPROBANTE",
-            TitledBorder.LEFT, TitledBorder.TOP,
-            new Font("Cambria", Font.BOLD, 11), COLOR_TEXTO
-        ));
-        panel.setBackground(COLOR_FONDO);
+        panel.setBorder(TemaFacturaSoft.crearSeccion("PUNTO DE VENTA Y TIPO DE COMPROBANTE"));
+        panel.setBackground(TemaFacturaSoft.BG_APP);
         Insets ins = new Insets(3, 6, 3, 6);
 
         panel.add(new JLabel("Punto de Venta:"), new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
         cmbPuntoVenta = new JComboBox<>(new String[]{"00001"});
-        cmbPuntoVenta.setFont(FUENTE_BOTON);
+        cmbPuntoVenta.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         cmbPuntoVenta.setPreferredSize(new Dimension(80, 24));
         cmbPuntoVenta.setPrototypeDisplayValue("00001");
         panel.add(cmbPuntoVenta, new GridBagConstraints(1, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
@@ -350,7 +328,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             "Nota de D\u00e9bito Electr\u00f3nica MiPymes (FCE) C",
             "Nota de Cr\u00e9dito Electr\u00f3nica MiPymes (FCE) C"
         });
-        cmbTipoComprobante.setFont(FUENTE_BOTON);
+        cmbTipoComprobante.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         cmbTipoComprobante.setPreferredSize(new Dimension(240, 24));
         cmbTipoComprobante.setPrototypeDisplayValue("Factura de Cr\u00e9dito Electr\u00f3nica");
         panel.add(cmbTipoComprobante, new GridBagConstraints(3, 0, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
@@ -359,45 +337,40 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
     private JPanel crearSeccionEmision() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(COLOR_TITULO),
-            "DATOS DE EMISION",
-            TitledBorder.LEFT, TitledBorder.TOP,
-            new Font("Cambria", Font.BOLD, 11), COLOR_TEXTO
-        ));
-        panel.setBackground(COLOR_FONDO);
+        panel.setBorder(TemaFacturaSoft.crearSeccion("DATOS DE EMISION"));
+        panel.setBackground(TemaFacturaSoft.BG_APP);
         Insets ins = new Insets(4, 8, 4, 8);
 
         txtEmisorRazonSocial = new JTextField(25);
         txtEmisorRazonSocial.setEditable(false);
-        txtEmisorRazonSocial.setFont(FUENTE_BOTON);
+        txtEmisorRazonSocial.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         txtEmisorRazonSocial.setPreferredSize(new Dimension(300, 24));
-        txtEmisorRazonSocial.setBackground(new Color(240, 240, 240));
+        txtEmisorRazonSocial.setBackground(TemaFacturaSoft.BG_INPUT_DISABLED);
 
         txtEmisorCuit = new JTextField(15);
         txtEmisorCuit.setEditable(false);
-        txtEmisorCuit.setFont(FUENTE_BOTON);
+        txtEmisorCuit.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         txtEmisorCuit.setPreferredSize(new Dimension(120, 24));
-        txtEmisorCuit.setBackground(new Color(240, 240, 240));
+        txtEmisorCuit.setBackground(TemaFacturaSoft.BG_INPUT_DISABLED);
 
         txtEmisorCondicionIva = new JTextField(15);
         txtEmisorCondicionIva.setEditable(false);
-        txtEmisorCondicionIva.setFont(FUENTE_BOTON);
+        txtEmisorCondicionIva.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         txtEmisorCondicionIva.setPreferredSize(new Dimension(120, 24));
-        txtEmisorCondicionIva.setBackground(new Color(240, 240, 240));
+        txtEmisorCondicionIva.setBackground(TemaFacturaSoft.BG_INPUT_DISABLED);
 
         dateFecha = crearDateChooser();
         cmbConcepto = new JComboBox<>(new String[]{"Productos", "Servicios", "Productos y Servicios"});
-        cmbConcepto.setFont(FUENTE_BOTON);
+        cmbConcepto.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         cmbConcepto.setPreferredSize(new Dimension(180, 24));
         cmbConcepto.setPrototypeDisplayValue("Productos");
 
         txtActividades = new JTextField(25);
         txtActividades.setText("331290 - Reparacion y mantenimiento de maquinaria de uso especial n.c.p.");
         txtActividades.setEditable(false);
-        txtActividades.setFont(FUENTE_BOTON);
+        txtActividades.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         txtActividades.setPreferredSize(new Dimension(300, 24));
-        txtActividades.setBackground(new Color(240, 240, 240));
+        txtActividades.setBackground(TemaFacturaSoft.BG_INPUT_DISABLED);
 
         datePeriodoDesde = crearDateChooser();
         datePeriodoHasta = crearDateChooser();
@@ -436,13 +409,8 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
     private JPanel crearSeccionReceptor() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(COLOR_TITULO),
-            "DATOS DEL RECEPTOR",
-            TitledBorder.LEFT, TitledBorder.TOP,
-            new Font("Cambria", Font.BOLD, 11), COLOR_TEXTO
-        ));
-        panel.setBackground(COLOR_FONDO);
+        panel.setBorder(TemaFacturaSoft.crearSeccion("DATOS DEL RECEPTOR"));
+        panel.setBackground(TemaFacturaSoft.BG_APP);
         Insets ins = new Insets(4, 8, 4, 8);
 
         cmbCondicionIva = new JComboBox<>(new String[]{
@@ -450,33 +418,33 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             "Responsable Monotributo", "Proveedor del Exterior", "Cliente del Exterior",
             "IVA Liberado - Ley 19.640", "Monotributista Social", "IVA No Alcanzado"
         });
-        cmbCondicionIva.setFont(FUENTE_BOTON);
+        cmbCondicionIva.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         cmbCondicionIva.setPreferredSize(new Dimension(200, 24));
         cmbCondicionIva.setPrototypeDisplayValue("IVA Responsable Inscripto");
 
         cmbTipoDoc = new JComboBox<>(new String[]{"CUIT", "DNI"});
-        cmbTipoDoc.setFont(FUENTE_BOTON);
+        cmbTipoDoc.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         cmbTipoDoc.setPreferredSize(new Dimension(80, 24));
         cmbTipoDoc.setPrototypeDisplayValue("CUIT");
 
         cmbNroDoc = new AutoCompleteComboBox();
-        cmbNroDoc.setFont(FUENTE_BOTON);
+        cmbNroDoc.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         cmbNroDoc.setPreferredSize(new Dimension(140, 24));
 
         cmbRazonSocial = new AutoCompleteComboBox();
-        cmbRazonSocial.setFont(FUENTE_BOTON);
+        cmbRazonSocial.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         cmbRazonSocial.setPreferredSize(new Dimension(220, 24));
 
         txtDomicilio = new JTextField(20);
-        txtDomicilio.setFont(FUENTE_BOTON);
+        txtDomicilio.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         txtDomicilio.setPreferredSize(new Dimension(180, 24));
 
         txtEmail = new JTextField(18);
-        txtEmail.setFont(FUENTE_BOTON);
+        txtEmail.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         txtEmail.setPreferredSize(new Dimension(160, 24));
 
         txtComprobanteAsoc = new JTextField(12);
-        txtComprobanteAsoc.setFont(FUENTE_BOTON);
+        txtComprobanteAsoc.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         txtComprobanteAsoc.setPreferredSize(new Dimension(110, 24));
 
         int row = 0;
@@ -500,7 +468,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panel.add(new JLabel("Cond. Venta:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
 
         JPanel panelChecks = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        panelChecks.setBackground(COLOR_FONDO);
+        panelChecks.setBackground(TemaFacturaSoft.BG_APP);
         chkContado = new JCheckBox("Contado");
         chkTarjetaDeb = new JCheckBox("Tarj. Debito");
         chkTarjetaCred = new JCheckBox("Tarj. Credito");
@@ -509,9 +477,9 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         chkTransf = new JCheckBox("Transf.");
         chkOtra = new JCheckBox("Otra");
         for (JCheckBox c : new JCheckBox[]{chkContado, chkTarjetaDeb, chkTarjetaCred, chkCC, chkCheque, chkTransf, chkOtra}) {
-            c.setBackground(COLOR_FONDO);
-            c.setFont(FUENTE_BOTON);
-            c.setForeground(COLOR_TEXTO);
+            c.setBackground(TemaFacturaSoft.BG_APP);
+            c.setFont(TemaFacturaSoft.FONT_UI_BOLD);
+            c.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
         }
         panelChecks.add(chkContado);
         panelChecks.add(chkTarjetaDeb);
@@ -527,7 +495,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panel.add(lblCompAsoc, new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
         panel.add(txtComprobanteAsoc, new GridBagConstraints(1, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
         btnImportarRemito = new JButton("Importar ReparSoft");
-        btnImportarRemito.setFont(FUENTE_BOTON);
+        btnImportarRemito.setFont(TemaFacturaSoft.FONT_UI_BOLD);
         panel.add(btnImportarRemito, new GridBagConstraints(2, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
 
         return panel;
@@ -553,9 +521,9 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     }
 
     private void estilizarBoton(JButton btn) {
-        btn.setFont(FUENTE_BOTON);
-        btn.setForeground(COLOR_TEXTO);
-        btn.setBackground(COLOR_BOTON);
+        btn.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btn.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btn.setBackground(TemaFacturaSoft.BG_SURFACE);
         btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btn.setFocusPainted(false);
     }

@@ -14,9 +14,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Cursor;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -26,13 +24,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class VentanaGastos extends javax.swing.JFrame {
-
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Color COLOR_TITULO = new Color(65, 105, 225);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
-    private static final Font FUENTE_TITULO = new Font("Cambria", Font.BOLD, 14);
 
     private ControladorGastos controlador;
     private JTable tabla;
@@ -47,6 +38,7 @@ public class VentanaGastos extends javax.swing.JFrame {
 
     public VentanaGastos() {
         controlador = new ControladorGastos();
+        getContentPane().setBackground(TemaFacturaSoft.BG_APP);
         initComponents();
         cargarCategorias();
         cargarGastos();
@@ -58,18 +50,17 @@ public class VentanaGastos extends javax.swing.JFrame {
         setSize(900, 520);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(COLOR_FONDO);
 
         JPanel panelSuperior = new JPanel(new BorderLayout());
-        panelSuperior.setBackground(COLOR_FONDO);
+        panelSuperior.setBackground(TemaFacturaSoft.BG_APP);
 
         JLabel lblTitulo = new JLabel("REGISTRO DE GASTOS", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Cambria", Font.BOLD, 20));
-        lblTitulo.setForeground(COLOR_TEXTO);
+        lblTitulo.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(20f));
+        lblTitulo.setForeground(TemaFacturaSoft.ACCENT_PRIMARY);
 
         lblTotal = new JLabel("Total: $0.00", SwingConstants.RIGHT);
-        lblTotal.setFont(FUENTE_TITULO);
-        lblTotal.setForeground(COLOR_TITULO);
+        lblTotal.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(14f));
+        lblTotal.setForeground(TemaFacturaSoft.ACCENT_PRIMARY);
 
         panelSuperior.add(lblTitulo, BorderLayout.CENTER);
         panelSuperior.add(lblTotal, BorderLayout.EAST);
@@ -83,11 +74,11 @@ public class VentanaGastos extends javax.swing.JFrame {
         };
 
         tabla = new JTable(modeloTabla);
-        tabla.setFont(new Font("Cambria", Font.PLAIN, 11));
+        TemaFacturaSoft.aplicarEstiloTabla(tabla);
         JScrollPane scrollPane = new JScrollPane(tabla);
 
         JPanel panelFiltro = new JPanel();
-        panelFiltro.setBackground(COLOR_FONDO);
+        panelFiltro.setBackground(TemaFacturaSoft.BG_APP);
 
         cmbMes = new JComboBox<>(new Integer[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
         cmbAnio = new JComboBox<>();
@@ -99,17 +90,17 @@ public class VentanaGastos extends javax.swing.JFrame {
         cmbAnio.setSelectedItem(anioActual);
 
         JLabel lblMes = new JLabel("Mes:");
-        lblMes.setFont(FUENTE_BOTON);
-        lblMes.setForeground(COLOR_TEXTO);
+        lblMes.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        lblMes.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
 
         JLabel lblAnio = new JLabel("Anio:");
-        lblAnio.setFont(FUENTE_BOTON);
-        lblAnio.setForeground(COLOR_TEXTO);
+        lblAnio.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        lblAnio.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
 
         JButton btnFiltrar = new JButton("FILTRAR");
-        btnFiltrar.setFont(FUENTE_BOTON);
-        btnFiltrar.setForeground(COLOR_TEXTO);
-        btnFiltrar.setBackground(COLOR_BOTON);
+        btnFiltrar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnFiltrar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnFiltrar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnFiltrar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnFiltrar.setFocusPainted(false);
         btnFiltrar.addActionListener(e -> {
@@ -124,24 +115,24 @@ public class VentanaGastos extends javax.swing.JFrame {
         panelFiltro.add(btnFiltrar);
 
         JPanel panelFormulario = new JPanel(new GridBagLayout());
-        panelFormulario.setBackground(COLOR_FONDO);
+        panelFormulario.setBackground(TemaFacturaSoft.BG_APP);
         JLabel lblCat = new JLabel("Categoria:");
-        lblCat.setFont(FUENTE_BOTON);
-        lblCat.setForeground(COLOR_TEXTO);
+        lblCat.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        lblCat.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
 
         JLabel lblDesc = new JLabel("Descripcion:");
-        lblDesc.setFont(FUENTE_BOTON);
-        lblDesc.setForeground(COLOR_TEXTO);
+        lblDesc.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        lblDesc.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
 
         JLabel lblMonto = new JLabel("Monto:");
-        lblMonto.setFont(FUENTE_BOTON);
-        lblMonto.setForeground(COLOR_TEXTO);
+        lblMonto.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        lblMonto.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
 
         cmbCategoria = new JComboBox<>();
         txtDescripcion = new JTextField(20);
-        txtDescripcion.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtDescripcion.setFont(TemaFacturaSoft.FONT_UI.deriveFont(11f));
         txtMonto = new JTextField(10);
-        txtMonto.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtMonto.setFont(TemaFacturaSoft.FONT_UI.deriveFont(11f));
 
         GridBagConstraints gbc_lblCat = new GridBagConstraints();
         gbc_lblCat.insets = new Insets(5, 8, 5, 8);
@@ -180,28 +171,28 @@ public class VentanaGastos extends javax.swing.JFrame {
         panelFormulario.add(txtMonto, gbc_txtMonto);
 
         JPanel panelBotones = new JPanel();
-        panelBotones.setBackground(COLOR_FONDO);
+        panelBotones.setBackground(TemaFacturaSoft.BG_APP);
 
         JButton btnAgregar = new JButton("AGREGAR");
-        btnAgregar.setFont(FUENTE_BOTON);
-        btnAgregar.setForeground(COLOR_TEXTO);
-        btnAgregar.setBackground(COLOR_BOTON);
+        btnAgregar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnAgregar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnAgregar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnAgregar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnAgregar.setFocusPainted(false);
         btnAgregar.addActionListener(e -> btnAgregarAction());
 
         JButton btnEliminar = new JButton("ELIMINAR");
-        btnEliminar.setFont(FUENTE_BOTON);
-        btnEliminar.setForeground(COLOR_TEXTO);
-        btnEliminar.setBackground(COLOR_BOTON);
+        btnEliminar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnEliminar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnEliminar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnEliminar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnEliminar.setFocusPainted(false);
         btnEliminar.addActionListener(e -> btnEliminarAction());
 
         JButton btnLimpiar = new JButton("LIMPIAR");
-        btnLimpiar.setFont(FUENTE_BOTON);
-        btnLimpiar.setForeground(COLOR_TEXTO);
-        btnLimpiar.setBackground(COLOR_BOTON);
+        btnLimpiar.setFont(TemaFacturaSoft.FONT_UI_BOLD.deriveFont(11f));
+        btnLimpiar.setForeground(TemaFacturaSoft.TEXT_PRIMARY);
+        btnLimpiar.setBackground(TemaFacturaSoft.BG_SURFACE);
         btnLimpiar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnLimpiar.setFocusPainted(false);
         btnLimpiar.addActionListener(e -> {
