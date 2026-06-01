@@ -13,9 +13,12 @@ import javax.swing.JSeparator;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -31,12 +34,10 @@ import java.awt.event.MouseEvent;
 
 public class VentanaCaja extends javax.swing.JFrame {
 
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Color COLOR_TITULO = new Color(65, 105, 225);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
-    private static final Font FUENTE_TITULO = new Font("Cambria", Font.BOLD, 14);
+    private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
+    private static final Font FUENTE_TITULO = new Font("Segoe UI", Font.BOLD, 14);
+
+    private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
     private ControladorCaja controlador;
     private JTable tabla;
@@ -60,12 +61,17 @@ public class VentanaCaja extends javax.swing.JFrame {
     private JTextField txtCotizacion;
     private JTextField txtPesosGastados;
     private JComboBox<String> cmbFormaPago;
+    private JCheckBox chkCompraDolares;
+    private JLabel lblSubTitulo;
+    private JLabel lblDatosMov;
 
     public VentanaCaja() {
         controlador = new ControladorCaja();
         initComponents();
+        applyTheme(currentTheme);
         cargarMovimientosPorAnio();
         actualizarSaldo();
+        VentanaPrincipal.addThemeListener(this);
     }
 
     private void initComponents() {
@@ -73,30 +79,30 @@ public class VentanaCaja extends javax.swing.JFrame {
         setSize(1000, 600);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(COLOR_FONDO);
+        getContentPane().setBackground(currentTheme.bgBase);
 
         JPanel panelSuperior = new JPanel(new BorderLayout());
-        panelSuperior.setBackground(COLOR_FONDO);
+        panelSuperior.setBackground(currentTheme.bgBase);
 
         JPanel panelTitulo = new JPanel(new BorderLayout());
-        panelTitulo.setBackground(COLOR_FONDO);
+        panelTitulo.setBackground(currentTheme.bgBase);
 
         JLabel lblTitulo = new JLabel("CONTROL DE CAJA", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Cambria", Font.BOLD, 20));
-        lblTitulo.setForeground(COLOR_TEXTO);
-        lblTitulo.setBackground(COLOR_FONDO);
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        lblTitulo.setForeground(currentTheme.textPrimary);
+        lblTitulo.setBackground(currentTheme.bgBase);
 
         lblSaldo = new JLabel("Saldo: $0.00", SwingConstants.RIGHT);
         lblSaldo.setFont(FUENTE_TITULO);
-        lblSaldo.setForeground(COLOR_TITULO);
-        lblSaldo.setBackground(COLOR_FONDO);
+        lblSaldo.setForeground(currentTheme.brand);
+        lblSaldo.setBackground(currentTheme.bgBase);
 
         JPanel panelAnio = new JPanel();
-        panelAnio.setBackground(COLOR_FONDO);
+        panelAnio.setBackground(currentTheme.bgBase);
         
         JLabel lblFiltrarAnio = new JLabel("Año:");
         lblFiltrarAnio.setFont(FUENTE_BOTON);
-        lblFiltrarAnio.setForeground(COLOR_TEXTO);
+        lblFiltrarAnio.setForeground(currentTheme.textPrimary);
         
         cmbAnio = new JComboBox<>();
         cmbAnio.setFont(FUENTE_BOTON);
@@ -132,7 +138,10 @@ public class VentanaCaja extends javax.swing.JFrame {
         };
 
         tabla = new JTable(modeloTabla);
-        tabla.setFont(new Font("Cambria", Font.PLAIN, 10));
+        tabla.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        tabla.setRowHeight(22);
+        tabla.setShowGrid(true);
+        tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 10));
         tabla.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         for (int i = 0; i < columnas.length; i++) {
             tabla.getColumnModel().getColumn(i).setPreferredWidth(100);
@@ -155,11 +164,11 @@ public class VentanaCaja extends javax.swing.JFrame {
         scrollPane.setPreferredSize(new java.awt.Dimension(1000, 250));
 
         JPanel panelSubtotales = new JPanel(new GridBagLayout());
-        panelSubtotales.setBackground(COLOR_FONDO);
+        panelSubtotales.setBackground(currentTheme.bgBase);
 
-        JLabel lblSubTitulo = new JLabel("SUBTOTALES");
-        lblSubTitulo.setFont(new Font("Cambria", Font.BOLD, 12));
-        lblSubTitulo.setForeground(COLOR_TITULO);
+        lblSubTitulo = new JLabel("SUBTOTALES");
+        lblSubTitulo.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblSubTitulo.setForeground(currentTheme.brand);
         GridBagConstraints gbcSubTitulo = new GridBagConstraints();
         gbcSubTitulo.gridx = 0; gbcSubTitulo.gridy = 0; gbcSubTitulo.gridwidth = 10;
         gbcSubTitulo.insets = new Insets(5, 10, 5, 10);
@@ -168,7 +177,7 @@ public class VentanaCaja extends javax.swing.JFrame {
 
         lblSubCobroEfectivo = new JLabel("Cobro Efectivo: $ 0,00");
         lblSubCobroEfectivo.setFont(FUENTE_BOTON);
-        lblSubCobroEfectivo.setForeground(COLOR_TEXTO);
+        lblSubCobroEfectivo.setForeground(currentTheme.textPrimary);
         GridBagConstraints gbcSubCobroEf = new GridBagConstraints();
         gbcSubCobroEf.gridwidth = 1; gbcSubCobroEf.gridx = 0; gbcSubCobroEf.gridy = 1;
         gbcSubCobroEf.insets = new Insets(5, 10, 5, 10);
@@ -177,7 +186,7 @@ public class VentanaCaja extends javax.swing.JFrame {
 
         lblSubCobroPatagonia = new JLabel("Cobro Patagonia: $ 0,00");
         lblSubCobroPatagonia.setFont(FUENTE_BOTON);
-        lblSubCobroPatagonia.setForeground(COLOR_TEXTO);
+        lblSubCobroPatagonia.setForeground(currentTheme.textPrimary);
         GridBagConstraints gbcSubCobroPat = new GridBagConstraints();
         gbcSubCobroPat.gridx = 1; gbcSubCobroPat.gridy = 1;
         gbcSubCobroPat.insets = new Insets(5, 10, 5, 10);
@@ -186,7 +195,7 @@ public class VentanaCaja extends javax.swing.JFrame {
 
         lblSubPagoEfectivo = new JLabel("Pago Efectivo: $ 0,00");
         lblSubPagoEfectivo.setFont(FUENTE_BOTON);
-        lblSubPagoEfectivo.setForeground(COLOR_TEXTO);
+        lblSubPagoEfectivo.setForeground(currentTheme.textPrimary);
         GridBagConstraints gbcSubPagoEf = new GridBagConstraints();
         gbcSubPagoEf.gridx = 2; gbcSubPagoEf.gridy = 1;
         gbcSubPagoEf.insets = new Insets(5, 10, 5, 10);
@@ -195,7 +204,7 @@ public class VentanaCaja extends javax.swing.JFrame {
 
         lblSubPagoPatagonia = new JLabel("Pago Patagonia: $ 0,00");
         lblSubPagoPatagonia.setFont(FUENTE_BOTON);
-        lblSubPagoPatagonia.setForeground(COLOR_TEXTO);
+        lblSubPagoPatagonia.setForeground(currentTheme.textPrimary);
         GridBagConstraints gbcSubPagoPat = new GridBagConstraints();
         gbcSubPagoPat.gridx = 3; gbcSubPagoPat.gridy = 1;
         gbcSubPagoPat.insets = new Insets(5, 10, 5, 10);
@@ -204,7 +213,7 @@ public class VentanaCaja extends javax.swing.JFrame {
 
         lblSubCompraDolares = new JLabel("Compra Dólares: $ 0,00");
         lblSubCompraDolares.setFont(FUENTE_BOTON);
-        lblSubCompraDolares.setForeground(COLOR_TEXTO);
+        lblSubCompraDolares.setForeground(currentTheme.textPrimary);
         GridBagConstraints gbcSubCompraDol = new GridBagConstraints();
         gbcSubCompraDol.gridx = 4; gbcSubCompraDol.gridy = 1;
         gbcSubCompraDol.insets = new Insets(5, 10, 5, 10);
@@ -212,8 +221,8 @@ public class VentanaCaja extends javax.swing.JFrame {
         panelSubtotales.add(lblSubCompraDolares, gbcSubCompraDol);
 
         lblSaldoTotal = new JLabel("SALDO: $ 0,00");
-        lblSaldoTotal.setFont(new Font("Cambria", Font.BOLD, 14));
-        lblSaldoTotal.setForeground(COLOR_TITULO);
+        lblSaldoTotal.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblSaldoTotal.setForeground(currentTheme.brand);
         GridBagConstraints gbcSubSaldoTotal = new GridBagConstraints();
         gbcSubSaldoTotal.gridx = 8; gbcSubSaldoTotal.gridy = 1;
         gbcSubSaldoTotal.insets = new Insets(5, 10, 5, 10);
@@ -221,55 +230,55 @@ public class VentanaCaja extends javax.swing.JFrame {
         panelSubtotales.add(lblSaldoTotal, gbcSubSaldoTotal);
 
         JPanel panelFormulario = new JPanel(new GridBagLayout());
-        panelFormulario.setBackground(COLOR_FONDO);
+        panelFormulario.setBackground(currentTheme.bgBase);
 
         JLabel lblFecha = new JLabel("Fecha:");
         lblFecha.setFont(FUENTE_BOTON);
-        lblFecha.setForeground(COLOR_TEXTO);
+        lblFecha.setForeground(currentTheme.textPrimary);
 
         JLabel lblCliente = new JLabel("Cliente:");
         lblCliente.setFont(FUENTE_BOTON);
-        lblCliente.setForeground(COLOR_TEXTO);
+        lblCliente.setForeground(currentTheme.textPrimary);
 
         JLabel lblFormaPago = new JLabel("Forma Pago:");
         lblFormaPago.setFont(FUENTE_BOTON);
-        lblFormaPago.setForeground(COLOR_TEXTO);
+        lblFormaPago.setForeground(currentTheme.textPrimary);
 
         JLabel lblELS = new JLabel("ELS:");
         lblELS.setFont(FUENTE_BOTON);
-        lblELS.setForeground(COLOR_TEXTO);
+        lblELS.setForeground(currentTheme.textPrimary);
 
         JLabel lblCobroEfec = new JLabel("Cobro Efectivo:");
         lblCobroEfec.setFont(FUENTE_BOTON);
-        lblCobroEfec.setForeground(COLOR_TEXTO);
+        lblCobroEfec.setForeground(currentTheme.textPrimary);
 
         JLabel lblCobroPat = new JLabel("Cobro Patagonia:");
         lblCobroPat.setFont(FUENTE_BOTON);
-        lblCobroPat.setForeground(COLOR_TEXTO);
+        lblCobroPat.setForeground(currentTheme.textPrimary);
 
         JLabel lblPagoEfec = new JLabel("Pago Efectivo:");
         lblPagoEfec.setFont(FUENTE_BOTON);
-        lblPagoEfec.setForeground(COLOR_TEXTO);
+        lblPagoEfec.setForeground(currentTheme.textPrimary);
 
         JLabel lblPagoPat = new JLabel("Pago Patagonia:");
         lblPagoPat.setFont(FUENTE_BOTON);
-        lblPagoPat.setForeground(COLOR_TEXTO);
+        lblPagoPat.setForeground(currentTheme.textPrimary);
 
         JLabel lblCompraDol = new JLabel("Compra Dólares:");
         lblCompraDol.setFont(FUENTE_BOTON);
-        lblCompraDol.setForeground(COLOR_TEXTO);
+        lblCompraDol.setForeground(currentTheme.textPrimary);
 
-        JCheckBox chkCompraDolares = new JCheckBox("Activo");
+        chkCompraDolares = new JCheckBox("Activo");
         chkCompraDolares.setFont(FUENTE_BOTON);
-        chkCompraDolares.setForeground(COLOR_TEXTO);
-        chkCompraDolares.setBackground(COLOR_FONDO);
+        chkCompraDolares.setForeground(currentTheme.textPrimary);
+        chkCompraDolares.setBackground(currentTheme.bgBase);
 
         JTextField txtFecha = new JTextField(10);
-        txtFecha.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtFecha.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         txtFecha.setText(LocalDate.now().format(fechaFormatter));
 
         JTextField txtCliente = new JTextField(15);
-        txtCliente.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtCliente.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
         cmbFormaPago = new JComboBox<>(new String[]{
             "Efectivo", "Transferencia", "Transferencia+Efectivo", "Débito", "Otra"
@@ -277,30 +286,30 @@ public class VentanaCaja extends javax.swing.JFrame {
         cmbFormaPago.setFont(FUENTE_BOTON);
 
         txtELS = new JTextField(8);
-        txtELS.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtELS.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
         txtCobroEfectivo = new JTextField(10);
-        txtCobroEfectivo.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtCobroEfectivo.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
         txtCobroPatagonia = new JTextField(10);
-        txtCobroPatagonia.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtCobroPatagonia.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
         txtPagoEfectivo = new JTextField(10);
-        txtPagoEfectivo.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtPagoEfectivo.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
         txtPagoPatagonia = new JTextField(10);
-        txtPagoPatagonia.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtPagoPatagonia.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
         txtDolares = new JTextField(8);
-        txtDolares.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtDolares.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         txtDolares.setEnabled(false);
 
         txtCotizacion = new JTextField(8);
-        txtCotizacion.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtCotizacion.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         txtCotizacion.setEnabled(false);
 
         txtPesosGastados = new JTextField(10);
-        txtPesosGastados.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtPesosGastados.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         txtPesosGastados.setEnabled(false);
         txtPesosGastados.setEditable(false);
 
@@ -349,7 +358,7 @@ public class VentanaCaja extends javax.swing.JFrame {
         });
 
         JPanel panelBotones = new JPanel();
-        panelBotones.setBackground(COLOR_FONDO);
+        panelBotones.setBackground(currentTheme.bgBase);
 
         JButton btnAgregar = new JButton("AGREGAR");
         estilizarBoton(btnAgregar);
@@ -451,9 +460,9 @@ public class VentanaCaja extends javax.swing.JFrame {
         gbcDatosMov.insets = new Insets(4, 6, 4, 6);
         gbcDatosMov.fill = GridBagConstraints.HORIZONTAL;
         gbcDatosMov.gridx = 0; gbcDatosMov.gridy = 0; gbcDatosMov.gridwidth = 8;
-        JLabel lblDatosMov = new JLabel("DATOS DEL MOVIMIENTO");
-        lblDatosMov.setFont(new Font("Cambria", Font.BOLD, 13));
-        lblDatosMov.setForeground(COLOR_TITULO);
+        lblDatosMov = new JLabel("DATOS DEL MOVIMIENTO");
+        lblDatosMov.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblDatosMov.setForeground(currentTheme.brand);
         panelFormulario.add(lblDatosMov, gbcDatosMov);
 
         GridBagConstraints gbcFecha = new GridBagConstraints();
@@ -551,7 +560,7 @@ public class VentanaCaja extends javax.swing.JFrame {
         gbcSep1.fill = GridBagConstraints.HORIZONTAL;
         gbcSep1.gridx = 0; gbcSep1.gridy = 3; gbcSep1.gridwidth = 8;
         JSeparator sep1 = new JSeparator();
-        sep1.setForeground(COLOR_TEXTO);
+        sep1.setForeground(currentTheme.borderLight);
         panelFormulario.add(sep1, gbcSep1);
 
         GridBagConstraints gbcChkCompraDolares = new GridBagConstraints();
@@ -603,12 +612,12 @@ public class VentanaCaja extends javax.swing.JFrame {
         panelFormulario.add(txtPesosGastados, gbcTxtPesosGastados);
 
         JPanel panelSur = new JPanel(new BorderLayout());
-        panelSur.setBackground(COLOR_FONDO);
+        panelSur.setBackground(currentTheme.bgBase);
         panelSur.add(panelFormulario, BorderLayout.CENTER);
         panelSur.add(panelBotones, BorderLayout.SOUTH);
 
         JPanel panelCompletoSur = new JPanel(new BorderLayout());
-        panelCompletoSur.setBackground(COLOR_FONDO);
+        panelCompletoSur.setBackground(currentTheme.bgBase);
         panelCompletoSur.add(panelSubtotales, BorderLayout.NORTH);
         panelCompletoSur.add(panelSur, BorderLayout.CENTER);
 
@@ -619,8 +628,8 @@ public class VentanaCaja extends javax.swing.JFrame {
 
     private void estilizarBoton(JButton btn) {
         btn.setFont(FUENTE_BOTON);
-        btn.setForeground(COLOR_TEXTO);
-        btn.setBackground(COLOR_BOTON);
+        btn.setForeground(currentTheme.textPrimary);
+        btn.setBackground(currentTheme.btnBg);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setFocusPainted(false);
     }
@@ -635,7 +644,7 @@ public class VentanaCaja extends javax.swing.JFrame {
         String valorStr = valorActual != null ? valorActual.toString().replace("$", "").replace(" ", "").trim() : "";
 
         JTextField txtEdit = new JTextField(valorStr);
-        txtEdit.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtEdit.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
         int result = JOptionPane.showConfirmDialog(this, txtEdit, "Editar valor", JOptionPane.OK_CANCEL_OPTION);
 
@@ -913,6 +922,79 @@ public class VentanaCaja extends javax.swing.JFrame {
             }
             cmbAnio.setSelectedItem(anioInt);
             JOptionPane.showMessageDialog(this, "Año " + nuevoAnio + " seleccionado. Ahora puede agregar movimientos.", "Información", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    private void applyTheme(Theme t) {
+        currentTheme = t;
+        if (getContentPane() != null) {
+            getContentPane().setBackground(t.bgBase);
+        }
+        themeComponent(getContentPane());
+
+        if (lblSubTitulo != null) lblSubTitulo.setForeground(t.brand);
+        if (lblDatosMov != null) lblDatosMov.setForeground(t.brand);
+        if (lblSaldo != null) lblSaldo.setForeground(t.brand);
+        if (lblSaldoTotal != null) lblSaldoTotal.setForeground(t.brand);
+        if (tabla != null) {
+            tabla.setBackground(t.bgInput);
+            tabla.setForeground(t.textPrimary);
+            tabla.setGridColor(t.borderLight);
+            tabla.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+                @Override
+                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                      boolean isSelected, boolean hasFocus, int row, int column) {
+                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                    if (!isSelected) {
+                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
+                        setForeground(t.textPrimary);
+                    }
+                    return this;
+                }
+            });
+        }
+    }
+
+    private void themeComponent(Container container) {
+        if (container == null) return;
+        for (Component c : container.getComponents()) {
+            if (c == null) continue;
+            if (c instanceof JPanel) {
+                c.setBackground(currentTheme.bgBase);
+            } else if (c instanceof JLabel) {
+                c.setForeground(currentTheme.textPrimary);
+            } else if (c instanceof JButton) {
+                c.setForeground(currentTheme.textPrimary);
+                c.setBackground(currentTheme.btnBg);
+            } else if (c instanceof JTextField) {
+                c.setForeground(currentTheme.textPrimary);
+                c.setBackground(currentTheme.bgInput);
+            } else if (c instanceof JComboBox) {
+                c.setForeground(currentTheme.textPrimary);
+                c.setBackground(currentTheme.bgElevated);
+            } else if (c instanceof JCheckBox) {
+                c.setForeground(currentTheme.textPrimary);
+                c.setBackground(currentTheme.bgBase);
+            } else if (c instanceof JSeparator) {
+                c.setForeground(currentTheme.borderLight);
+            } else if (c instanceof JScrollPane) {
+                JScrollPane sp = (JScrollPane) c;
+                if (sp.getViewport() != null) {
+                    sp.getViewport().setBackground(currentTheme.bgBase);
+                }
+            } else if (c instanceof JTable) {
+                c.setForeground(currentTheme.textPrimary);
+                c.setBackground(currentTheme.bgInput);
+                ((JTable) c).setGridColor(currentTheme.borderLight);
+                if (((JTable) c).getTableHeader() != null) {
+                    boolean isDark = currentTheme.bgBase.getRed() < 50;
+                    Color hdrFg = isDark ? Color.WHITE : currentTheme.textPrimary;
+                    Theme.styleTableHeader(((JTable) c).getTableHeader(), currentTheme.bgElevated, hdrFg);
+                }
+            }
+            if (c instanceof Container) {
+                themeComponent((Container) c);
+            }
         }
     }
 

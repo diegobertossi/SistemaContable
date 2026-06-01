@@ -1,12 +1,22 @@
 package com.els.facturacion.vista;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Image;
-import java.awt.SystemColor;
+import java.awt.Insets;
+import java.awt.RenderingHints;
 import java.awt.Toolkit;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.geom.Ellipse2D;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,14 +31,47 @@ import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
-import javax.swing.border.BevelBorder;
-import javax.swing.border.EtchedBorder;
+import javax.swing.UIManager;
+import javax.swing.border.Border;
 
 import com.els.facturacion.util.UbicacionSistema;
+import javax.swing.border.EtchedBorder;
+import javax.swing.border.MatteBorder;
+import javax.swing.border.SoftBevelBorder;
+import javax.swing.border.BevelBorder;
+import javax.swing.border.LineBorder;
 
 public class VentanaPrincipal extends JFrame {
 
     private static final long serialVersionUID = 1L;
+
+    private Theme currentTheme;
+    private boolean isDarkMode = false;
+
+    // ─── Static theme propagation ────────────────────────────────────
+    private static Theme staticTheme = Theme.LIGHT;
+    private static final java.util.List<java.lang.ref.WeakReference<Object>> themeListeners = new java.util.ArrayList<>();
+
+    public static Theme getCurrentTheme() { return staticTheme; }
+
+    public static void addThemeListener(Object window) {
+        themeListeners.add(new java.lang.ref.WeakReference<>(window));
+    }
+
+    private static void notifyThemeListeners(Theme t) {
+        themeListeners.removeIf(ref -> {
+            Object w = ref.get();
+            if (w == null) return true;
+            try {
+                java.lang.reflect.Method m = w.getClass().getDeclaredMethod("applyTheme", Theme.class);
+                m.setAccessible(true);
+                m.invoke(w, t);
+            } catch (Exception e) { }
+            return false;
+        });
+    }
+
+    // ─── Controls ──────────────────────────────────────────────────────
 
     private List<JButton> botones;
     private JButton btnComprobantes;
@@ -38,285 +81,446 @@ public class VentanaPrincipal extends JFrame {
     private JButton btnHerramientas;
     private JButton btnCajaGastos;
     private JButton btnSalir;
+    private JButton btnCerrarSesion;
+    private JButton btnThemeToggle;
     private JTextField textUsuario;
     private JTextField textUbicacion;
     private JTextField textProgramador;
     private JTextField textVersionSoft;
     private JPanel panelDeControl;
     private JComboBox<String> cmbUbicacion;
+    private JPanel panel;
+    private JLabel lblFacturaSoft;
+    private JLabel lblVersion;
+    private JLabel lblDescripcion;
+    private JLabel lblImagen;
+    private JLabel lblUbicacion;
+    private JPanel ubPanel;
+    private JSeparator separatorBottom1;
+    private JSeparator separatorBottom2;
+    private JSeparator separatorTop1;
+    private JSeparator separatorTop2;
+
+    // ─── Constructor ───────────────────────────────────────────────────
 
     public VentanaPrincipal() {
         super();
+        currentTheme = staticTheme;
         botones = new ArrayList<>();
         setResizable(false);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(new Color(219, 227, 246));
         setMinimumSize(new Dimension(500, 400));
         initialize();
+        {
+            boolean isDark = currentTheme.bgBase.getRed() < 50;
+            Color hdrFg = isDark ? Color.WHITE : currentTheme.textPrimary;
+            UIManager.put("TableHeader.foreground", hdrFg);
+        }
+        UIManager.put("TableHeader.background", currentTheme.bgElevated);
+        applyTheme(currentTheme);
         try {
             Image icon = Toolkit.getDefaultToolkit().getImage(getClass().getResource("/img/Iconosoft.png"));
             setIconImage(icon);
-        } catch (Exception e) {
-            // icon not available
-        }
+        } catch (Exception e) { }
     }
 
+    // ─── Initialization ────────────────────────────────────────────────
+
     private void initialize() {
-        setBounds(100, 10, 557, 525);
+        setBounds(100, 10, 520, 500);
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         getContentPane().setLayout(null);
 
-        // Main panel for layout
-        JPanel panel = new JPanel();
+        panel = new JPanel();
         panel.setOpaque(false);
-        panel.setBackground(new Color(219, 227, 246));
         panel.setBorder(null);
-        panel.setBounds(0, 0, 548, 486);
+        panel.setBounds(0, 0, 504, 461);
         getContentPane().add(panel);
         panel.setLayout(null);
-        
-                // Title and info text below image
-                JLabel lblFacturaSoft = new JLabel("FACTURASOFT", SwingConstants.CENTER);
-                lblFacturaSoft.setFont(new Font("Cambria", Font.BOLD, 32));
-                lblFacturaSoft.setForeground(new Color(65, 105, 225));
-                lblFacturaSoft.setBounds(134, 116, 280, 28);
-                panel.add(lblFacturaSoft);
 
-        // Close session button
-        JButton btnCerrarSesion = new JButton("<html><center>CERRAR SESI\u00d3N</html>");
+        // ── Theme toggle ────────────────────────────────────────────
+        btnThemeToggle = new RoundedButton("", 50);
+        btnThemeToggle.setBounds(202, 426, 100, 35);
+        ImageIcon sunIcon = loadToggleIcon("/img/sol.png", "\u2600");
+        btnThemeToggle.setIcon(sunIcon);
+        btnThemeToggle.setFocusPainted(false);
+        btnThemeToggle.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnThemeToggle.setToolTipText("Cambiar a tema oscuro");
+        btnThemeToggle.addActionListener(e -> toggleTheme());
+        panel.add(btnThemeToggle);
+
+        // ── Title ───────────────────────────────────────────────────
+        lblFacturaSoft = new JLabel("FACTURASOFT", SwingConstants.CENTER);
+        lblFacturaSoft.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        lblFacturaSoft.setBounds(112, 112, 280, 28);
+        panel.add(lblFacturaSoft);
+
+        // ── Close session ───────────────────────────────────────────
+        btnCerrarSesion = new RoundedButton("<html><center>CERRAR SESI\u00d3N</html>", 50);
         btnCerrarSesion.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnCerrarSesion.setHorizontalTextPosition(SwingConstants.RIGHT);
-        btnCerrarSesion.setForeground(new Color(70, 130, 180));
-        btnCerrarSesion.setFont(new Font("Cambria", Font.BOLD, 10));
-        btnCerrarSesion.setBounds(10, 10, 110, 33);
-        btnCerrarSesion.setIcon(new ImageIcon(this.getClass().getResource("/img/Icono cerrar sesion.png")));
+        btnCerrarSesion.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        btnCerrarSesion.setBounds(10, 10, 100, 35);
+        btnCerrarSesion.addMouseListener(new MouseAdapter() {
+            @Override public void mouseEntered(MouseEvent e) {
+                btnCerrarSesion.setBackground(currentTheme.hoverBg);
+            }
+            @Override public void mouseExited(MouseEvent e) {
+                btnCerrarSesion.setBackground(currentTheme.btnBg);
+            }
+        });
+        try {
+            btnCerrarSesion.setIcon(new ImageIcon(getClass().getResource("/img/Icono cerrar sesion.png")));
+        } catch (Exception e) { }
         panel.add(btnCerrarSesion);
 
-        // Salir button
-        btnSalir = new JButton("SALIR");
-        btnSalir.setBounds(424, 10, 110, 33);
-        panel.add(btnSalir);
-        btnSalir.setForeground(new Color(255, 0, 51));
+        // ── Exit button ─────────────────────────────────────────────
+        btnSalir = new RoundedButton("SALIR", 50);
+        btnSalir.setBounds(399, 10, 100, 35);
         btnSalir.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnSalir.setFont(new Font("Cambria", Font.BOLD, 10));
-        btnSalir.setIcon(new ImageIcon(this.getClass().getResource("/img/Icono salir.png")));
+        btnSalir.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        btnSalir.addMouseListener(new MouseAdapter() {
+            @Override public void mouseEntered(MouseEvent e) {
+                btnSalir.setBackground(currentTheme.hoverBg);
+            }
+            @Override public void mouseExited(MouseEvent e) {
+                btnSalir.setBackground(currentTheme.btnBg);
+            }
+        });
+        try {
+            btnSalir.setIcon(new ImageIcon(getClass().getResource("/img/Icono salir.png")));
+        } catch (Exception e) { }
         btnSalir.addActionListener(e -> System.exit(0));
-        
+        panel.add(btnSalir);
 
-        // Main image - same dimensions as VistaPrincipal (473x153), maintains aspect ratio
-        JLabel lblImagen = new JLabel("");
-        ImageIcon icono = new ImageIcon(getClass().getResource("/img/Inicio facturacion.png"));
-        int imgTargetW = 473, imgTargetH = 160;
-        double scale = Math.min((double) imgTargetW / icono.getIconWidth(),
-                (double) imgTargetH / icono.getIconHeight());
-        int scaledW = (int) (icono.getIconWidth() * scale);
-        int scaledH = (int) (icono.getIconHeight() * scale);
-        Image img = icono.getImage().getScaledInstance(scaledW, scaledH, Image.SCALE_SMOOTH);
-        lblImagen.setIcon(new ImageIcon(img));
+        // ── Image ───────────────────────────────────────────────────
+        lblImagen = new JLabel("");
+        try {
+            ImageIcon icono = new ImageIcon(getClass().getResource("/img/Inicio facturacion.png"));
+            int imgTargetW = 473, imgTargetH = 160;
+            double scale = Math.min((double) imgTargetW / icono.getIconWidth(),
+                    (double) imgTargetH / icono.getIconHeight());
+            int scaledW = (int) (icono.getIconWidth() * scale);
+            int scaledH = (int) (icono.getIconHeight() * scale);
+            Image img = icono.getImage().getScaledInstance(scaledW, scaledH, Image.SCALE_SMOOTH);
+            lblImagen.setIcon(new ImageIcon(img));
+        } catch (Exception e) { }
         lblImagen.setOpaque(false);
         lblImagen.setHorizontalAlignment(SwingConstants.CENTER);
-        lblImagen.setBounds(134, 10, 280, 131);
+        lblImagen.setBounds(112, 10, 280, 125);
         panel.add(lblImagen);
 
-        JLabel lblVersion = new JLabel("Versi\u00f3n: 1.0", SwingConstants.CENTER);
-        lblVersion.setFont(new Font("Cambria", Font.PLAIN, 11));
-        lblVersion.setForeground(new Color(105, 105, 105));
-        lblVersion.setBounds(234, 144, 80, 14);
+        // ── Version ─────────────────────────────────────────────────
+        lblVersion = new JLabel("Versi\u00f3n: 1.0", SwingConstants.CENTER);
+        lblVersion.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblVersion.setBounds(215, 140, 80, 14);
         panel.add(lblVersion);
 
-        JLabel lblDescripcion = new JLabel(
+        // ── Description ─────────────────────────────────────────────
+        lblDescripcion = new JLabel(
                 "SISTEMA DE FACTURACI\u00d3N ELECTR\u00d3NICA Y GESTI\u00d3N CONTABLE",
                 SwingConstants.CENTER);
-        lblDescripcion.setFont(new Font("Cambria", Font.PLAIN, 11));
-        lblDescripcion.setForeground(new Color(65, 105, 225));
-        lblDescripcion.setBounds(54, 177, 440, 14);
+        lblDescripcion.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblDescripcion.setBounds(35, 162, 440, 14);
         panel.add(lblDescripcion);
 
-        // Buttons panel
+        // ── Separators above panel ──────────────────────────────────
+        separatorTop2 = new JSeparator();
+        separatorTop2.setBounds(52, 186, 400, 2);
+        panel.add(separatorTop2);
+        separatorTop1 = new JSeparator();
+        separatorTop1.setBounds(52, 190, 400, 2);
+        panel.add(separatorTop1);
+
+        // ── Control panel ───────────────────────────────────────────
         panelDeControl = new JPanel();
-        panelDeControl.setBounds(29, 217, 490, 231);
-        panel.add(panelDeControl);
-        panelDeControl.setBackground(new Color(176, 196, 222));
-        panelDeControl.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
+        panelDeControl.setBounds(10, 198, 490, 209);
         panelDeControl.setLayout(null);
+        panel.add(panelDeControl);
 
         int btnW = 210;
-        int btnH = 45;
+        int btnH = 42;
         int col1X = 25;
         int col2X = 255;
-        int row1Y = 15;
-        int row2Y = 68;
-        int row3Y = 121;
+        int row1Y = 12;
+        int row2Y = 58;
+        int row3Y = 104;
 
         btnComprobantes = crearBoton("COMPROBANTES");
         btnComprobantes.setBounds(col1X, row1Y, btnW, btnH);
-        btnComprobantes.setIcon(new ImageIcon(this.getClass().getResource("/img/Comprobantes.png")));
-        btnComprobantes.addActionListener(e -> {
-            VentanaGestionComprobantes v = new VentanaGestionComprobantes();
-            v.setVisible(true);
-        });
+        try { btnComprobantes.setIcon(new ImageIcon(getClass().getResource("/img/Comprobantes.png"))); } catch (Exception e) { }
+        btnComprobantes.addActionListener(e -> new VentanaGestionComprobantes().setVisible(true));
         panelDeControl.add(btnComprobantes);
 
         btnClientes = crearBoton("             CLIENTES");
         btnClientes.setBounds(col2X, row1Y, btnW, btnH);
-        btnClientes.setIcon(new ImageIcon(this.getClass().getResource("/img/Clientes.png")));
-       // btnClientes.setHorizontalAlignment(SwingConstants.LEFT);
+        try { btnClientes.setIcon(new ImageIcon(getClass().getResource("/img/Clientes.png"))); } catch (Exception e) { }
         btnClientes.addActionListener(e -> new VentanaClientes().setVisible(true));
         panelDeControl.add(btnClientes);
 
         btnRemitos = crearBoton("            REMITOS");
         btnRemitos.setBounds(col1X, row2Y, btnW, btnH);
-        btnRemitos.setIcon(new ImageIcon(this.getClass().getResource("/img/Remitos.png")));
+        try { btnRemitos.setIcon(new ImageIcon(getClass().getResource("/img/Remitos.png"))); } catch (Exception e) { }
         btnRemitos.addActionListener(e ->
-            JOptionPane.showMessageDialog(this, "Funcionalidad en desarrollo")
-        );
+            JOptionPane.showMessageDialog(this, "Funcionalidad en desarrollo"));
         panelDeControl.add(btnRemitos);
 
         btnPagosRecibos = crearBoton("PAGOS Y RECIBOS");
-        btnPagosRecibos.setIcon(new ImageIcon(this.getClass().getResource("/img/Pagos y recibos.png")));
         btnPagosRecibos.setBounds(col2X, row2Y, btnW, btnH);
-        btnPagosRecibos.addActionListener(e -> {
-            VentanaPagosRecibos v = new VentanaPagosRecibos();
-            v.setVisible(true);
-        });
+        try { btnPagosRecibos.setIcon(new ImageIcon(getClass().getResource("/img/Pagos y recibos.png"))); } catch (Exception e) { }
+        btnPagosRecibos.addActionListener(e -> new VentanaPagosRecibos().setVisible(true));
         panelDeControl.add(btnPagosRecibos);
 
         btnHerramientas = crearBoton(" HERRAMIENTAS");
         btnHerramientas.setBounds(col1X, row3Y, btnW, btnH);
-        btnHerramientas.setIcon(new ImageIcon(this.getClass().getResource("/img/Herramientas.png")));
-        btnHerramientas.addActionListener(e -> {
-            VentanaConfigCertificados v = new VentanaConfigCertificados();
-            v.setVisible(true);
-        });
+        try { btnHerramientas.setIcon(new ImageIcon(getClass().getResource("/img/Herramientas.png"))); } catch (Exception e) { }
+        btnHerramientas.addActionListener(e -> new VentanaConfigCertificados().setVisible(true));
         panelDeControl.add(btnHerramientas);
 
         btnCajaGastos = crearBoton("      CAJA Y GASTOS");
         btnCajaGastos.setBounds(col2X, row3Y, btnW, btnH);
-        btnCajaGastos.setIcon(new ImageIcon(this.getClass().getResource("/img/Caja y gastos.png")));
-        btnCajaGastos.addActionListener(e -> {
-            VentanaCajaGastos v = new VentanaCajaGastos();
-            v.setVisible(true);
-        });
+        try { btnCajaGastos.setIcon(new ImageIcon(getClass().getResource("/img/Caja y gastos.png"))); } catch (Exception e) { }
+        btnCajaGastos.addActionListener(e -> new VentanaCajaGastos().setVisible(true));
         panelDeControl.add(btnCajaGastos);
 
-        // Recuadro de ubicacion
-        JPanel ubPanel = new JPanel(null);
-        ubPanel.setBounds(15, 182, 460, 41);
-        ubPanel.setBackground(new Color(176, 196, 222));
-        ubPanel.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.RAISED));
+        // ── Location panel ──────────────────────────────────────────
+        ubPanel = new JPanel(null);
+        ubPanel.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
+        ubPanel.setBounds(15, 160, 460, 38);
         panelDeControl.add(ubPanel);
 
-        JLabel lblUbicacion = new JLabel("UBICACI\u00d3N:");
-        lblUbicacion.setFont(new Font("Cambria", Font.BOLD, 14));
-        lblUbicacion.setForeground(new Color(65, 105, 225));
-        lblUbicacion.setBounds(98, 8, 80, 25);
+        lblUbicacion = new JLabel("UBICACI\u00d3N:");
+        lblUbicacion.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblUbicacion.setBounds(98, 7, 80, 24);
         ubPanel.add(lblUbicacion);
 
         cmbUbicacion = new JComboBox<>();
         cmbUbicacion.addItem("");
         cmbUbicacion.addItem(UbicacionSistema.BSAS);
         cmbUbicacion.addItem(UbicacionSistema.BRC);
-        cmbUbicacion.setFont(new Font("Cambria", Font.BOLD, 14));
-        cmbUbicacion.setBounds(184, 6, 185, 28);
+        cmbUbicacion.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        cmbUbicacion.setBounds(184, 5, 185, 28);
         cmbUbicacion.addActionListener(e -> {
             String selected = (String) cmbUbicacion.getSelectedItem();
             if (selected != null && !selected.isEmpty()) {
                 UbicacionSistema.setUbicacion(selected);
-                for (JButton btn : botones) {
-                    btn.setEnabled(true);
-                }
+                for (JButton btn : botones) btn.setEnabled(true);
             } else {
                 UbicacionSistema.setUbicacion(null);
-                for (JButton btn : botones) {
-                    btn.setEnabled(false);
-                }
+                for (JButton btn : botones) btn.setEnabled(false);
             }
         });
         ubPanel.add(cmbUbicacion);
-        
-                // Bottom separators
-                JSeparator separatorBottom1 = new JSeparator();
-                separatorBottom1.setBounds(24, 455, 500, 2);
-                panel.add(separatorBottom1);
-                JSeparator separatorBottom2 = new JSeparator();
-                separatorBottom2.setBounds(24, 459, 500, 2);
-                panel.add(separatorBottom2);
-                
-                        textVersionSoft = new JTextField();
-                        textVersionSoft.setBounds(338, 461, 200, 16);
-                        panel.add(textVersionSoft);
-                        textVersionSoft.setOpaque(false);
-                        textVersionSoft.setHorizontalAlignment(SwingConstants.RIGHT);
-                        textVersionSoft.setForeground(new Color(65, 105, 225));
-                        textVersionSoft.setFont(new Font("Cambria", Font.PLAIN, 12));
-                        textVersionSoft.setEditable(false);
-                        textVersionSoft.setColumns(10);
-                        textVersionSoft.setBorder(null);
-                        textVersionSoft.setBackground(SystemColor.activeCaption);
-                        
-                                // Bottom info fields
-                                textProgramador = new JTextField();
-                                textProgramador.setBounds(8, 461, 200, 16);
-                                panel.add(textProgramador);
-                                textProgramador.setOpaque(false);
-                                textProgramador.setHorizontalAlignment(SwingConstants.RIGHT);
-                                textProgramador.setForeground(new Color(65, 105, 225));
-                                textProgramador.setFont(new Font("Cambria", Font.PLAIN, 12));
-                                textProgramador.setEditable(false);
-                                textProgramador.setColumns(10);
-                                textProgramador.setBorder(null);
-                                textProgramador.setBackground(SystemColor.activeCaption);
-                                
-                                        // Separators above the button panel
-                                        JSeparator separatorTop1 = new JSeparator();
-                                        separatorTop1.setBounds(74, 206, 400, 2);
-                                        panel.add(separatorTop1);
-                                        JSeparator separatorTop2 = new JSeparator();
-                                        separatorTop2.setBounds(74, 202, 400, 2);
-                                        panel.add(separatorTop2);
 
-        for (JButton btn : botones) {
-            btn.setEnabled(false);
-        }
+        // ── Bottom separators ───────────────────────────────────────
+        separatorBottom1 = new JSeparator();
+        separatorBottom1.setBounds(52, 416, 400, 2);
+        panel.add(separatorBottom1);
+        separatorBottom2 = new JSeparator();
+        separatorBottom2.setBounds(52, 420, 400, 2);
+        panel.add(separatorBottom2);
 
-        // User text field
+        // ── Footer fields ───────────────────────────────────────────
+        textVersionSoft = new JTextField();
+        textVersionSoft.setBounds(301, 422, 200, 16);
+        textVersionSoft.setOpaque(false);
+        textVersionSoft.setHorizontalAlignment(SwingConstants.RIGHT);
+        textVersionSoft.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        textVersionSoft.setEditable(false);
+        textVersionSoft.setColumns(10);
+        textVersionSoft.setBorder(null);
+        panel.add(textVersionSoft);
+
+        textProgramador = new JTextField();
+        textProgramador.setBounds(10, 422, 200, 16);
+        textProgramador.setOpaque(false);
+        textProgramador.setHorizontalAlignment(SwingConstants.RIGHT);
+        textProgramador.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        textProgramador.setEditable(false);
+        textProgramador.setColumns(10);
+        textProgramador.setBorder(null);
+        panel.add(textProgramador);
+
+        // ── User fields ─────────────────────────────────────────────
         textUsuario = new JTextField();
         textUsuario.setOpaque(false);
         textUsuario.setEditable(false);
         textUsuario.setBorder(null);
         textUsuario.setHorizontalAlignment(SwingConstants.CENTER);
-        textUsuario.setBackground(SystemColor.activeCaption);
-        textUsuario.setForeground(new Color(65, 105, 225));
-        textUsuario.setFont(new Font("Cambria", Font.BOLD, 14));
-        textUsuario.setBounds(250, 8, 200, 18);
-        getContentPane().add(textUsuario);
+        textUsuario.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        textUsuario.setBounds(210, 8, 180, 18);
         textUsuario.setColumns(10);
+        getContentPane().add(textUsuario);
 
-        // Ubicacion text field
         textUbicacion = new JTextField();
         textUbicacion.setOpaque(false);
         textUbicacion.setHorizontalAlignment(SwingConstants.CENTER);
-        textUbicacion.setForeground(new Color(65, 105, 225));
-        textUbicacion.setFont(new Font("Cambria", Font.BOLD, 14));
+        textUbicacion.setFont(new Font("Segoe UI", Font.BOLD, 13));
         textUbicacion.setEditable(false);
         textUbicacion.setColumns(10);
         textUbicacion.setBorder(null);
-        textUbicacion.setBackground(SystemColor.activeCaption);
-        textUbicacion.setBounds(250, 30, 200, 18);
+        textUbicacion.setBounds(210, 30, 180, 18);
         getContentPane().add(textUbicacion);
+
+        // ── Disable buttons until location selected ─────────────────
+        for (JButton btn : botones) btn.setEnabled(false);
 
         setLocationCenter();
     }
 
+    // ─── Button factory with hover/press effects ───────────────────────
+
     private JButton crearBoton(String texto) {
-        JButton btn = new JButton(texto);
-        btn.setForeground(new Color(0, 0, 128));
+        RoundedButton btn = new RoundedButton(texto, 50);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setFont(new Font("Cambria", Font.BOLD, 13));
-        btn.setFocusPainted(false);
+        btn.addMouseListener(new MouseAdapter() {
+            @Override public void mouseEntered(MouseEvent e) {
+                if (btn.isEnabled()) btn.setBackground(currentTheme.hoverBg);
+            }
+            @Override public void mouseExited(MouseEvent e) {
+                if (btn.isEnabled()) btn.setBackground(currentTheme.btnBg);
+            }
+            @Override public void mousePressed(MouseEvent e) {
+                if (btn.isEnabled()) btn.setBackground(currentTheme.pressedBg);
+            }
+            @Override public void mouseReleased(MouseEvent e) {
+                if (btn.isEnabled()) btn.setBackground(currentTheme.hoverBg);
+            }
+        });
         botones.add(btn);
         return btn;
     }
+
+    // ─── Theme icons (PNG resources) ─────────────────────────────────
+
+    /** Loads a PNG icon from classpath, or builds a text fallback if not found. */
+    private ImageIcon loadToggleIcon(String resourcePath, String fallbackText) {
+        java.net.URL url = getClass().getResource(resourcePath);
+        if (url != null) {
+            return new ImageIcon(url);
+        }
+        // Fallback: draw text on a small buffered image
+        BufferedImage img = new BufferedImage(18, 18, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        FontMetrics fm = g.getFontMetrics();
+        int x = (18 - fm.stringWidth(fallbackText)) / 2;
+        int y = (18 - fm.getHeight()) / 2 + fm.getAscent();
+        g.drawString(fallbackText, x, y);
+        g.dispose();
+        return new ImageIcon(img);
+    }
+
+    // ─── Theme application ─────────────────────────────────────────────
+
+    private void applyTheme(Theme t) {
+        currentTheme = t;
+        getContentPane().setBackground(t.bgBase);
+
+        Color btnBright = t.brandDark;
+        Border surfaceBorder = BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(t.borderLight, 1),
+            BorderFactory.createEmptyBorder(6, 6, 6, 6)
+        );
+        Border ubBorder = BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(t.borderLight, 1),
+            BorderFactory.createEmptyBorder(4, 8, 4, 8)
+        );
+        Border btnBorder = new RoundedBorder(t.borderLight, 50, 1, 12, 6);
+
+        // Canvas
+        if (panel != null) panel.setBackground(t.bgBase);
+
+        // Labels
+        if (lblFacturaSoft != null) lblFacturaSoft.setForeground(t.brand);
+        if (lblVersion != null) lblVersion.setForeground(t.textTertiary);
+        if (lblDescripcion != null) lblDescripcion.setForeground(t.brand);
+
+        // Control panel
+        if (panelDeControl != null) {
+            panelDeControl.setBackground(t.bgSurface);
+            panelDeControl.setBorder(surfaceBorder);
+        }
+
+        // Location panel
+        if (ubPanel != null) {
+            ubPanel.setBackground(t.bgSurface);
+            ubPanel.setBorder(ubBorder);
+        }
+        if (lblUbicacion != null) lblUbicacion.setForeground(t.brand);
+        if (cmbUbicacion != null) {
+            cmbUbicacion.setBackground(t.bgElevated);
+            cmbUbicacion.setForeground(t.textPrimary);
+        }
+
+        // Main buttons
+        for (JButton btn : botones) {
+            btn.setForeground(btnBright);
+            btn.setBackground(t.btnBg);
+            btn.setBorder(btnBorder);
+        }
+
+        // Side buttons
+        Border sideBorder = new RoundedBorder(t.borderLight, 50, 1, 8, 4);
+        if (btnCerrarSesion != null) {
+            btnCerrarSesion.setForeground(t.textSecondary);
+            btnCerrarSesion.setBackground(t.btnBg);
+            btnCerrarSesion.setBorder(sideBorder);
+        }
+        if (btnSalir != null) {
+            btnSalir.setForeground(t.danger);
+            btnSalir.setBackground(t.btnBg);
+            btnSalir.setBorder(sideBorder);
+        }
+
+        // Theme toggle
+        if (btnThemeToggle != null) {
+            btnThemeToggle.setBackground(t.btnBg);
+            btnThemeToggle.setForeground(t.textPrimary);
+            btnThemeToggle.setBorder(sideBorder);
+            btnThemeToggle.setToolTipText(isDarkMode
+                ? "Cambiar a tema claro"
+                : "Cambiar a tema oscuro");
+        }
+
+        // Separators
+        Color sepColor = t.borderLight;
+        if (separatorBottom1 != null) separatorBottom1.setForeground(sepColor);
+        if (separatorBottom2 != null) separatorBottom2.setForeground(sepColor);
+        if (separatorTop1 != null) separatorTop1.setForeground(sepColor);
+        if (separatorTop2 != null) separatorTop2.setForeground(sepColor);
+
+        // Footer
+        if (textVersionSoft != null) textVersionSoft.setForeground(t.textSecondary);
+        if (textProgramador != null) textProgramador.setForeground(t.textSecondary);
+
+        // User text
+        if (textUsuario != null) textUsuario.setForeground(t.textSecondary);
+        if (textUbicacion != null) textUbicacion.setForeground(t.textSecondary);
+    }
+
+    private void toggleTheme() {
+        isDarkMode = !isDarkMode;
+        Theme t = isDarkMode ? Theme.DARK : Theme.LIGHT;
+        {
+            boolean isDark = t.bgBase.getRed() < 50;
+            Color hdrFg = isDark ? Color.WHITE : t.textPrimary;
+            UIManager.put("TableHeader.foreground", hdrFg);
+        }
+        UIManager.put("TableHeader.background", t.bgElevated);
+        // FIX: swap icon
+        btnThemeToggle.setIcon(loadToggleIcon(
+            isDarkMode ? "/img/luna.png" : "/img/sol.png",
+            isDarkMode ? "\u263E" : "\u2600"));
+        applyTheme(t);
+        staticTheme = t;
+        notifyThemeListeners(t);
+    }
+
+    // ─── Centering ──────────────────────────────────────────────────────
 
     public void setLocationCenter() {
         setLocationMove(0, 0);
@@ -324,82 +528,33 @@ public class VentanaPrincipal extends JFrame {
 
     public void setLocationMove(int moveWidth, int moveHeight) {
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        Dimension frameSize = this.getSize();
-        frameSize.width = frameSize.width > screenSize.width ? screenSize.width : frameSize.width;
-        frameSize.height = frameSize.height > screenSize.height ? screenSize.height : frameSize.height;
+        Dimension frameSize = getSize();
+        frameSize.width = Math.min(frameSize.width, screenSize.width);
+        frameSize.height = Math.min(frameSize.height, screenSize.height);
         setLocation((screenSize.width - frameSize.width) / 2 + moveWidth,
                 (screenSize.height - frameSize.height) / 2 + moveHeight);
     }
 
-    public JButton getBotonComprobantes() {
-        return btnComprobantes;
-    }
+    // ─── Getters / setters ──────────────────────────────────────────────
 
-    public JButton getBotonClientes() {
-        return btnClientes;
-    }
+    public JButton getBotonComprobantes() { return btnComprobantes; }
+    public JButton getBotonClientes() { return btnClientes; }
+    public JButton getBotonRemitos() { return btnRemitos; }
+    public JButton getBotonPagosRecibos() { return btnPagosRecibos; }
+    public JButton getBotonHerramientas() { return btnHerramientas; }
+    public JButton getBotonCajaGastos() { return btnCajaGastos; }
+    public JButton getBtnSalir() { return btnSalir; }
+    public JPanel getPanelDeControl() { return panelDeControl; }
+    public JTextField getTextUsuario() { return textUsuario; }
+    public void setTextUsuario(JTextField textUsuario) { this.textUsuario = textUsuario; }
+    public JTextField getTextUbicacion() { return textUbicacion; }
+    public void setTextUbicacion(JTextField textUbicacion) { this.textUbicacion = textUbicacion; }
+    public JTextField getTextProgramador() { return textProgramador; }
+    public void setTextProgramador(JTextField textProgramador) { this.textProgramador = textProgramador; }
+    public JTextField getTextVersionSoft() { return textVersionSoft; }
+    public void setTextVersionSoft(JTextField textVersionSoft) { this.textVersionSoft = textVersionSoft; }
+    public JComboBox<String> getCmbUbicacion() { return cmbUbicacion; }
+    public List<JButton> getBotones() { return botones; }
+    public boolean isDarkMode() { return isDarkMode; }
 
-    public JButton getBotonRemitos() {
-        return btnRemitos;
-    }
-
-    public JButton getBotonPagosRecibos() {
-        return btnPagosRecibos;
-    }
-
-    public JButton getBotonHerramientas() {
-        return btnHerramientas;
-    }
-
-    public JButton getBotonCajaGastos() {
-        return btnCajaGastos;
-    }
-
-    public JButton getBtnSalir() {
-        return btnSalir;
-    }
-
-    public JPanel getPanelDeControl() {
-        return panelDeControl;
-    }
-
-    public JTextField getTextUsuario() {
-        return textUsuario;
-    }
-
-    public void setTextUsuario(JTextField textUsuario) {
-        this.textUsuario = textUsuario;
-    }
-
-    public JTextField getTextUbicacion() {
-        return textUbicacion;
-    }
-
-    public void setTextUbicacion(JTextField textUbicacion) {
-        this.textUbicacion = textUbicacion;
-    }
-
-    public JTextField getTextProgramador() {
-        return textProgramador;
-    }
-
-    public void setTextProgramador(JTextField textProgramador) {
-        this.textProgramador = textProgramador;
-    }
-
-    public JTextField getTextVersionSoft() {
-        return textVersionSoft;
-    }
-
-    public void setTextVersionSoft(JTextField textVersionSoft) {
-        this.textVersionSoft = textVersionSoft;
-    }
-
-    public JComboBox<String> getCmbUbicacion() {
-        return cmbUbicacion;
-    }
-
-    public List<JButton> getBotones() {
-        return botones;
-    }
 }

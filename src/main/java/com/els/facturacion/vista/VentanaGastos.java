@@ -12,6 +12,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -27,12 +28,10 @@ import java.util.List;
 
 public class VentanaGastos extends javax.swing.JFrame {
 
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Color COLOR_TITULO = new Color(65, 105, 225);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
-    private static final Font FUENTE_TITULO = new Font("Cambria", Font.BOLD, 14);
+    private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
+    private static final Font FUENTE_TITULO = new Font("Segoe UI", Font.BOLD, 14);
+
+    private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
     private ControladorGastos controlador;
     private JTable tabla;
@@ -44,13 +43,29 @@ public class VentanaGastos extends javax.swing.JFrame {
     private JComboBox<Integer> cmbAnio;
     private JLabel lblTotal;
     private DateTimeFormatter fechaFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private JPanel panelSuperior;
+    private JPanel panelFiltro;
+    private JPanel panelFormulario;
+    private JPanel panelBotones;
+    private JLabel lblTitulo;
+    private JLabel lblMes;
+    private JLabel lblAnio;
+    private JLabel lblCat;
+    private JLabel lblDesc;
+    private JLabel lblMonto;
+    private JButton btnFiltrar;
+    private JButton btnAgregar;
+    private JButton btnEliminar;
+    private JButton btnLimpiar;
 
     public VentanaGastos() {
         controlador = new ControladorGastos();
         initComponents();
+        applyTheme(currentTheme);
         cargarCategorias();
         cargarGastos();
         actualizarTotal();
+        VentanaPrincipal.addThemeListener(this);
     }
 
     private void initComponents() {
@@ -58,18 +73,18 @@ public class VentanaGastos extends javax.swing.JFrame {
         setSize(900, 520);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(COLOR_FONDO);
+        getContentPane().setBackground(currentTheme.bgBase);
 
-        JPanel panelSuperior = new JPanel(new BorderLayout());
-        panelSuperior.setBackground(COLOR_FONDO);
+        panelSuperior = new JPanel(new BorderLayout());
+        panelSuperior.setBackground(currentTheme.bgBase);
 
-        JLabel lblTitulo = new JLabel("REGISTRO DE GASTOS", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Cambria", Font.BOLD, 20));
-        lblTitulo.setForeground(COLOR_TEXTO);
+        lblTitulo = new JLabel("REGISTRO DE GASTOS", SwingConstants.CENTER);
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        lblTitulo.setForeground(currentTheme.textPrimary);
 
         lblTotal = new JLabel("Total: $0.00", SwingConstants.RIGHT);
         lblTotal.setFont(FUENTE_TITULO);
-        lblTotal.setForeground(COLOR_TITULO);
+        lblTotal.setForeground(currentTheme.brand);
 
         panelSuperior.add(lblTitulo, BorderLayout.CENTER);
         panelSuperior.add(lblTotal, BorderLayout.EAST);
@@ -83,11 +98,14 @@ public class VentanaGastos extends javax.swing.JFrame {
         };
 
         tabla = new JTable(modeloTabla);
-        tabla.setFont(new Font("Cambria", Font.PLAIN, 11));
+        tabla.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        tabla.setRowHeight(22);
+        tabla.setShowGrid(true);
+        tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
         JScrollPane scrollPane = new JScrollPane(tabla);
 
-        JPanel panelFiltro = new JPanel();
-        panelFiltro.setBackground(COLOR_FONDO);
+        panelFiltro = new JPanel();
+        panelFiltro.setBackground(currentTheme.bgBase);
 
         cmbMes = new JComboBox<>(new Integer[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
         cmbAnio = new JComboBox<>();
@@ -98,18 +116,18 @@ public class VentanaGastos extends javax.swing.JFrame {
         cmbMes.setSelectedItem(LocalDate.now().getMonthValue());
         cmbAnio.setSelectedItem(anioActual);
 
-        JLabel lblMes = new JLabel("Mes:");
+        lblMes = new JLabel("Mes:");
         lblMes.setFont(FUENTE_BOTON);
-        lblMes.setForeground(COLOR_TEXTO);
+        lblMes.setForeground(currentTheme.textPrimary);
 
-        JLabel lblAnio = new JLabel("Anio:");
+        lblAnio = new JLabel("Anio:");
         lblAnio.setFont(FUENTE_BOTON);
-        lblAnio.setForeground(COLOR_TEXTO);
+        lblAnio.setForeground(currentTheme.textPrimary);
 
-        JButton btnFiltrar = new JButton("FILTRAR");
+        btnFiltrar = new JButton("FILTRAR");
         btnFiltrar.setFont(FUENTE_BOTON);
-        btnFiltrar.setForeground(COLOR_TEXTO);
-        btnFiltrar.setBackground(COLOR_BOTON);
+        btnFiltrar.setForeground(currentTheme.textPrimary);
+        btnFiltrar.setBackground(currentTheme.btnBg);
         btnFiltrar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnFiltrar.setFocusPainted(false);
         btnFiltrar.addActionListener(e -> {
@@ -123,25 +141,25 @@ public class VentanaGastos extends javax.swing.JFrame {
         panelFiltro.add(cmbAnio);
         panelFiltro.add(btnFiltrar);
 
-        JPanel panelFormulario = new JPanel(new GridBagLayout());
-        panelFormulario.setBackground(COLOR_FONDO);
-        JLabel lblCat = new JLabel("Categoria:");
+        panelFormulario = new JPanel(new GridBagLayout());
+        panelFormulario.setBackground(currentTheme.bgBase);
+        lblCat = new JLabel("Categoria:");
         lblCat.setFont(FUENTE_BOTON);
-        lblCat.setForeground(COLOR_TEXTO);
+        lblCat.setForeground(currentTheme.textPrimary);
 
-        JLabel lblDesc = new JLabel("Descripcion:");
+        lblDesc = new JLabel("Descripcion:");
         lblDesc.setFont(FUENTE_BOTON);
-        lblDesc.setForeground(COLOR_TEXTO);
+        lblDesc.setForeground(currentTheme.textPrimary);
 
-        JLabel lblMonto = new JLabel("Monto:");
+        lblMonto = new JLabel("Monto:");
         lblMonto.setFont(FUENTE_BOTON);
-        lblMonto.setForeground(COLOR_TEXTO);
+        lblMonto.setForeground(currentTheme.textPrimary);
 
         cmbCategoria = new JComboBox<>();
         txtDescripcion = new JTextField(20);
-        txtDescripcion.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtDescripcion.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         txtMonto = new JTextField(10);
-        txtMonto.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtMonto.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
         GridBagConstraints gbc_lblCat = new GridBagConstraints();
         gbc_lblCat.insets = new Insets(5, 8, 5, 8);
@@ -179,29 +197,29 @@ public class VentanaGastos extends javax.swing.JFrame {
         gbc_txtMonto.gridx = 5; gbc_txtMonto.gridy = 0;
         panelFormulario.add(txtMonto, gbc_txtMonto);
 
-        JPanel panelBotones = new JPanel();
-        panelBotones.setBackground(COLOR_FONDO);
+        panelBotones = new JPanel();
+        panelBotones.setBackground(currentTheme.bgBase);
 
-        JButton btnAgregar = new JButton("AGREGAR");
+        btnAgregar = new JButton("AGREGAR");
         btnAgregar.setFont(FUENTE_BOTON);
-        btnAgregar.setForeground(COLOR_TEXTO);
-        btnAgregar.setBackground(COLOR_BOTON);
+        btnAgregar.setForeground(currentTheme.textPrimary);
+        btnAgregar.setBackground(currentTheme.btnBg);
         btnAgregar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnAgregar.setFocusPainted(false);
         btnAgregar.addActionListener(e -> btnAgregarAction());
 
-        JButton btnEliminar = new JButton("ELIMINAR");
+        btnEliminar = new JButton("ELIMINAR");
         btnEliminar.setFont(FUENTE_BOTON);
-        btnEliminar.setForeground(COLOR_TEXTO);
-        btnEliminar.setBackground(COLOR_BOTON);
+        btnEliminar.setForeground(currentTheme.textPrimary);
+        btnEliminar.setBackground(currentTheme.btnBg);
         btnEliminar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnEliminar.setFocusPainted(false);
         btnEliminar.addActionListener(e -> btnEliminarAction());
 
-        JButton btnLimpiar = new JButton("LIMPIAR");
+        btnLimpiar = new JButton("LIMPIAR");
         btnLimpiar.setFont(FUENTE_BOTON);
-        btnLimpiar.setForeground(COLOR_TEXTO);
-        btnLimpiar.setBackground(COLOR_BOTON);
+        btnLimpiar.setForeground(currentTheme.textPrimary);
+        btnLimpiar.setBackground(currentTheme.btnBg);
         btnLimpiar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnLimpiar.setFocusPainted(false);
         btnLimpiar.addActionListener(e -> {
@@ -299,6 +317,81 @@ public class VentanaGastos extends javax.swing.JFrame {
         Integer anio = (Integer) cmbAnio.getSelectedItem();
         BigDecimal total = controlador.getTotalGastos(mes, anio);
         lblTotal.setText("Total: $" + total.toString());
+    }
+
+    private void applyTheme(Theme t) {
+        currentTheme = t;
+        if (t == null) return;
+        getContentPane().setBackground(t.bgBase);
+        if (panelSuperior != null) panelSuperior.setBackground(t.bgBase);
+        if (panelFiltro != null) panelFiltro.setBackground(t.bgBase);
+        if (panelFormulario != null) panelFormulario.setBackground(t.bgBase);
+        if (panelBotones != null) panelBotones.setBackground(t.bgBase);
+        if (lblTitulo != null) lblTitulo.setForeground(t.brand);
+        if (lblTotal != null) lblTotal.setForeground(t.brand);
+        if (lblMes != null) lblMes.setForeground(t.textPrimary);
+        if (lblAnio != null) lblAnio.setForeground(t.textPrimary);
+        if (lblCat != null) lblCat.setForeground(t.textPrimary);
+        if (lblDesc != null) lblDesc.setForeground(t.textPrimary);
+        if (lblMonto != null) lblMonto.setForeground(t.textPrimary);
+        if (btnFiltrar != null) {
+            btnFiltrar.setBackground(t.btnBg);
+            btnFiltrar.setForeground(t.textPrimary);
+        }
+        if (btnAgregar != null) {
+            btnAgregar.setBackground(t.btnBg);
+            btnAgregar.setForeground(t.textPrimary);
+        }
+        if (btnEliminar != null) {
+            btnEliminar.setBackground(t.btnBg);
+            btnEliminar.setForeground(t.textPrimary);
+        }
+        if (btnLimpiar != null) {
+            btnLimpiar.setBackground(t.btnBg);
+            btnLimpiar.setForeground(t.textPrimary);
+        }
+        if (tabla != null) {
+            tabla.setBackground(t.bgInput);
+            tabla.setForeground(t.textPrimary);
+            tabla.setGridColor(t.borderLight);
+            boolean isDark = t.bgBase.getRed() < 50;
+            Color hdrFg = isDark ? Color.WHITE : t.textPrimary;
+            tabla.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+                @Override
+                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                      boolean isSelected, boolean hasFocus, int row, int column) {
+                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                    if (!isSelected) {
+                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
+                        setForeground(t.textPrimary);
+                    }
+                    return this;
+                }
+            });
+            if (tabla.getTableHeader() != null) {
+                Theme.styleTableHeader(tabla.getTableHeader(), t.bgElevated, hdrFg);
+            }
+        }
+        if (txtDescripcion != null) {
+            txtDescripcion.setForeground(t.textPrimary);
+            txtDescripcion.setBackground(t.bgInput);
+        }
+        if (txtMonto != null) {
+            txtMonto.setForeground(t.textPrimary);
+            txtMonto.setBackground(t.bgInput);
+        }
+        if (cmbCategoria != null) {
+            cmbCategoria.setForeground(t.textPrimary);
+            cmbCategoria.setBackground(t.bgElevated);
+        }
+        if (cmbMes != null) {
+            cmbMes.setForeground(t.textPrimary);
+            cmbMes.setBackground(t.bgElevated);
+        }
+        if (cmbAnio != null) {
+            cmbAnio.setForeground(t.textPrimary);
+            cmbAnio.setBackground(t.bgElevated);
+        }
     }
 
     public static void main(String[] args) {

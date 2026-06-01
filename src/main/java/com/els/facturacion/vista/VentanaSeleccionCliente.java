@@ -10,6 +10,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -22,35 +23,40 @@ import java.util.List;
 
 public class VentanaSeleccionCliente extends JDialog {
 
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
+    private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
+
+    private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
     private ControladorClientes controlador;
     private JTable tabla;
     private DefaultTableModel modeloTabla;
     private JTextField txtBuscar;
+    private JButton btnBuscar;
+    private JButton btnMostrarTodos;
+    private JButton btnSeleccionar;
+    private JButton btnCancelar;
     private ClienteDTO clienteSeleccionado;
 
     public VentanaSeleccionCliente(java.awt.Window owner) {
         super(owner, "Seleccionar Cliente", ModalityType.APPLICATION_MODAL);
         controlador = new ControladorClientes();
         initComponents();
+        applyTheme(currentTheme);
+        VentanaPrincipal.addThemeListener(this);
         cargarClientes();
     }
 
     private void initComponents() {
         setSize(700, 500);
         setLocationRelativeTo(getOwner());
-        getContentPane().setBackground(COLOR_FONDO);
+        getContentPane().setBackground(currentTheme.bgBase);
 
         JPanel panelSuperior = new JPanel(new GridBagLayout());
-        panelSuperior.setBackground(COLOR_FONDO);
+        panelSuperior.setBackground(currentTheme.bgSurface);
 
         JLabel lblTitulo = new JLabel("SELECCIONAR CLIENTE");
-        lblTitulo.setFont(new Font("Cambria", Font.BOLD, 16));
-        lblTitulo.setForeground(COLOR_TEXTO);
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        lblTitulo.setForeground(currentTheme.brand);
 
         GridBagConstraints gbc_titulo = new GridBagConstraints();
         gbc_titulo.insets = new Insets(5, 5, 5, 5);
@@ -59,34 +65,34 @@ public class VentanaSeleccionCliente extends JDialog {
 
         txtBuscar = new JTextField(20);
 
-        JButton btnBuscar = new JButton("BUSCAR");
+        btnBuscar = new JButton("BUSCAR");
         btnBuscar.setFont(FUENTE_BOTON);
-        btnBuscar.setForeground(COLOR_TEXTO);
-        btnBuscar.setBackground(COLOR_BOTON);
+        btnBuscar.setForeground(currentTheme.textPrimary);
+        btnBuscar.setBackground(currentTheme.btnBg);
         btnBuscar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnBuscar.setFocusPainted(false);
         btnBuscar.addActionListener(e -> buscarCliente());
 
-        JButton btnMostrarTodos = new JButton("MOSTRAR TODOS");
+        btnMostrarTodos = new JButton("MOSTRAR TODOS");
         btnMostrarTodos.setFont(FUENTE_BOTON);
-        btnMostrarTodos.setForeground(COLOR_TEXTO);
-        btnMostrarTodos.setBackground(COLOR_BOTON);
+        btnMostrarTodos.setForeground(currentTheme.textPrimary);
+        btnMostrarTodos.setBackground(currentTheme.btnBg);
         btnMostrarTodos.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnMostrarTodos.setFocusPainted(false);
         btnMostrarTodos.addActionListener(e -> cargarClientes());
 
-        JButton btnSeleccionar = new JButton("SELECCIONAR");
+        btnSeleccionar = new JButton("SELECCIONAR");
         btnSeleccionar.setFont(FUENTE_BOTON);
-        btnSeleccionar.setForeground(COLOR_TEXTO);
-        btnSeleccionar.setBackground(COLOR_BOTON);
+        btnSeleccionar.setForeground(currentTheme.textPrimary);
+        btnSeleccionar.setBackground(currentTheme.btnBg);
         btnSeleccionar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnSeleccionar.setFocusPainted(false);
         btnSeleccionar.addActionListener(e -> seleccionarCliente());
 
-        JButton btnCancelar = new JButton("CANCELAR");
+        btnCancelar = new JButton("CANCELAR");
         btnCancelar.setFont(FUENTE_BOTON);
-        btnCancelar.setForeground(COLOR_TEXTO);
-        btnCancelar.setBackground(COLOR_BOTON);
+        btnCancelar.setForeground(currentTheme.textPrimary);
+        btnCancelar.setBackground(currentTheme.btnBg);
         btnCancelar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnCancelar.setFocusPainted(false);
         btnCancelar.addActionListener(e -> dispose());
@@ -120,8 +126,10 @@ public class VentanaSeleccionCliente extends JDialog {
             public boolean isCellEditable(int row, int column) { return false; }
         };
         tabla = new JTable(modeloTabla);
-        tabla.setFont(new Font("Cambria", Font.PLAIN, 11));
-        tabla.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 11));
+        tabla.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        tabla.setRowHeight(22);
+        tabla.setShowGrid(true);
+        tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
         tabla.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (e.getClickCount() == 2) seleccionarCliente();
@@ -129,7 +137,7 @@ public class VentanaSeleccionCliente extends JDialog {
         });
 
         JPanel panelBotones = new JPanel();
-        panelBotones.setBackground(COLOR_FONDO);
+        panelBotones.setBackground(currentTheme.bgSurface);
         panelBotones.add(btnSeleccionar);
         panelBotones.add(btnCancelar);
 
@@ -181,6 +189,53 @@ public class VentanaSeleccionCliente extends JDialog {
 
     public ClienteDTO getClienteSeleccionado() {
         return clienteSeleccionado;
+    }
+
+    private void applyTheme(Theme t) {
+        currentTheme = t;
+        getContentPane().setBackground(t.bgBase);
+        if (btnBuscar != null) {
+            btnBuscar.setBackground(t.btnBg);
+            btnBuscar.setForeground(t.textPrimary);
+        }
+        if (btnMostrarTodos != null) {
+            btnMostrarTodos.setBackground(t.btnBg);
+            btnMostrarTodos.setForeground(t.textPrimary);
+        }
+        if (btnSeleccionar != null) {
+            btnSeleccionar.setBackground(t.btnBg);
+            btnSeleccionar.setForeground(t.textPrimary);
+        }
+        if (btnCancelar != null) {
+            btnCancelar.setBackground(t.btnBg);
+            btnCancelar.setForeground(t.textPrimary);
+        }
+        if (tabla != null) {
+            tabla.setBackground(t.bgInput);
+            tabla.setForeground(t.textPrimary);
+            tabla.setGridColor(t.borderLight);
+            boolean isDark = t.bgBase.getRed() < 50;
+            Color hdrFg = isDark ? Color.WHITE : t.textPrimary;
+            tabla.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+                @Override
+                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                      boolean isSelected, boolean hasFocus, int row, int column) {
+                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                    if (!isSelected) {
+                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
+                        setForeground(t.textPrimary);
+                    }
+                    return this;
+                }
+            });
+            if (tabla.getTableHeader() != null) {
+                Theme.styleTableHeader(tabla.getTableHeader(), t.bgElevated, hdrFg);
+            }
+        }
+        if (txtBuscar != null) {
+            txtBuscar.setForeground(t.textPrimary);
+            txtBuscar.setBackground(t.bgInput);
+        }
     }
 
 }

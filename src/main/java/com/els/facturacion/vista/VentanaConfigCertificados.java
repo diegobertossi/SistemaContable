@@ -14,6 +14,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -26,12 +27,10 @@ import java.util.List;
 
 public class VentanaConfigCertificados extends JFrame {
 
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Color COLOR_TITULO = new Color(65, 105, 225);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
-    private static final Font FUENTE_LABEL = new Font("Cambria", Font.BOLD, 11);
+    private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
+    private static final Font FUENTE_LABEL = new Font("Segoe UI", Font.BOLD, 11);
+
+    private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
     private JTable tabla;
     private DefaultTableModel modeloTabla;
@@ -44,27 +43,39 @@ public class VentanaConfigCertificados extends JFrame {
     private JTextField txtRutaCertificado;
     private JPasswordField txtPassword;
     private JButton btnSeleccionarArchivo;
+    private JPanel panelSuperior;
+    private JPanel panelFormulario;
+    private JPanel panelBotones;
+    private JPanel panelSur;
+    private JScrollPane scrollTabla;
+    private JLabel lblTitulo;
+    private JButton btnAgregar;
+    private JButton btnModificar;
+    private JButton btnEliminar;
+    private JButton btnLimpiar;
 
     public VentanaConfigCertificados() {
         setTitle("Configuracion de Certificados ARCA");
         setSize(950, 620);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(COLOR_FONDO);
+        getContentPane().setBackground(currentTheme.bgBase);
 
         dao = new CuitDAO();
         initComponents();
+        applyTheme(currentTheme);
         cargarTabla();
+        VentanaPrincipal.addThemeListener(this);
     }
 
     private void initComponents() {
-        JPanel panelSuperior = new JPanel(new BorderLayout());
-        panelSuperior.setBackground(COLOR_FONDO);
+        panelSuperior = new JPanel(new BorderLayout());
+        panelSuperior.setBackground(currentTheme.bgSurface);
 
-        JLabel lblTitulo = new JLabel("GESTION DE CERTIFICADOS Y CUITs", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Cambria", Font.BOLD, 18));
-        lblTitulo.setForeground(COLOR_TEXTO);
-        lblTitulo.setBackground(COLOR_FONDO);
+        lblTitulo = new JLabel("GESTION DE CERTIFICADOS Y CUITs", SwingConstants.CENTER);
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblTitulo.setForeground(currentTheme.brand);
+        lblTitulo.setBackground(currentTheme.bgSurface);
 
         panelSuperior.add(lblTitulo, BorderLayout.NORTH);
 
@@ -105,33 +116,37 @@ public class VentanaConfigCertificados extends JFrame {
         };
 
         tabla = new JTable(modeloTabla);
-        tabla.setFont(new Font("Cambria", Font.PLAIN, 11));
-        JScrollPane scrollTabla = new JScrollPane(tabla);
+        tabla.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        tabla.setRowHeight(22);
+        tabla.setShowGrid(true);
+        tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
+        tabla.getTableHeader().setBackground(currentTheme.btnBg);
+        scrollTabla = new JScrollPane(tabla);
 
-        JPanel panelFormulario = new JPanel(new GridBagLayout());
-        panelFormulario.setBackground(COLOR_FONDO);
+        panelFormulario = new JPanel(new GridBagLayout());
+        panelFormulario.setBackground(currentTheme.bgSurface);
         txtCuit = new JTextField(15);
-        txtCuit.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtCuit.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
         txtRazonSocial = new JTextField(20);
-        txtRazonSocial.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtRazonSocial.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
         cmbCondicionIva = new JComboBox<>(new String[]{"RI", "Monotributista", "Exento", "Consumidor Final"});
         cmbCondicionIva.setFont(FUENTE_BOTON);
 
         txtPuntoVenta = new JTextField(10);
-        txtPuntoVenta.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtPuntoVenta.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
         txtRutaCertificado = new JTextField(25);
-        txtRutaCertificado.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtRutaCertificado.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
         txtPassword = new JPasswordField(15);
-        txtPassword.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtPassword.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
         btnSeleccionarArchivo = new JButton("SELECCIONAR");
         btnSeleccionarArchivo.setFont(FUENTE_BOTON);
-        btnSeleccionarArchivo.setForeground(COLOR_TEXTO);
-        btnSeleccionarArchivo.setBackground(COLOR_BOTON);
+        btnSeleccionarArchivo.setForeground(currentTheme.textPrimary);
+        btnSeleccionarArchivo.setBackground(currentTheme.btnBg);
         btnSeleccionarArchivo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnSeleccionarArchivo.setFocusPainted(false);
 
@@ -143,7 +158,7 @@ public class VentanaConfigCertificados extends JFrame {
         gbc_lbl1.gridx = 0; gbc_lbl1.gridy = row;
         JLabel lbl1 = new JLabel("CUIT:");
         lbl1.setFont(FUENTE_LABEL);
-        lbl1.setForeground(COLOR_TEXTO);
+        lbl1.setForeground(currentTheme.textPrimary);
         panelFormulario.add(lbl1, gbc_lbl1);
         GridBagConstraints gbc_txtCuit = new GridBagConstraints();
         gbc_txtCuit.insets = new Insets(5, 5, 5, 5);
@@ -158,7 +173,7 @@ public class VentanaConfigCertificados extends JFrame {
         gbc_lbl2.gridx = 0; gbc_lbl2.gridy = row;
         JLabel lbl2 = new JLabel("Razon Social:");
         lbl2.setFont(FUENTE_LABEL);
-        lbl2.setForeground(COLOR_TEXTO);
+        lbl2.setForeground(currentTheme.textPrimary);
         panelFormulario.add(lbl2, gbc_lbl2);
         GridBagConstraints gbc_txtRazonSocial = new GridBagConstraints();
         gbc_txtRazonSocial.insets = new Insets(5, 5, 5, 5);
@@ -174,7 +189,7 @@ public class VentanaConfigCertificados extends JFrame {
         gbc_lbl3.gridx = 0; gbc_lbl3.gridy = row;
         JLabel lbl3 = new JLabel("Condicion IVA:");
         lbl3.setFont(FUENTE_LABEL);
-        lbl3.setForeground(COLOR_TEXTO);
+        lbl3.setForeground(currentTheme.textPrimary);
         panelFormulario.add(lbl3, gbc_lbl3);
         GridBagConstraints gbc_cmbCondicionIva = new GridBagConstraints();
         gbc_cmbCondicionIva.insets = new Insets(5, 5, 5, 5);
@@ -189,7 +204,7 @@ public class VentanaConfigCertificados extends JFrame {
         gbc_lbl4.gridx = 0; gbc_lbl4.gridy = row;
         JLabel lbl4 = new JLabel("Punto de Venta:");
         lbl4.setFont(FUENTE_LABEL);
-        lbl4.setForeground(COLOR_TEXTO);
+        lbl4.setForeground(currentTheme.textPrimary);
         panelFormulario.add(lbl4, gbc_lbl4);
         GridBagConstraints gbc_txtPuntoVenta = new GridBagConstraints();
         gbc_txtPuntoVenta.insets = new Insets(5, 5, 5, 5);
@@ -204,7 +219,7 @@ public class VentanaConfigCertificados extends JFrame {
         gbc_lbl5.gridx = 0; gbc_lbl5.gridy = row;
         JLabel lbl5 = new JLabel("Certificado .p12:");
         lbl5.setFont(FUENTE_LABEL);
-        lbl5.setForeground(COLOR_TEXTO);
+        lbl5.setForeground(currentTheme.textPrimary);
         panelFormulario.add(lbl5, gbc_lbl5);
         GridBagConstraints gbc_txtRutaCertificado = new GridBagConstraints();
         gbc_txtRutaCertificado.insets = new Insets(5, 5, 5, 5);
@@ -224,7 +239,7 @@ public class VentanaConfigCertificados extends JFrame {
         gbc_lbl6.gridx = 0; gbc_lbl6.gridy = row;
         JLabel lbl6 = new JLabel("Password:");
         lbl6.setFont(FUENTE_LABEL);
-        lbl6.setForeground(COLOR_TEXTO);
+        lbl6.setForeground(currentTheme.textPrimary);
         panelFormulario.add(lbl6, gbc_lbl6);
         GridBagConstraints gbc_txtPassword = new GridBagConstraints();
         gbc_txtPassword.insets = new Insets(5, 5, 5, 5);
@@ -232,37 +247,37 @@ public class VentanaConfigCertificados extends JFrame {
         gbc_txtPassword.gridx = 1; gbc_txtPassword.gridy = row;
         panelFormulario.add(txtPassword, gbc_txtPassword);
 
-        JPanel panelBotones = new JPanel();
-        panelBotones.setBackground(COLOR_FONDO);
+        panelBotones = new JPanel();
+        panelBotones.setBackground(currentTheme.bgSurface);
 
-        JButton btnAgregar = new JButton("AGREGAR");
+        btnAgregar = new JButton("AGREGAR");
         btnAgregar.setFont(FUENTE_BOTON);
-        btnAgregar.setForeground(COLOR_TEXTO);
-        btnAgregar.setBackground(COLOR_BOTON);
+        btnAgregar.setForeground(currentTheme.textPrimary);
+        btnAgregar.setBackground(currentTheme.btnBg);
         btnAgregar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnAgregar.setFocusPainted(false);
         btnAgregar.addActionListener(this::btnAgregarAction);
 
-        JButton btnModificar = new JButton("MODIFICAR");
+        btnModificar = new JButton("MODIFICAR");
         btnModificar.setFont(FUENTE_BOTON);
-        btnModificar.setForeground(COLOR_TEXTO);
-        btnModificar.setBackground(COLOR_BOTON);
+        btnModificar.setForeground(currentTheme.textPrimary);
+        btnModificar.setBackground(currentTheme.btnBg);
         btnModificar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnModificar.setFocusPainted(false);
         btnModificar.addActionListener(this::btnModificarAction);
 
-        JButton btnEliminar = new JButton("ELIMINAR");
+        btnEliminar = new JButton("ELIMINAR");
         btnEliminar.setFont(FUENTE_BOTON);
-        btnEliminar.setForeground(COLOR_TEXTO);
-        btnEliminar.setBackground(COLOR_BOTON);
+        btnEliminar.setForeground(currentTheme.textPrimary);
+        btnEliminar.setBackground(currentTheme.btnBg);
         btnEliminar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnEliminar.setFocusPainted(false);
         btnEliminar.addActionListener(this::btnEliminarAction);
 
-        JButton btnLimpiar = new JButton("LIMPIAR");
+        btnLimpiar = new JButton("LIMPIAR");
         btnLimpiar.setFont(FUENTE_BOTON);
-        btnLimpiar.setForeground(COLOR_TEXTO);
-        btnLimpiar.setBackground(COLOR_BOTON);
+        btnLimpiar.setForeground(currentTheme.textPrimary);
+        btnLimpiar.setBackground(currentTheme.btnBg);
         btnLimpiar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnLimpiar.setFocusPainted(false);
         btnLimpiar.addActionListener(this::btnLimpiarAction);
@@ -279,8 +294,8 @@ public class VentanaConfigCertificados extends JFrame {
         panelBotones.add(btnEliminar);
         panelBotones.add(btnLimpiar);
 
-        JPanel panelSur = new JPanel(new BorderLayout());
-        panelSur.setBackground(COLOR_FONDO);
+        panelSur = new JPanel(new BorderLayout());
+        panelSur.setBackground(currentTheme.bgSurface);
         panelSur.add(panelFormulario, BorderLayout.NORTH);
         panelSur.add(panelBotones, BorderLayout.SOUTH);
 
@@ -433,5 +448,87 @@ public class VentanaConfigCertificados extends JFrame {
         txtRutaCertificado.setText("");
         txtPassword.setText("");
         tabla.clearSelection();
+    }
+
+    private void applyTheme(Theme t) {
+        currentTheme = t;
+        getContentPane().setBackground(t.bgBase);
+        if (panelSuperior != null) panelSuperior.setBackground(t.bgSurface);
+        if (lblTitulo != null) {
+            lblTitulo.setForeground(t.brand);
+            lblTitulo.setBackground(t.bgSurface);
+        }
+        if (panelFormulario != null) panelFormulario.setBackground(t.bgSurface);
+        if (panelBotones != null) panelBotones.setBackground(t.bgSurface);
+        if (panelSur != null) panelSur.setBackground(t.bgSurface);
+        if (txtCuit != null) {
+            txtCuit.setForeground(t.textPrimary);
+            txtCuit.setBackground(t.bgInput);
+        }
+        if (txtRazonSocial != null) {
+            txtRazonSocial.setForeground(t.textPrimary);
+            txtRazonSocial.setBackground(t.bgInput);
+        }
+        if (txtPuntoVenta != null) {
+            txtPuntoVenta.setForeground(t.textPrimary);
+            txtPuntoVenta.setBackground(t.bgInput);
+        }
+        if (txtRutaCertificado != null) {
+            txtRutaCertificado.setForeground(t.textPrimary);
+            txtRutaCertificado.setBackground(t.bgInput);
+        }
+        if (txtPassword != null) {
+            txtPassword.setForeground(t.textPrimary);
+            txtPassword.setBackground(t.bgInput);
+        }
+        if (cmbCondicionIva != null) {
+            cmbCondicionIva.setForeground(t.textPrimary);
+            cmbCondicionIva.setBackground(t.bgElevated);
+        }
+        if (btnSeleccionarArchivo != null) {
+            btnSeleccionarArchivo.setForeground(t.textPrimary);
+            btnSeleccionarArchivo.setBackground(t.btnBg);
+        }
+        if (btnAgregar != null) {
+            btnAgregar.setForeground(t.textPrimary);
+            btnAgregar.setBackground(t.btnBg);
+        }
+        if (btnModificar != null) {
+            btnModificar.setForeground(t.textPrimary);
+            btnModificar.setBackground(t.btnBg);
+        }
+        if (btnEliminar != null) {
+            btnEliminar.setForeground(t.textPrimary);
+            btnEliminar.setBackground(t.btnBg);
+        }
+        if (btnLimpiar != null) {
+            btnLimpiar.setForeground(t.textPrimary);
+            btnLimpiar.setBackground(t.btnBg);
+        }
+        if (tabla != null) {
+            tabla.setBackground(t.bgInput);
+            tabla.setForeground(t.textPrimary);
+            tabla.setGridColor(t.borderLight);
+            boolean isDark = t.bgBase.getRed() < 50;
+            Color hdrFg = isDark ? Color.WHITE : t.textPrimary;
+            tabla.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+                @Override
+                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                      boolean isSelected, boolean hasFocus, int row, int column) {
+                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                    if (!isSelected) {
+                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
+                        setForeground(t.textPrimary);
+                    }
+                    return this;
+                }
+            });
+            if (tabla.getTableHeader() != null) {
+                Theme.styleTableHeader(tabla.getTableHeader(), t.bgElevated, hdrFg);
+            }
+        }
+        if (scrollTabla != null) {
+            scrollTabla.getViewport().setBackground(t.bgBase);
+        }
     }
 }

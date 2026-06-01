@@ -2,6 +2,7 @@ package com.els.facturacion.vista;
 
 import com.els.facturacion.controlador.ControladorFacturacion;
 import com.els.facturacion.modelo.ComprobanteDTO;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -10,6 +11,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -25,22 +27,29 @@ import java.util.List;
 
 public class VentanaComprobantes extends javax.swing.JFrame {
 
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Color COLOR_TITULO = new Color(65, 105, 225);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
-    private static final Font FUENTE_TITULO = new Font("Cambria", Font.BOLD, 14);
+    private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
+    private static final Font FUENTE_TITULO = new Font("Segoe UI", Font.BOLD, 14);
+
+    private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
     private ControladorFacturacion controlador;
     private JTable tabla;
     private DefaultTableModel modeloTabla;
     private JTextField txtBuscarCAE;
+    private JLabel lblTitulo;
+    private JButton btnBuscar;
+    private JButton btnActualizar;
+    private JButton btnVerPDF;
+    private JPanel panelSuperior;
+    private JLabel lblBuscar;
+    private JScrollPane scrollPane;
     private DateTimeFormatter fechaFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     public VentanaComprobantes() {
         controlador = new ControladorFacturacion();
         initComponents();
+        applyTheme(currentTheme);
+        VentanaPrincipal.addThemeListener(this);
         cargarComprobantes();
     }
 
@@ -49,14 +58,14 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         setSize(950, 520);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(COLOR_FONDO);
+        getContentPane().setBackground(currentTheme.bgBase);
 
-        JPanel panelSuperior = new JPanel(new GridBagLayout());
-        panelSuperior.setBackground(COLOR_FONDO);
+        panelSuperior = new JPanel(new GridBagLayout());
+        panelSuperior.setBackground(currentTheme.bgSurface);
 
-        JLabel lblTitulo = new JLabel("HISTORIAL DE COMPROBANTES", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Cambria", Font.BOLD, 18));
-        lblTitulo.setForeground(COLOR_TEXTO);
+        lblTitulo = new JLabel("HISTORIAL DE COMPROBANTES", SwingConstants.CENTER);
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblTitulo.setForeground(currentTheme.brand);
 
         GridBagConstraints gbc_titulo = new GridBagConstraints();
         gbc_titulo.insets = new Insets(5, 5, 5, 5);
@@ -64,33 +73,33 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         gbc_titulo.gridx = 0; gbc_titulo.gridy = 0; gbc_titulo.gridwidth = 5;
         panelSuperior.add(lblTitulo, gbc_titulo);
 
-        JLabel lblBuscar = new JLabel("Buscar por CAE:");
+        lblBuscar = new JLabel("Buscar por CAE:");
         lblBuscar.setFont(FUENTE_BOTON);
-        lblBuscar.setForeground(COLOR_TEXTO);
+        lblBuscar.setForeground(currentTheme.textPrimary);
 
         txtBuscarCAE = new JTextField(20);
-        txtBuscarCAE.setFont(new Font("Cambria", Font.PLAIN, 11));
+        txtBuscarCAE.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 
-        JButton btnBuscar = new JButton("BUSCAR");
+        btnBuscar = new JButton("BUSCAR");
         btnBuscar.setFont(FUENTE_BOTON);
-        btnBuscar.setForeground(COLOR_TEXTO);
-        btnBuscar.setBackground(COLOR_BOTON);
+        btnBuscar.setForeground(currentTheme.textPrimary);
+        btnBuscar.setBackground(currentTheme.btnBg);
         btnBuscar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnBuscar.setFocusPainted(false);
         btnBuscar.addActionListener(e -> btnBuscarAction());
 
-        JButton btnActualizar = new JButton("ACTUALIZAR");
+        btnActualizar = new JButton("ACTUALIZAR");
         btnActualizar.setFont(FUENTE_BOTON);
-        btnActualizar.setForeground(COLOR_TEXTO);
-        btnActualizar.setBackground(COLOR_BOTON);
+        btnActualizar.setForeground(currentTheme.textPrimary);
+        btnActualizar.setBackground(currentTheme.btnBg);
         btnActualizar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnActualizar.setFocusPainted(false);
         btnActualizar.addActionListener(e -> cargarComprobantes());
 
-        JButton btnVerPDF = new JButton("VER PDF");
+        btnVerPDF = new JButton("VER PDF");
         btnVerPDF.setFont(FUENTE_BOTON);
-        btnVerPDF.setForeground(COLOR_TEXTO);
-        btnVerPDF.setBackground(COLOR_BOTON);
+        btnVerPDF.setForeground(currentTheme.textPrimary);
+        btnVerPDF.setBackground(currentTheme.btnBg);
         btnVerPDF.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnVerPDF.setFocusPainted(false);
         btnVerPDF.addActionListener(e -> btnVerPDFAction());
@@ -139,8 +148,11 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         };
 
         tabla = new JTable(modeloTabla);
-        tabla.setFont(new Font("Cambria", Font.PLAIN, 10));
-        JScrollPane scrollPane = new JScrollPane(tabla);
+        tabla.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        tabla.setRowHeight(22);
+        tabla.setShowGrid(true);
+        tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 10));
+        scrollPane = new JScrollPane(tabla);
 
         add(panelSuperior, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
@@ -264,6 +276,56 @@ public class VentanaComprobantes extends javax.swing.JFrame {
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error al abrir PDF: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void applyTheme(Theme t) {
+        currentTheme = t;
+        if (getContentPane() != null) getContentPane().setBackground(t.bgBase);
+        boolean isDark = t.bgBase.getRed() < 50;
+        Color hdrFg = isDark ? Color.WHITE : t.textPrimary;
+        if (panelSuperior != null) panelSuperior.setBackground(t.bgSurface);
+        if (lblTitulo != null) lblTitulo.setForeground(t.brand);
+        if (lblBuscar != null) lblBuscar.setForeground(t.textPrimary);
+        if (scrollPane != null) {
+            scrollPane.getViewport().setBackground(t.bgBase);
+            scrollPane.setBorder(BorderFactory.createLineBorder(t.borderLight));
+        }
+        if (btnBuscar != null) {
+            btnBuscar.setBackground(t.btnBg);
+            btnBuscar.setForeground(t.textPrimary);
+        }
+        if (btnActualizar != null) {
+            btnActualizar.setBackground(t.btnBg);
+            btnActualizar.setForeground(t.textPrimary);
+        }
+        if (btnVerPDF != null) {
+            btnVerPDF.setBackground(t.btnBg);
+            btnVerPDF.setForeground(t.textPrimary);
+        }
+        if (tabla != null) {
+            tabla.setBackground(t.bgInput);
+            tabla.setForeground(t.textPrimary);
+            tabla.setGridColor(t.borderLight);
+            tabla.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+                @Override
+                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                      boolean isSelected, boolean hasFocus, int row, int column) {
+                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                    if (!isSelected) {
+                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
+                        setForeground(t.textPrimary);
+                    }
+                    return this;
+                }
+            });
+            if (tabla.getTableHeader() != null) {
+                Theme.styleTableHeader(tabla.getTableHeader(), t.bgElevated, hdrFg);
+            }
+        }
+        if (txtBuscarCAE != null) {
+            txtBuscarCAE.setForeground(t.textPrimary);
+            txtBuscarCAE.setBackground(t.bgInput);
         }
     }
 

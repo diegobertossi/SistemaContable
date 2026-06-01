@@ -10,8 +10,12 @@ import javax.swing.JTabbedPane;
 
 public class VentanaGestionComprobantes extends JFrame {
 
+    private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
+    private JTabbedPane tabbedPane;
+
     public VentanaGestionComprobantes() {
         initComponents();
+        VentanaPrincipal.addThemeListener(this);
     }
 
     private void initComponents() {
@@ -20,10 +24,10 @@ public class VentanaGestionComprobantes extends JFrame {
         setMinimumSize(new Dimension(900, 650));
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(new Color(219, 227, 246));
+        getContentPane().setBackground(currentTheme.bgBase);
 
-        JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.setFont(new java.awt.Font("Cambria", java.awt.Font.BOLD, 12));
+        tabbedPane = new JTabbedPane();
+        tabbedPane.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
 
         // Tab Facturacion
         VentanaFacturacion facturacionView = new VentanaFacturacion();
@@ -40,5 +44,16 @@ public class VentanaGestionComprobantes extends JFrame {
         tabbedPane.addTab("Comprobantes", compContent);
 
         add(tabbedPane, BorderLayout.CENTER);
+    }
+
+    private void applyTheme(Theme t) {
+        currentTheme = t;
+        if (getContentPane() != null) {
+            getContentPane().setBackground(t.bgBase);
+        }
+        if (tabbedPane != null) {
+            tabbedPane.setBackground(t.bgSurface);
+            tabbedPane.setForeground(t.textPrimary);
+        }
     }
 }

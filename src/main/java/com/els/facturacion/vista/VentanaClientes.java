@@ -2,6 +2,7 @@ package com.els.facturacion.vista;
 
 import com.els.facturacion.controlador.ControladorClientes;
 import com.els.facturacion.modelo.ClienteDTO;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -12,6 +13,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -24,10 +26,9 @@ import java.util.List;
 
 public class VentanaClientes extends javax.swing.JFrame {
 
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
+    private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
+
+    private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
     private ControladorClientes controlador;
     private JTable tabla;
@@ -40,10 +41,20 @@ public class VentanaClientes extends javax.swing.JFrame {
     private JTextField txtEmail;
     private JComboBox<String> cmbTipoDoc;
     private JComboBox<String> cmbCondicionIva;
+    private JPanel panelSuperior;
+    private JLabel lblTitulo;
+    private JButton btnImportar;
+    private JPanel panelForm;
+    private JPanel panelBotonesForm;
+    private JButton btnGuardar;
+    private JButton btnNuevo;
+    private JScrollPane scrollTabla;
 
     public VentanaClientes() {
         controlador = new ControladorClientes();
         initComponents();
+        applyTheme(currentTheme);
+        VentanaPrincipal.addThemeListener(this);
         cargarClientes();
     }
 
@@ -52,18 +63,18 @@ public class VentanaClientes extends javax.swing.JFrame {
         setSize(900, 600);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(COLOR_FONDO);
+        getContentPane().setBackground(currentTheme.bgBase);
 
-        JPanel panelSuperior = new JPanel(new GridBagLayout());
-        panelSuperior.setBackground(COLOR_FONDO);
+        panelSuperior = new JPanel(new GridBagLayout());
+        panelSuperior.setBackground(currentTheme.bgSurface);
         GridBagConstraints gbc_titulo = new GridBagConstraints();
         gbc_titulo.insets = new Insets(5, 5, 5, 5);
         gbc_titulo.fill = GridBagConstraints.HORIZONTAL;
         gbc_titulo.gridx = 0; gbc_titulo.gridy = 0; gbc_titulo.gridwidth = 5;
 
-        JLabel lblTitulo = new JLabel("MODULO DE CLIENTES");
-        lblTitulo.setFont(new Font("Cambria", Font.BOLD, 18));
-        lblTitulo.setForeground(COLOR_TEXTO);
+        lblTitulo = new JLabel("MODULO DE CLIENTES");
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblTitulo.setForeground(currentTheme.brand);
         panelSuperior.add(lblTitulo, gbc_titulo);
 
         txtBuscar = new JTextField(20);
@@ -72,10 +83,10 @@ public class VentanaClientes extends javax.swing.JFrame {
             public void removeUpdate(DocumentEvent e) { buscarCliente(); }
             public void changedUpdate(DocumentEvent e) { buscarCliente(); }
         });
-        JButton btnImportar = new JButton("IMPORTAR DE REPARSOFT");
+        btnImportar = new JButton("IMPORTAR DE REPARSOFT");
         btnImportar.setFont(FUENTE_BOTON);
-        btnImportar.setForeground(COLOR_TEXTO);
-        btnImportar.setBackground(COLOR_BOTON);
+        btnImportar.setForeground(currentTheme.textPrimary);
+        btnImportar.setBackground(currentTheme.btnBg);
         btnImportar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnImportar.setFocusPainted(false);
         btnImportar.addActionListener(e -> importarClientes());
@@ -99,8 +110,8 @@ public class VentanaClientes extends javax.swing.JFrame {
         panelSuperior.add(txtBuscar, gbc_txtBuscar);
         panelSuperior.add(btnImportar, gbc_btnImportar);
 
-        JPanel panelForm = new JPanel(new GridBagLayout());
-        panelForm.setBackground(COLOR_FONDO);
+        panelForm = new JPanel(new GridBagLayout());
+        panelForm.setBackground(currentTheme.bgSurface);
 
         cmbTipoDoc = new JComboBox<>(new String[]{"CUIT", "DNI"});
         cmbCondicionIva = new JComboBox<>(new String[]{
@@ -209,19 +220,19 @@ public class VentanaClientes extends javax.swing.JFrame {
         fgc_txtEmail.gridx = 1; fgc_txtEmail.gridy = row;
         panelForm.add(txtEmail, fgc_txtEmail);
 
-        JPanel panelBotonesForm = new JPanel();
-        panelBotonesForm.setBackground(COLOR_FONDO);
-        JButton btnGuardar = new JButton("GUARDAR CLIENTE");
+        panelBotonesForm = new JPanel();
+        panelBotonesForm.setBackground(currentTheme.bgSurface);
+        btnGuardar = new JButton("GUARDAR CLIENTE");
         btnGuardar.setFont(FUENTE_BOTON);
-        btnGuardar.setForeground(COLOR_TEXTO);
-        btnGuardar.setBackground(COLOR_BOTON);
+        btnGuardar.setForeground(currentTheme.textPrimary);
+        btnGuardar.setBackground(currentTheme.btnBg);
         btnGuardar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnGuardar.setFocusPainted(false);
         btnGuardar.addActionListener(e -> guardarCliente());
-        JButton btnNuevo = new JButton("NUEVO");
+        btnNuevo = new JButton("NUEVO");
         btnNuevo.setFont(FUENTE_BOTON);
-        btnNuevo.setForeground(COLOR_TEXTO);
-        btnNuevo.setBackground(COLOR_BOTON);
+        btnNuevo.setForeground(currentTheme.textPrimary);
+        btnNuevo.setBackground(currentTheme.btnBg);
         btnNuevo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnNuevo.setFocusPainted(false);
         btnNuevo.addActionListener(e -> limpiarFormulario());
@@ -241,17 +252,20 @@ public class VentanaClientes extends javax.swing.JFrame {
             public boolean isCellEditable(int row, int column) { return false; }
         };
         tabla = new JTable(modeloTabla);
+        tabla.setRowHeight(22);
+        tabla.setShowGrid(true);
         tabla.getColumnModel().getColumn(0).setMinWidth(0);
         tabla.getColumnModel().getColumn(0).setMaxWidth(0);
         tabla.getColumnModel().getColumn(0).setPreferredWidth(0);
-        tabla.setFont(new Font("Cambria", Font.PLAIN, 10));
-        tabla.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 10));
+        tabla.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 10));
         tabla.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) cargarClienteSeleccionado();
         });
 
         add(panelSuperior, BorderLayout.NORTH);
-        add(new JScrollPane(tabla), BorderLayout.CENTER);
+        scrollTabla = new JScrollPane(tabla);
+        add(scrollTabla, BorderLayout.CENTER);
         add(panelForm, BorderLayout.SOUTH);
     }
 
@@ -342,6 +356,88 @@ public class VentanaClientes extends javax.swing.JFrame {
         txtDomicilio.setText("");
         txtTelefono.setText("");
         txtEmail.setText("");
+    }
+
+    private void applyTheme(Theme t) {
+        currentTheme = t;
+        if (getContentPane() != null) getContentPane().setBackground(t.bgBase);
+        boolean isDark = t.bgBase.getRed() < 50;
+        Color hdrFg = isDark ? Color.WHITE : t.textPrimary;
+        // FIX: live-theme — panels promovidos de local a field
+        if (panelSuperior != null) panelSuperior.setBackground(t.bgSurface);
+        if (lblTitulo != null) lblTitulo.setForeground(t.brand);
+        if (panelForm != null) panelForm.setBackground(t.bgSurface);
+        if (panelBotonesForm != null) panelBotonesForm.setBackground(t.bgSurface);
+        // FIX: live-theme — botones promovidos de local a field
+        if (btnImportar != null) {
+            btnImportar.setForeground(t.textPrimary);
+            btnImportar.setBackground(t.btnBg);
+        }
+        if (btnGuardar != null) {
+            btnGuardar.setForeground(t.textPrimary);
+            btnGuardar.setBackground(t.btnBg);
+        }
+        if (btnNuevo != null) {
+            btnNuevo.setForeground(t.textPrimary);
+            btnNuevo.setBackground(t.btnBg);
+        }
+        // FIX: live-theme — scroll pane viewport
+        if (scrollTabla != null) {
+            scrollTabla.getViewport().setBackground(t.bgBase);
+            scrollTabla.setBorder(BorderFactory.createLineBorder(t.borderLight));
+        }
+        if (tabla != null) {
+            tabla.setBackground(t.bgInput);
+            tabla.setForeground(t.textPrimary);
+            tabla.setGridColor(t.borderLight);
+            tabla.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+                @Override
+                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                      boolean isSelected, boolean hasFocus, int row, int column) {
+                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                    if (!isSelected) {
+                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
+                        setForeground(t.textPrimary);
+                    }
+                    return this;
+                }
+            });
+            if (tabla.getTableHeader() != null) {
+                Theme.styleTableHeader(tabla.getTableHeader(), t.bgElevated, hdrFg);
+            }
+        }
+        if (txtBuscar != null) {
+            txtBuscar.setForeground(t.textPrimary);
+            txtBuscar.setBackground(t.bgInput);
+        }
+        if (txtNroDoc != null) {
+            txtNroDoc.setForeground(t.textPrimary);
+            txtNroDoc.setBackground(t.bgInput);
+        }
+        if (txtRazonSocial != null) {
+            txtRazonSocial.setForeground(t.textPrimary);
+            txtRazonSocial.setBackground(t.bgInput);
+        }
+        if (txtDomicilio != null) {
+            txtDomicilio.setForeground(t.textPrimary);
+            txtDomicilio.setBackground(t.bgInput);
+        }
+        if (txtTelefono != null) {
+            txtTelefono.setForeground(t.textPrimary);
+            txtTelefono.setBackground(t.bgInput);
+        }
+        if (txtEmail != null) {
+            txtEmail.setForeground(t.textPrimary);
+            txtEmail.setBackground(t.bgInput);
+        }
+        if (cmbTipoDoc != null) {
+            cmbTipoDoc.setForeground(t.textPrimary);
+            cmbTipoDoc.setBackground(t.bgElevated);
+        }
+        if (cmbCondicionIva != null) {
+            cmbCondicionIva.setForeground(t.textPrimary);
+            cmbCondicionIva.setBackground(t.bgElevated);
+        }
     }
 
 }

@@ -27,6 +27,7 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.Container;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
@@ -39,12 +40,10 @@ import javax.swing.border.EmptyBorder;
 
 public class VentanaFacturacion extends javax.swing.JFrame {
 
-    private static final Color COLOR_FONDO = new Color(219, 227, 246);
-    private static final Color COLOR_TITULO = new Color(65, 105, 225);
-    private static final Color COLOR_TEXTO = new Color(0, 0, 128);
-    private static final Color COLOR_BOTON = new Color(176, 196, 222);
-    private static final Font FUENTE_BOTON = new Font("Cambria", Font.BOLD, 11);
+    private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
     private CardLayout cardLayout;
     private JPanel panelPrincipal;
@@ -94,8 +93,32 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private JCheckBox chkModoPrueba;
     private JButton btnSiguiente;
 
+    // FIX: live-theme — contenedores visibles (antes locales)
+    private JPanel panelPrincipalWrapper;
+    private JPanel panelOperacion;
+    private JPanel panelItems;
+    private JPanel panelTotales;
+    private JPanel panelEmitir;
+    private JPanel statusBar;
+    private JLabel lblStatus;
+    private JScrollPane scrollTabla;
+    private JPanel panelSuperiorOp;
+    private JLabel lblTituloOp;
+    private JPanel panelSur;
+    private JPanel datosCard;
+    private JPanel centerCol;
+    private JScrollPane scrollDatos;
+    private JPanel datosWrapper;
+    private JPanel panelNav;
+    // Secciones con titled border
+    private JPanel secPuntoVenta;
+    private JPanel secEmision;
+    private JPanel secReceptor;
+    private JPanel panelChecks;
+
     public VentanaFacturacion() {
         initComponents();
+        VentanaPrincipal.addThemeListener(this);
     }
 
     private void initComponents() {
@@ -104,61 +127,61 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         setMinimumSize(new Dimension(900, 650));
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(COLOR_FONDO);
+        getContentPane().setBackground(currentTheme.bgBase);
 
         // ===================== CARD LAYOUT =====================
         cardLayout = new CardLayout();
         panelPrincipal = new JPanel(cardLayout);
-        panelPrincipal.setBackground(COLOR_FONDO);
+        panelPrincipal.setBackground(currentTheme.bgBase);
 
         // ===================== DATOS CARD =====================
-        JPanel datosWrapper = new JPanel(new GridBagLayout());
-        datosWrapper.setBackground(COLOR_FONDO);
+        datosWrapper = new JPanel(new GridBagLayout());
+        datosWrapper.setBackground(currentTheme.bgBase);
 
-        JPanel centerCol = new JPanel(new GridBagLayout());
-        centerCol.setBorder(new CompoundBorder(new LineBorder(new Color(0, 0, 160)), new EmptyBorder(10, 10, 10, 10)));
-        centerCol.setBackground(COLOR_FONDO);
+        centerCol = new JPanel(new GridBagLayout());
+        centerCol.setBorder(new CompoundBorder(new LineBorder(currentTheme.brand), new EmptyBorder(10, 10, 10, 10)));
+        centerCol.setBackground(currentTheme.bgBase);
 
         centerCol.add(crearSeccionPuntoVenta(), new GridBagConstraints(0, 0, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(8, 0, 8, 0), 0, 0));
         centerCol.add(crearSeccionEmision(), new GridBagConstraints(0, 1, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(8, 0, 8, 0), 0, 0));
         centerCol.add(crearSeccionReceptor(), new GridBagConstraints(0, 2, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(8, 0, 8, 0), 0, 0));
 
         chkModoPrueba = new JCheckBox("MODO PRUEBA");
-        chkModoPrueba.setFont(new Font("Cambria", Font.BOLD, 12));
-        chkModoPrueba.setForeground(new Color(200, 0, 0));
-        chkModoPrueba.setBackground(COLOR_FONDO);
-
-        btnSiguiente = new JButton("SIGUIENTE >>");
+        chkModoPrueba.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        chkModoPrueba.setForeground(currentTheme.danger);
+        chkModoPrueba.setBackground(currentTheme.bgBase);
+        
+        btnSiguiente = new RoundedButton("SIGUIENTE >>", 50);
         estilizarBoton(btnSiguiente);
-        JPanel panelNav = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 3));
-        panelNav.setBackground(COLOR_FONDO);
+        panelNav = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 3));
+        panelNav.setBackground(currentTheme.bgBase);
         panelNav.add(chkModoPrueba);
         panelNav.add(btnSiguiente);
         centerCol.add(panelNav, new GridBagConstraints(0, 3, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(5, 0, 0, 0), 0, 0));
 
         datosWrapper.add(centerCol, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.NORTH, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
 
-        JScrollPane scroll = new JScrollPane(datosWrapper);
-        scroll.setBorder(null);
-        scroll.getVerticalScrollBar().setUnitIncrement(16);
-        JPanel datosCard = new JPanel(new BorderLayout());
-        datosCard.setBackground(COLOR_FONDO);
-        datosCard.add(scroll);
+        scrollDatos = new JScrollPane(datosWrapper);
+        scrollDatos.setBorder(null);
+        scrollDatos.getVerticalScrollBar().setUnitIncrement(16);
+        datosCard = new JPanel(new BorderLayout());
+        datosCard.setBackground(currentTheme.bgBase);
+        datosCard.add(scrollDatos);
 
         // ===================== OPERACION CARD =====================
-        JPanel panelOperacion = new JPanel(new BorderLayout(5, 5));
-        panelOperacion.setBackground(COLOR_FONDO);
+        panelOperacion = new JPanel(new BorderLayout(5, 5));
+        panelOperacion.setBackground(currentTheme.bgBase);
         panelOperacion.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
-        JPanel panelSuperior = new JPanel(new BorderLayout());
-        panelSuperior.setBackground(COLOR_FONDO);
-        btnAnterior = new JButton("<< ANTERIOR");
+        panelSuperiorOp = new JPanel(new BorderLayout());
+        panelSuperiorOp.setBackground(currentTheme.bgBase);
+        btnAnterior = new RoundedButton("<< ANTERIOR", 50);
         estilizarBoton(btnAnterior);
-        JLabel lblTitulo = new JLabel("DATOS DE LA OPERACION", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Cambria", Font.BOLD, 15));
-        lblTitulo.setForeground(COLOR_TEXTO);
-        panelSuperior.add(btnAnterior, BorderLayout.WEST);
-        panelSuperior.add(lblTitulo, BorderLayout.CENTER);
+        lblTituloOp = new JLabel("DATOS DE LA OPERACION", SwingConstants.CENTER);
+        lblTituloOp.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblTituloOp.setForeground(currentTheme.textPrimary);
+        panelSuperiorOp.add(btnAnterior, BorderLayout.WEST);
+        panelSuperiorOp.add(lblTituloOp, BorderLayout.CENTER);
 
         String[] columnas = {"ELS", "PRODUCTO/SERVICIO", "CANTIDAD", "U. MEDIDA", "P. UNITARIO", "SUBTOTAL", "SEL"};
         modeloTablaItems = new DefaultTableModel(columnas, 0) {
@@ -172,12 +195,13 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             }
         };
         tablaItems = new JTable(modeloTablaItems);
-        tablaItems.setFont(new Font("Cambria", Font.PLAIN, 11));
-        tablaItems.getTableHeader().setFont(new Font("Cambria", Font.BOLD, 11));
-        tablaItems.getTableHeader().setBackground(COLOR_BOTON);
+        tablaItems.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        tablaItems.setForeground(currentTheme.textPrimary);
+        tablaItems.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
+        tablaItems.getTableHeader().setBackground(currentTheme.btnBg);
         tablaItems.setRowHeight(22);
         tablaItems.setShowGrid(true);
-        tablaItems.setGridColor(new Color(200, 210, 230));
+        tablaItems.setGridColor(currentTheme.borderLight);
         tablaItems.getColumnModel().getColumn(0).setPreferredWidth(60);
         tablaItems.getColumnModel().getColumn(1).setPreferredWidth(200);
         tablaItems.getColumnModel().getColumn(2).setPreferredWidth(50);
@@ -220,34 +244,34 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         tablaItems.getColumnModel().getColumn(4).setCellRenderer(currencyRenderer);
         tablaItems.getColumnModel().getColumn(5).setCellRenderer(currencyRenderer);
 
-        JScrollPane scrollTabla = new JScrollPane(tablaItems);
+        scrollTabla = new JScrollPane(tablaItems);
 
-        btnAgregarItem = new JButton("+ AGREGAR ITEM");
+        btnAgregarItem = new RoundedButton("+ AGREGAR ITEM", 50);
         estilizarBoton(btnAgregarItem);
-        btnEliminarItem = new JButton("- ELIMINAR ITEM");
+        btnEliminarItem = new RoundedButton("- ELIMINAR ITEM", 50);
         estilizarBoton(btnEliminarItem);
         cmbAlicuotaIva = new JComboBox<>(new String[]{"21%", "10.5%", "0%", "27%"});
         cmbAlicuotaIva.setPreferredSize(new Dimension(80, 24));
         cmbAlicuotaIva.setPrototypeDisplayValue("21%");
 
-        JPanel panelSur = new JPanel(new GridBagLayout());
-        panelSur.setBackground(COLOR_FONDO);
+        panelSur = new JPanel(new GridBagLayout());
+        panelSur.setBackground(currentTheme.bgBase);
         Insets panelIns = new Insets(2, 5, 2, 5);
 
         // Row 0 - Items management + Totals
-        JPanel panelItems = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
-        panelItems.setBackground(COLOR_FONDO);
+        panelItems = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
+        panelItems.setBackground(currentTheme.bgBase);
         panelItems.add(new JLabel("IVA:"));
         panelItems.add(cmbAlicuotaIva);
         panelItems.add(btnAgregarItem);
         panelItems.add(btnEliminarItem);
 
-        JPanel panelTotales = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
-        panelTotales.setBackground(COLOR_FONDO);
+        panelTotales = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
+        panelTotales.setBackground(currentTheme.bgBase);
 
         lblTotal = new JLabel("$ 0,00");
-        lblTotal.setFont(new Font("Cambria", Font.BOLD, 16));
-        lblTotal.setForeground(new Color(0, 100, 0));
+        lblTotal.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        lblTotal.setForeground(currentTheme.brandDark);
 
         txtImporteNeto = new JTextField(10);
         txtImporteNeto.setEditable(false);
@@ -269,7 +293,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         txtImporteTotal.setFont(FUENTE_BOTON);
         txtImporteTotal.setPreferredSize(new Dimension(100, 24));
         txtImporteTotal.setHorizontalAlignment(JTextField.RIGHT);
-        txtImporteTotal.setForeground(new Color(0, 100, 0));
+        txtImporteTotal.setForeground(currentTheme.brandDark);
 
         panelTotales.add(new JLabel("Neto:"));
         panelTotales.add(txtImporteNeto);
@@ -283,16 +307,34 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelSur.add(panelTotales, new GridBagConstraints(1, 0, 1, 1, 1, 0, GridBagConstraints.EAST, GridBagConstraints.HORIZONTAL, panelIns, 0, 0));
 
         // Row 1 - Emitir + Limpiar
-        JPanel panelEmitir = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 4));
-        panelEmitir.setBackground(COLOR_FONDO);
+        panelEmitir = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 4));
+        panelEmitir.setBackground(currentTheme.bgBase);
 
-        btnEmitir = new JButton("GUARDAR / EMITIR FACTURA");
-        btnEmitir.setFont(new Font("Cambria", Font.BOLD, 13));
-        btnEmitir.setBackground(new Color(50, 140, 50));
+        btnEmitir = new RoundedButton("GUARDAR / EMITIR FACTURA", 50);
+        btnEmitir.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnEmitir.setBackground(currentTheme.brandDark);
         btnEmitir.setForeground(Color.WHITE);
         btnEmitir.setFocusPainted(false);
         btnEmitir.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnLimpiar = new JButton("LIMPIAR");
+        btnEmitir.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                btnEmitir.setBackground(currentTheme.brand);
+            }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                btnEmitir.setBackground(currentTheme.brandDark);
+            }
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                btnEmitir.setBackground(currentTheme.brandDark.darker());
+            }
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent e) {
+                btnEmitir.setBackground(currentTheme.brand);
+            }
+        });
+        btnLimpiar = new RoundedButton("LIMPIAR", 50);
         estilizarBoton(btnLimpiar);
 
         panelEmitir.add(btnEmitir);
@@ -300,7 +342,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
         panelSur.add(panelEmitir, new GridBagConstraints(0, 1, 2, 1, 1, 0, GridBagConstraints.EAST, GridBagConstraints.HORIZONTAL, panelIns, 0, 0));
 
-        panelOperacion.add(panelSuperior, BorderLayout.NORTH);
+        panelOperacion.add(panelSuperiorOp, BorderLayout.NORTH);
         panelOperacion.add(scrollTabla, BorderLayout.CENTER);
         panelOperacion.add(panelSur, BorderLayout.SOUTH);
 
@@ -308,42 +350,43 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelPrincipal.add(panelOperacion, "operacion");
 
         // ===================== WRAPPER + STATUS BAR =====================
-        JPanel panelPrincipalWrapper = new JPanel(new BorderLayout());
-        panelPrincipalWrapper.setBackground(COLOR_FONDO);
+        panelPrincipalWrapper = new JPanel(new BorderLayout());
+        panelPrincipalWrapper.setBackground(currentTheme.bgBase);
         panelPrincipalWrapper.add(panelPrincipal, BorderLayout.CENTER);
 
-        JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
-        statusBar.setBackground(new Color(50, 50, 80));
-        JLabel lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica");
-        lblStatus.setFont(new Font("Cambria", Font.PLAIN, 11));
-        lblStatus.setForeground(new Color(200, 200, 220));
+        statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
+        statusBar.setBackground(currentTheme.bgElevated);
+        lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica");
+        lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblStatus.setForeground(currentTheme.textSecondary);
         statusBar.add(lblStatus);
         panelPrincipalWrapper.add(statusBar, BorderLayout.SOUTH);
 
         getContentPane().add(panelPrincipalWrapper);
+        applyTheme(currentTheme);
     }
 
     // ===================== SECTION BUILDERS =====================
 
     private JPanel crearSeccionPuntoVenta() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(COLOR_TITULO),
+        secPuntoVenta = new JPanel(new GridBagLayout());
+        secPuntoVenta.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(currentTheme.brand),
             "PUNTO DE VENTA Y TIPO DE COMPROBANTE",
             TitledBorder.LEFT, TitledBorder.TOP,
-            new Font("Cambria", Font.BOLD, 11), COLOR_TEXTO
+            new Font("Segoe UI", Font.BOLD, 11), currentTheme.textPrimary
         ));
-        panel.setBackground(COLOR_FONDO);
+        secPuntoVenta.setBackground(currentTheme.bgBase);
         Insets ins = new Insets(3, 6, 3, 6);
 
-        panel.add(new JLabel("Punto de Venta:"), new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secPuntoVenta.add(new JLabel("Punto de Venta:"), new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
         cmbPuntoVenta = new JComboBox<>(new String[]{"00001"});
         cmbPuntoVenta.setFont(FUENTE_BOTON);
         cmbPuntoVenta.setPreferredSize(new Dimension(80, 24));
         cmbPuntoVenta.setPrototypeDisplayValue("00001");
-        panel.add(cmbPuntoVenta, new GridBagConstraints(1, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secPuntoVenta.add(cmbPuntoVenta, new GridBagConstraints(1, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
 
-        panel.add(new JLabel("Tipo Comprobante:"), new GridBagConstraints(2, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secPuntoVenta.add(new JLabel("Tipo Comprobante:"), new GridBagConstraints(2, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
         cmbTipoComprobante = new JComboBox<>(new String[]{
             "Factura C", "Nota de D\u00e9bito C", "Nota de Cr\u00e9dito C",
             "Recibo C", "Factura de Cr\u00e9dito Electr\u00f3nica MiPymes (FCE) C",
@@ -353,38 +396,38 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         cmbTipoComprobante.setFont(FUENTE_BOTON);
         cmbTipoComprobante.setPreferredSize(new Dimension(240, 24));
         cmbTipoComprobante.setPrototypeDisplayValue("Factura de Cr\u00e9dito Electr\u00f3nica");
-        panel.add(cmbTipoComprobante, new GridBagConstraints(3, 0, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
-        return panel;
+        secPuntoVenta.add(cmbTipoComprobante, new GridBagConstraints(3, 0, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
+        return secPuntoVenta;
     }
 
     private JPanel crearSeccionEmision() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(COLOR_TITULO),
+        secEmision = new JPanel(new GridBagLayout());
+        secEmision.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(currentTheme.brand),
             "DATOS DE EMISION",
             TitledBorder.LEFT, TitledBorder.TOP,
-            new Font("Cambria", Font.BOLD, 11), COLOR_TEXTO
+            new Font("Segoe UI", Font.BOLD, 11), currentTheme.textPrimary
         ));
-        panel.setBackground(COLOR_FONDO);
+        secEmision.setBackground(currentTheme.bgBase);
         Insets ins = new Insets(4, 8, 4, 8);
 
         txtEmisorRazonSocial = new JTextField(25);
         txtEmisorRazonSocial.setEditable(false);
         txtEmisorRazonSocial.setFont(FUENTE_BOTON);
         txtEmisorRazonSocial.setPreferredSize(new Dimension(300, 24));
-        txtEmisorRazonSocial.setBackground(new Color(240, 240, 240));
+        txtEmisorRazonSocial.setBackground(currentTheme.bgInput);
 
         txtEmisorCuit = new JTextField(15);
         txtEmisorCuit.setEditable(false);
         txtEmisorCuit.setFont(FUENTE_BOTON);
         txtEmisorCuit.setPreferredSize(new Dimension(120, 24));
-        txtEmisorCuit.setBackground(new Color(240, 240, 240));
+        txtEmisorCuit.setBackground(currentTheme.bgInput);
 
         txtEmisorCondicionIva = new JTextField(15);
         txtEmisorCondicionIva.setEditable(false);
         txtEmisorCondicionIva.setFont(FUENTE_BOTON);
         txtEmisorCondicionIva.setPreferredSize(new Dimension(120, 24));
-        txtEmisorCondicionIva.setBackground(new Color(240, 240, 240));
+        txtEmisorCondicionIva.setBackground(currentTheme.bgInput);
 
         dateFecha = crearDateChooser();
         cmbConcepto = new JComboBox<>(new String[]{"Productos", "Servicios", "Productos y Servicios"});
@@ -397,52 +440,52 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         txtActividades.setEditable(false);
         txtActividades.setFont(FUENTE_BOTON);
         txtActividades.setPreferredSize(new Dimension(300, 24));
-        txtActividades.setBackground(new Color(240, 240, 240));
+        txtActividades.setBackground(currentTheme.bgInput);
 
         datePeriodoDesde = crearDateChooser();
         datePeriodoHasta = crearDateChooser();
         datePeriodoVto = crearDateChooser();
 
         int row = 0;
-        panel.add(new JLabel("Emisor Razon Social:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(txtEmisorRazonSocial, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
+        secEmision.add(new JLabel("Emisor Razon Social:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(txtEmisorRazonSocial, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
-        panel.add(new JLabel("Emisor CUIT:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(txtEmisorCuit, new GridBagConstraints(1, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(new JLabel("     Condicion IVA:"), new GridBagConstraints(2, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(txtEmisorCondicionIva, new GridBagConstraints(3, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(new JLabel("Emisor CUIT:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(txtEmisorCuit, new GridBagConstraints(1, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(new JLabel("     Condicion IVA:"), new GridBagConstraints(2, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(txtEmisorCondicionIva, new GridBagConstraints(3, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
 
         row++;
-        panel.add(new JLabel("Fecha del comprobante:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(dateFecha, new GridBagConstraints(1, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(new JLabel("     Concepto:"), new GridBagConstraints(2, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(cmbConcepto, new GridBagConstraints(3, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(new JLabel("Fecha del comprobante:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(dateFecha, new GridBagConstraints(1, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(new JLabel("     Concepto:"), new GridBagConstraints(2, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(cmbConcepto, new GridBagConstraints(3, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
 
         row++;
-        panel.add(new JLabel("Actividades Asociadas:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(txtActividades, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
+        secEmision.add(new JLabel("Actividades Asociadas:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(txtActividades, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
-        panel.add(new JLabel("Periodo facturado:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(datePeriodoDesde, new GridBagConstraints(1, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(new JLabel("Hasta:"), new GridBagConstraints(2, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(datePeriodoHasta, new GridBagConstraints(3, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(new JLabel("Vto.:"), new GridBagConstraints(4, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(datePeriodoVto, new GridBagConstraints(5, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(new JLabel("Periodo facturado:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(datePeriodoDesde, new GridBagConstraints(1, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(new JLabel("Hasta:"), new GridBagConstraints(2, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(datePeriodoHasta, new GridBagConstraints(3, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(new JLabel("Vto.:"), new GridBagConstraints(4, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(datePeriodoVto, new GridBagConstraints(5, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
 
-        return panel;
+        return secEmision;
     }
 
     private JPanel crearSeccionReceptor() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(COLOR_TITULO),
+        secReceptor = new JPanel(new GridBagLayout());
+        secReceptor.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(currentTheme.brand),
             "DATOS DEL RECEPTOR",
             TitledBorder.LEFT, TitledBorder.TOP,
-            new Font("Cambria", Font.BOLD, 11), COLOR_TEXTO
+            new Font("Segoe UI", Font.BOLD, 11), currentTheme.textPrimary
         ));
-        panel.setBackground(COLOR_FONDO);
+        secReceptor.setBackground(currentTheme.bgBase);
         Insets ins = new Insets(4, 8, 4, 8);
 
         cmbCondicionIva = new JComboBox<>(new String[]{
@@ -480,27 +523,27 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         txtComprobanteAsoc.setPreferredSize(new Dimension(110, 24));
 
         int row = 0;
-        panel.add(new JLabel("Condicion IVA:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(cmbCondicionIva, new GridBagConstraints(1, row, 2, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(new JLabel("Doc:"), new GridBagConstraints(3, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(cmbTipoDoc, new GridBagConstraints(4, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(cmbNroDoc, new GridBagConstraints(5, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
+        secReceptor.add(new JLabel("Condicion IVA:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secReceptor.add(cmbCondicionIva, new GridBagConstraints(1, row, 2, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secReceptor.add(new JLabel("Doc:"), new GridBagConstraints(3, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secReceptor.add(cmbTipoDoc, new GridBagConstraints(4, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secReceptor.add(cmbNroDoc, new GridBagConstraints(5, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
-        panel.add(new JLabel("Razon Social:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(cmbRazonSocial, new GridBagConstraints(1, row, 5, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
+        secReceptor.add(new JLabel("Razon Social:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secReceptor.add(cmbRazonSocial, new GridBagConstraints(1, row, 5, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
-        panel.add(new JLabel("Domicilio:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(txtDomicilio, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
-        panel.add(new JLabel("Email:"), new GridBagConstraints(4, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(txtEmail, new GridBagConstraints(5, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
+        secReceptor.add(new JLabel("Domicilio:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secReceptor.add(txtDomicilio, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
+        secReceptor.add(new JLabel("Email:"), new GridBagConstraints(4, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secReceptor.add(txtEmail, new GridBagConstraints(5, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
-        panel.add(new JLabel("Cond. Venta:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secReceptor.add(new JLabel("Cond. Venta:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
 
-        JPanel panelChecks = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        panelChecks.setBackground(COLOR_FONDO);
+        panelChecks = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        panelChecks.setBackground(currentTheme.bgBase);
         chkContado = new JCheckBox("Contado");
         chkTarjetaDeb = new JCheckBox("Tarj. Debito");
         chkTarjetaCred = new JCheckBox("Tarj. Credito");
@@ -509,9 +552,9 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         chkTransf = new JCheckBox("Transf.");
         chkOtra = new JCheckBox("Otra");
         for (JCheckBox c : new JCheckBox[]{chkContado, chkTarjetaDeb, chkTarjetaCred, chkCC, chkCheque, chkTransf, chkOtra}) {
-            c.setBackground(COLOR_FONDO);
+            c.setBackground(currentTheme.bgBase);
             c.setFont(FUENTE_BOTON);
-            c.setForeground(COLOR_TEXTO);
+            c.setForeground(currentTheme.textPrimary);
         }
         panelChecks.add(chkContado);
         panelChecks.add(chkTarjetaDeb);
@@ -520,17 +563,17 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelChecks.add(chkCheque);
         panelChecks.add(chkTransf);
         panelChecks.add(chkOtra);
-        panel.add(panelChecks, new GridBagConstraints(1, row, 5, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
+        secReceptor.add(panelChecks, new GridBagConstraints(1, row, 5, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
         JLabel lblCompAsoc = new JLabel("Comp. Asoc.:");
-        panel.add(lblCompAsoc, new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        panel.add(txtComprobanteAsoc, new GridBagConstraints(1, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        btnImportarRemito = new JButton("Importar ReparSoft");
+        secReceptor.add(lblCompAsoc, new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secReceptor.add(txtComprobanteAsoc, new GridBagConstraints(1, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        btnImportarRemito = new RoundedButton("Importar ReparSoft", 50);
         btnImportarRemito.setFont(FUENTE_BOTON);
-        panel.add(btnImportarRemito, new GridBagConstraints(2, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secReceptor.add(btnImportarRemito, new GridBagConstraints(2, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
 
-        return panel;
+        return secReceptor;
     }
 
     // ===================== UI FACTORIES =====================
@@ -553,11 +596,173 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     }
 
     private void estilizarBoton(JButton btn) {
-        btn.setFont(FUENTE_BOTON);
-        btn.setForeground(COLOR_TEXTO);
-        btn.setBackground(COLOR_BOTON);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        btn.setForeground(currentTheme.textPrimary);
+        btn.setBackground(currentTheme.btnBg);
         btn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btn.setFocusPainted(false);
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                btn.setBackground(currentTheme.hoverBg);
+            }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                btn.setBackground(currentTheme.btnBg);
+            }
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                btn.setBackground(currentTheme.pressedBg);
+            }
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent e) {
+                btn.setBackground(currentTheme.hoverBg);
+            }
+        });
+    }
+
+    private void applyTheme(Theme t) {
+        currentTheme = t;
+        boolean isDark = t.bgBase.getRed() < 50;
+        Color hdrFg = isDark ? Color.WHITE : t.textPrimary;
+        Color titledFg = t.textPrimary;
+        Color titledLine = t.brand;
+        Font titledFont = new Font("Segoe UI", Font.BOLD, 11);
+
+        // FIX: live-theme — contenedores raíz (no usar getContentPane(), está fuera del árbol)
+        if (panelPrincipalWrapper != null) panelPrincipalWrapper.setBackground(t.bgBase);
+        if (panelPrincipal != null) panelPrincipal.setBackground(t.bgBase);
+        if (datosCard != null) datosCard.setBackground(t.bgBase);
+        if (datosWrapper != null) datosWrapper.setBackground(t.bgBase);
+        if (panelOperacion != null) {
+            panelOperacion.setBackground(t.bgBase);
+            panelOperacion.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        }
+        if (panelSuperiorOp != null) panelSuperiorOp.setBackground(t.bgBase);
+        if (panelSur != null) panelSur.setBackground(t.bgBase);
+        if (panelItems != null) panelItems.setBackground(t.bgBase);
+        if (panelTotales != null) panelTotales.setBackground(t.bgBase);
+        if (panelEmitir != null) panelEmitir.setBackground(t.bgBase);
+        if (statusBar != null) statusBar.setBackground(t.bgElevated);
+        if (lblStatus != null) lblStatus.setForeground(t.textSecondary);
+        if (lblTituloOp != null) lblTituloOp.setForeground(t.textPrimary);
+        if (centerCol != null) {
+            centerCol.setBackground(t.bgBase);
+            centerCol.setBorder(new CompoundBorder(new LineBorder(t.brand), new EmptyBorder(10, 10, 10, 10)));
+        }
+        if (panelNav != null) panelNav.setBackground(t.bgBase);
+        // Section panels con titled border
+        if (secPuntoVenta != null) {
+            secPuntoVenta.setBackground(t.bgBase);
+            secPuntoVenta.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(t.brand),
+                "PUNTO DE VENTA Y TIPO DE COMPROBANTE",
+                TitledBorder.LEFT, TitledBorder.TOP, titledFont, titledFg));
+        }
+        if (secEmision != null) {
+            secEmision.setBackground(t.bgBase);
+            secEmision.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(t.brand),
+                "DATOS DE EMISION",
+                TitledBorder.LEFT, TitledBorder.TOP, titledFont, titledFg));
+        }
+        if (secReceptor != null) {
+            secReceptor.setBackground(t.bgBase);
+            secReceptor.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(t.brand),
+                "DATOS DEL RECEPTOR",
+                TitledBorder.LEFT, TitledBorder.TOP, titledFont, titledFg));
+        }
+        if (panelChecks != null) panelChecks.setBackground(t.bgBase);
+        // Scroll panes
+        if (scrollDatos != null) {
+            scrollDatos.getViewport().setBackground(t.bgBase);
+            scrollDatos.setBorder(null);
+        }
+        if (scrollTabla != null) {
+            scrollTabla.getViewport().setBackground(t.bgBase);
+            scrollTabla.setBorder(BorderFactory.createLineBorder(t.borderLight));
+        }
+
+        // FIX: live-theme — inputs y controles (field references, siempre funcionan)
+        if (cmbPuntoVenta != null) { cmbPuntoVenta.setBackground(t.bgInput); cmbPuntoVenta.setForeground(t.textPrimary); }
+        if (cmbTipoComprobante != null) { cmbTipoComprobante.setBackground(t.bgInput); cmbTipoComprobante.setForeground(t.textPrimary); }
+        if (dateFecha != null) { dateFecha.setBackground(t.bgInput); dateFecha.setForeground(t.textPrimary); }
+        if (datePeriodoDesde != null) { datePeriodoDesde.setBackground(t.bgInput); datePeriodoDesde.setForeground(t.textPrimary); }
+        if (datePeriodoHasta != null) { datePeriodoHasta.setBackground(t.bgInput); datePeriodoHasta.setForeground(t.textPrimary); }
+        if (datePeriodoVto != null) { datePeriodoVto.setBackground(t.bgInput); datePeriodoVto.setForeground(t.textPrimary); }
+        if (cmbConcepto != null) { cmbConcepto.setBackground(t.bgInput); cmbConcepto.setForeground(t.textPrimary); }
+        if (txtActividades != null) { txtActividades.setBackground(t.bgInput); txtActividades.setForeground(t.textPrimary); }
+        if (txtEmisorRazonSocial != null) { txtEmisorRazonSocial.setBackground(t.bgInput); txtEmisorRazonSocial.setForeground(t.textPrimary); }
+        if (txtEmisorCuit != null) { txtEmisorCuit.setBackground(t.bgInput); txtEmisorCuit.setForeground(t.textPrimary); }
+        if (txtEmisorCondicionIva != null) { txtEmisorCondicionIva.setBackground(t.bgInput); txtEmisorCondicionIva.setForeground(t.textPrimary); }
+        if (cmbCondicionIva != null) { cmbCondicionIva.setBackground(t.bgInput); cmbCondicionIva.setForeground(t.textPrimary); }
+        if (cmbTipoDoc != null) { cmbTipoDoc.setBackground(t.bgInput); cmbTipoDoc.setForeground(t.textPrimary); }
+        if (cmbRazonSocial != null) { cmbRazonSocial.setBackground(t.bgInput); cmbRazonSocial.setForeground(t.textPrimary); }
+        if (cmbNroDoc != null) { cmbNroDoc.setBackground(t.bgInput); cmbNroDoc.setForeground(t.textPrimary); }
+        if (txtDomicilio != null) { txtDomicilio.setBackground(t.bgInput); txtDomicilio.setForeground(t.textPrimary); }
+        if (txtEmail != null) { txtEmail.setBackground(t.bgInput); txtEmail.setForeground(t.textPrimary); }
+        if (txtComprobanteAsoc != null) { txtComprobanteAsoc.setBackground(t.bgInput); txtComprobanteAsoc.setForeground(t.textPrimary); }
+        if (chkContado != null) { chkContado.setBackground(t.bgBase); chkContado.setForeground(t.textPrimary); }
+        if (chkTarjetaDeb != null) { chkTarjetaDeb.setBackground(t.bgBase); chkTarjetaDeb.setForeground(t.textPrimary); }
+        if (chkTarjetaCred != null) { chkTarjetaCred.setBackground(t.bgBase); chkTarjetaCred.setForeground(t.textPrimary); }
+        if (chkCC != null) { chkCC.setBackground(t.bgBase); chkCC.setForeground(t.textPrimary); }
+        if (chkCheque != null) { chkCheque.setBackground(t.bgBase); chkCheque.setForeground(t.textPrimary); }
+        if (chkTransf != null) { chkTransf.setBackground(t.bgBase); chkTransf.setForeground(t.textPrimary); }
+        if (chkOtra != null) { chkOtra.setBackground(t.bgBase); chkOtra.setForeground(t.textPrimary); }
+        if (btnImportarRemito != null) { btnImportarRemito.setBackground(t.btnBg); btnImportarRemito.setForeground(t.textPrimary); }
+        if (btnAnterior != null) { btnAnterior.setBackground(t.btnBg); btnAnterior.setForeground(t.textPrimary); }
+        if (tablaItems != null) {
+            tablaItems.setForeground(t.textPrimary);
+            tablaItems.setBackground(t.bgInput);
+            tablaItems.setGridColor(t.borderLight);
+            tablaItems.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+                @Override
+                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                      boolean isSelected, boolean hasFocus, int row, int column) {
+                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                    if (!isSelected) {
+                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
+                        setForeground(t.textPrimary);
+                    }
+                    return this;
+                }
+            });
+            if (tablaItems.getTableHeader() != null) {
+                Theme.styleTableHeader(tablaItems.getTableHeader(), t.bgElevated, hdrFg);
+            }
+        }
+        if (lblTotal != null) { lblTotal.setForeground(t.brandDark); }
+        if (txtImporteNeto != null) { txtImporteNeto.setBackground(t.bgInput); txtImporteNeto.setForeground(t.textPrimary); }
+        if (txtImporteIva != null) { txtImporteIva.setBackground(t.bgInput); txtImporteIva.setForeground(t.textPrimary); }
+        if (txtImporteTotal != null) { txtImporteTotal.setBackground(t.bgInput); txtImporteTotal.setForeground(t.brandDark); }
+        if (txtOtrosImpuestos != null) { txtOtrosImpuestos.setBackground(t.bgInput); txtOtrosImpuestos.setForeground(t.textPrimary); }
+        if (cmbAlicuotaIva != null) { cmbAlicuotaIva.setBackground(t.bgInput); cmbAlicuotaIva.setForeground(t.textPrimary); }
+        if (btnEliminarItem != null) { btnEliminarItem.setBackground(t.btnBg); btnEliminarItem.setForeground(t.textPrimary); }
+        if (btnAgregarItem != null) { btnAgregarItem.setBackground(t.btnBg); btnAgregarItem.setForeground(t.textPrimary); }
+        if (btnEmitir != null) {
+            btnEmitir.setBackground(t.brandDark);
+            btnEmitir.setForeground(Color.WHITE);
+        }
+        if (btnLimpiar != null) { btnLimpiar.setBackground(t.btnBg); btnLimpiar.setForeground(t.textPrimary); }
+        if (chkModoPrueba != null) { chkModoPrueba.setBackground(t.bgBase); chkModoPrueba.setForeground(t.danger); }
+        if (btnSiguiente != null) { btnSiguiente.setBackground(t.btnBg); btnSiguiente.setForeground(t.textPrimary); }
+        // FIX: live-theme — walk desde panelPrincipalWrapper (en lugar de this, que está fuera del árbol)
+        if (panelPrincipalWrapper != null) {
+            themeLabels(panelPrincipalWrapper, t);
+        }
+    }
+
+    private void themeLabels(Container c, Theme t) {
+        for (java.awt.Component comp : c.getComponents()) {
+            if (comp instanceof JLabel) {
+                JLabel lbl = (JLabel) comp;
+                lbl.setForeground(t.textPrimary);
+            }
+            if (comp instanceof Container) {
+                themeLabels((Container) comp, t);
+            }
+        }
     }
 
     // ===================== GETTERS =====================
