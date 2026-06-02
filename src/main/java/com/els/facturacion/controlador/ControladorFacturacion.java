@@ -14,6 +14,7 @@ import com.els.facturacion.pdf.GestorPDF;
 import com.els.facturacion.vista.VentanaFacturacion;
 import com.els.facturacion.vista.VentanaClientes;
 import com.els.facturacion.vista.VentanaImportarRemito;
+import com.els.facturacion.vista.VentanaEquiposPresupuestados;
 import com.els.facturacion.util.UbicacionSistema;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -29,6 +30,8 @@ import java.util.List;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import javax.swing.table.DefaultTableModel;
 
 public class ControladorFacturacion {
@@ -80,6 +83,7 @@ public class ControladorFacturacion {
         view.getBtnEmitir().addActionListener(e -> btnEmitirAction());
         view.getBtnLimpiar().addActionListener(e -> limpiarTodo());
         view.getBtnImportarRemito().addActionListener(e -> importarRemitoReparsoft());
+        view.getBtnVerEquipos().addActionListener(e -> verEquiposPresupuestados());
 
         // Items table
         view.getBtnAgregarItem().addActionListener(e -> agregarItem());
@@ -96,11 +100,28 @@ public class ControladorFacturacion {
         // Auto-recalculate on IVA combobox change
         view.getCmbAlicuotaIva().addActionListener(e -> recalcularTotales());
 
-        // Autocomplete
+        // Autocomplete on Enter
         JTextField editorRS = (JTextField) view.getCmbRazonSocial().getEditor().getEditorComponent();
         editorRS.addActionListener(e -> autocompletarPorRazonSocial());
         JTextField editorND = (JTextField) view.getCmbNroDoc().getEditor().getEditorComponent();
         editorND.addActionListener(e -> autocompletarPorDocumento());
+
+        // Autocomplete on dropdown selection
+        PopupMenuListener seleccionDropdown = new PopupMenuListener() {
+            @Override public void popupMenuWillBecomeVisible(PopupMenuEvent e) {}
+            @Override public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+                javax.swing.JComboBox<?> src = (javax.swing.JComboBox<?>) e.getSource();
+                if (src.getSelectedItem() != null) {
+                    if (src == view.getCmbRazonSocial()) autocompletarPorRazonSocial();
+                    else if (src == view.getCmbNroDoc()) autocompletarPorDocumento();
+                    else if (src == view.getCmbCondicionIva()) autocompletarPorCondicionIva();
+                }
+            }
+            @Override public void popupMenuCanceled(PopupMenuEvent e) {}
+        };
+        view.getCmbRazonSocial().addPopupMenuListener(seleccionDropdown);
+        view.getCmbNroDoc().addPopupMenuListener(seleccionDropdown);
+        view.getCmbCondicionIva().addPopupMenuListener(seleccionDropdown);
 
         // Menu actions removed - now handled by VentanaPrincipal
     }
@@ -206,6 +227,33 @@ public class ControladorFacturacion {
         view.getTxtEmail().setText(cli.getEmail() != null ? cli.getEmail() : "");
     }
 
+    private void autocompletarPorCondicionIva() {
+        String condIva = (String) view.getCmbCondicionIva().getSelectedItem();
+        if (condIva == null) return;
+
+        List<ClienteDTO> todos = listarClientes();
+        List<ClienteDTO> matches = new ArrayList<>();
+        for (ClienteDTO c : todos) {
+            if (condIva.equals(c.getCondicionIva())) {
+                matches.add(c);
+            }
+        }
+
+        if (matches.size() == 1) {
+            autocompletarCamposCliente(matches.get(0));
+        } else if (matches.size() > 1) {
+            String rs = view.getCmbRazonSocial().getEditorText().trim();
+            if (!rs.isEmpty()) {
+                for (ClienteDTO c : matches) {
+                    if (c.getRazonSocial().equalsIgnoreCase(rs)) {
+                        autocompletarCamposCliente(c);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
     // ===================== IMPORTAR REMITO =====================
 
     private void importarRemitoReparsoft() {
@@ -257,6 +305,35 @@ public class ControladorFacturacion {
                 model.addRow(new Object[]{codigo, descripcion, "1", "Unidad", precioStr, "0,00", true});
             }
         }
+        recalcularTotales();
+    }
+
+    // ===================== VER EQUIPOS PRESUPUESTADOS =====================
+
+    private void verEquiposPresupuestados() {
+        String razonSocial = view.getCmbRazonSocial().getEditorText().trim();
+        if (razonSocial.isEmpty()) {
+            JOptionPane.showMessageDialog(view,
+                "Seleccione un cliente (raz\u00f3n social) antes de ver equipos presupuestados",
+                "Ver Equipos", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        List<RemitoReparsoftItem> equipos = VentanaEquiposPresupuestados.mostrarDialog(view, razonSocial);
+        if (equipos == null || equipos.isEmpty()) return;
+
+        DefaultTableModel model = view.getModeloItems();
+        for (RemitoReparsoftItem item : equipos) {
+            String descripcion = item.getDescripcion();
+            BigDecimal precio = item.getPrecioPeso() != null ? item.getPrecioPeso() : BigDecimal.ZERO;
+            String precioStr = precio.compareTo(BigDecimal.ZERO) > 0
+                ? DF.format(precio)
+                : "0,00";
+            String codigo = String.valueOf(item.getEls());
+            model.addRow(new Object[]{codigo, descripcion, "1", "Unidad", precioStr, "0,00", true});
+        }
+
+        view.getCardLayout().show(view.getPanelPrincipal(), "operacion");
         recalcularTotales();
     }
 

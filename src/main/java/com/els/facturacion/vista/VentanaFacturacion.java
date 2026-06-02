@@ -74,6 +74,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private JCheckBox chkContado, chkTarjetaDeb, chkTarjetaCred, chkCC, chkCheque, chkTransf, chkOtra;
     private JTextField txtComprobanteAsoc;
     private JButton btnImportarRemito;
+    private JButton btnVerEquipos;
 
     // Operacion
     private JButton btnAnterior;
@@ -100,6 +101,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private JPanel panelItems;
     private JPanel panelTotales;
     private JPanel panelEmitir;
+    private JPanel panelAnterior;
     private JPanel statusBar;
     private JLabel lblStatus;
     private JScrollPane scrollTabla;
@@ -124,8 +126,8 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
     private void initComponents() {
         setTitle("FacturaSoft v1.0 \u2014 Sistema de Facturaci\u00f3n Electr\u00f3nica");
-        setSize(1024, 720);
-        setMinimumSize(new Dimension(900, 650));
+        setSize(900, 640);
+        setMinimumSize(new Dimension(800, 580));
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(currentTheme.bgSurface);
@@ -153,11 +155,12 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         chkModoPrueba.setBackground(currentTheme.bgBase);
         
         btnSiguiente = new JButton("SIGUIENTE >>");
-        btnSiguiente.setFont(FUENTE_BOTON);
+        btnSiguiente.setFont(new Font("Segoe UI", Font.BOLD, 13));
         btnSiguiente.setForeground(currentTheme.textPrimary);
         btnSiguiente.setBackground(currentTheme.btnBg);
         btnSiguiente.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnSiguiente.setFocusPainted(false);
+        btnSiguiente.setMargin(new Insets(6, 14, 6, 14));
         panelNav = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 3));
         panelNav.setBackground(currentTheme.bgBase);
         panelNav.add(chkModoPrueba);
@@ -180,16 +183,9 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
         panelSuperiorOp = new JPanel(new BorderLayout());
         panelSuperiorOp.setBackground(currentTheme.bgSurface);
-        btnAnterior = new JButton("<< ANTERIOR");
-        btnAnterior.setFont(FUENTE_BOTON);
-        btnAnterior.setForeground(currentTheme.textPrimary);
-        btnAnterior.setBackground(currentTheme.btnBg);
-        btnAnterior.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnAnterior.setFocusPainted(false);
         lblTituloOp = new JLabel("DATOS DE LA OPERACION", SwingConstants.CENTER);
         lblTituloOp.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lblTituloOp.setForeground(currentTheme.textPrimary);
-        panelSuperiorOp.add(btnAnterior, BorderLayout.WEST);
         panelSuperiorOp.add(lblTituloOp, BorderLayout.CENTER);
 
         String[] columnas = {"ELS", "PRODUCTO/SERVICIO", "CANTIDAD", "U. MEDIDA", "P. UNITARIO", "SUBTOTAL", "SEL"};
@@ -214,10 +210,18 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
         scrollTabla = new JScrollPane(tablaItems);
 
-        btnAgregarItem = new RoundedButton("+ AGREGAR ITEM", 50);
-        estilizarBoton(btnAgregarItem);
-        btnEliminarItem = new RoundedButton("- ELIMINAR ITEM", 50);
-        estilizarBoton(btnEliminarItem);
+        btnAgregarItem = new JButton("+ AGREGAR ITEM");
+        btnAgregarItem.setFont(FUENTE_BOTON);
+        btnAgregarItem.setForeground(currentTheme.textPrimary);
+        btnAgregarItem.setBackground(currentTheme.btnBg);
+        btnAgregarItem.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnAgregarItem.setFocusPainted(false);
+        btnEliminarItem = new JButton("- ELIMINAR ITEM");
+        btnEliminarItem.setFont(FUENTE_BOTON);
+        btnEliminarItem.setForeground(currentTheme.textPrimary);
+        btnEliminarItem.setBackground(currentTheme.btnBg);
+        btnEliminarItem.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnEliminarItem.setFocusPainted(false);
         cmbAlicuotaIva = new JComboBox<>(new String[]{"21%", "10.5%", "0%", "27%"});
         cmbAlicuotaIva.setPreferredSize(new Dimension(80, 24));
         cmbAlicuotaIva.setPrototypeDisplayValue("21%");
@@ -241,25 +245,25 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         lblTotal.setFont(new Font("Segoe UI", Font.BOLD, 15));
         lblTotal.setForeground(currentTheme.brandDark);
 
-        txtImporteNeto = new JTextField(10);
+        txtImporteNeto = new JTextField(8);
         txtImporteNeto.setEditable(false);
         txtImporteNeto.setFont(FUENTE_BOTON);
-        txtImporteNeto.setPreferredSize(new Dimension(90, 24));
+        txtImporteNeto.setPreferredSize(new Dimension(75, 24));
         txtImporteNeto.setHorizontalAlignment(JTextField.RIGHT);
-        txtImporteIva = new JTextField(10);
+        txtImporteIva = new JTextField(8);
         txtImporteIva.setEditable(false);
         txtImporteIva.setFont(FUENTE_BOTON);
-        txtImporteIva.setPreferredSize(new Dimension(90, 24));
+        txtImporteIva.setPreferredSize(new Dimension(75, 24));
         txtImporteIva.setHorizontalAlignment(JTextField.RIGHT);
-        txtOtrosImpuestos = new JTextField(8);
+        txtOtrosImpuestos = new JTextField(6);
         txtOtrosImpuestos.setText("0,00");
-        txtOtrosImpuestos.setPreferredSize(new Dimension(80, 24));
+        txtOtrosImpuestos.setPreferredSize(new Dimension(65, 24));
         txtOtrosImpuestos.setHorizontalAlignment(JTextField.RIGHT);
         txtOtrosImpuestos.setFont(FUENTE_BOTON);
-        txtImporteTotal = new JTextField(10);
+        txtImporteTotal = new JTextField(8);
         txtImporteTotal.setEditable(false);
         txtImporteTotal.setFont(FUENTE_BOTON);
-        txtImporteTotal.setPreferredSize(new Dimension(100, 24));
+        txtImporteTotal.setPreferredSize(new Dimension(85, 24));
         txtImporteTotal.setHorizontalAlignment(JTextField.RIGHT);
         txtImporteTotal.setForeground(currentTheme.brandDark);
 
@@ -274,9 +278,14 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelSur.add(panelItems, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, panelIns, 0, 0));
         panelSur.add(panelTotales, new GridBagConstraints(1, 0, 1, 1, 1, 0, GridBagConstraints.EAST, GridBagConstraints.HORIZONTAL, panelIns, 0, 0));
 
-        // Row 1 - Emitir + Limpiar
-        panelEmitir = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 4));
-        panelEmitir.setBackground(currentTheme.bgBase);
+        // Row 1 - Anterior (left) + Emitir/Limpiar (right)
+        btnAnterior = new JButton("<< ANTERIOR");
+        btnAnterior.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnAnterior.setForeground(currentTheme.textPrimary);
+        btnAnterior.setBackground(currentTheme.btnBg);
+        btnAnterior.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnAnterior.setFocusPainted(false);
+        btnAnterior.setMargin(new Insets(6, 14, 6, 14));
 
         btnEmitir = new JButton("GUARDAR / EMITIR FACTURA");
         btnEmitir.setFont(new Font("Segoe UI", Font.BOLD, 14));
@@ -284,19 +293,26 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         btnEmitir.setForeground(Color.WHITE);
         btnEmitir.setFocusPainted(false);
         btnEmitir.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnEmitir.setMargin(new Insets(10, 24, 10, 24));
+        btnEmitir.setMargin(new Insets(6, 16, 6, 16));
         btnLimpiar = new JButton("LIMPIAR");
         btnLimpiar.setFont(new Font("Segoe UI", Font.BOLD, 13));
         btnLimpiar.setForeground(currentTheme.textPrimary);
         btnLimpiar.setBackground(currentTheme.btnBg);
         btnLimpiar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnLimpiar.setFocusPainted(false);
-        btnLimpiar.setMargin(new Insets(8, 20, 8, 20));
+        btnLimpiar.setMargin(new Insets(6, 14, 6, 14));
 
+        panelAnterior = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
+        panelAnterior.setBackground(currentTheme.bgBase);
+        panelAnterior.add(btnAnterior);
+
+        panelEmitir = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 4));
+        panelEmitir.setBackground(currentTheme.bgBase);
         panelEmitir.add(btnEmitir);
         panelEmitir.add(btnLimpiar);
 
-        panelSur.add(panelEmitir, new GridBagConstraints(0, 1, 2, 1, 1, 0, GridBagConstraints.EAST, GridBagConstraints.HORIZONTAL, panelIns, 0, 0));
+        panelSur.add(panelAnterior, new GridBagConstraints(0, 1, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, panelIns, 0, 0));
+        panelSur.add(panelEmitir, new GridBagConstraints(1, 1, 1, 1, 1, 0, GridBagConstraints.EAST, GridBagConstraints.HORIZONTAL, panelIns, 0, 0));
 
         panelOperacion.add(panelSuperiorOp, BorderLayout.NORTH);
         panelOperacion.add(scrollTabla, BorderLayout.CENTER);
@@ -465,7 +481,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
         cmbRazonSocial = new AutoCompleteComboBox();
         cmbRazonSocial.setFont(FUENTE_BOTON);
-        cmbRazonSocial.setPreferredSize(new Dimension(220, 24));
+        cmbRazonSocial.setPreferredSize(new Dimension(150, 24));
 
         txtDomicilio = new JTextField(20);
         txtDomicilio.setFont(FUENTE_BOTON);
@@ -487,8 +503,15 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         secReceptor.add(cmbNroDoc, new GridBagConstraints(5, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
+        btnVerEquipos = new JButton("VER EQUIPOS");
+        btnVerEquipos.setFont(FUENTE_BOTON);
+        btnVerEquipos.setForeground(currentTheme.textPrimary);
+        btnVerEquipos.setBackground(currentTheme.btnBg);
+        btnVerEquipos.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnVerEquipos.setFocusPainted(false);
         secReceptor.add(new JLabel("Razon Social:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        secReceptor.add(cmbRazonSocial, new GridBagConstraints(1, row, 5, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
+        secReceptor.add(cmbRazonSocial, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
+        secReceptor.add(btnVerEquipos, new GridBagConstraints(4, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
 
         row++;
         secReceptor.add(new JLabel("Domicilio:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
@@ -602,6 +625,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         if (panelItems != null) panelItems.setBackground(t.bgBase);
         if (panelTotales != null) panelTotales.setBackground(t.bgBase);
         if (panelEmitir != null) panelEmitir.setBackground(t.bgBase);
+        if (panelAnterior != null) panelAnterior.setBackground(t.bgBase);
         if (statusBar != null) {
             boolean isLight = t.bgBase.getRed() > 128;
             statusBar.setBackground(isLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
@@ -676,6 +700,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         if (chkTransf != null) { chkTransf.setBackground(t.bgBase); chkTransf.setForeground(t.textPrimary); }
         if (chkOtra != null) { chkOtra.setBackground(t.bgBase); chkOtra.setForeground(t.textPrimary); }
         if (btnImportarRemito != null) { btnImportarRemito.setBackground(t.btnBg); btnImportarRemito.setForeground(t.textPrimary); }
+        if (btnVerEquipos != null) { btnVerEquipos.setBackground(t.btnBg); btnVerEquipos.setForeground(t.textPrimary); }
         if (btnAnterior != null) { btnAnterior.setBackground(t.btnBg); btnAnterior.setForeground(t.textPrimary); }
         if (tablaItems != null) {
             boolean isDarkTheme = t.bgBase.getRed() < 50;
@@ -765,6 +790,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     public JCheckBox getChkModoPrueba() { return chkModoPrueba; }
     public JButton getBtnSiguiente() { return btnSiguiente; }
     public JButton getBtnImportarRemito() { return btnImportarRemito; }
+    public JButton getBtnVerEquipos() { return btnVerEquipos; }
     public JButton getBtnAgregarItem() { return btnAgregarItem; }
     public JButton getBtnEliminarItem() { return btnEliminarItem; }
     public JComboBox<String> getCmbAlicuotaIva() { return cmbAlicuotaIva; }

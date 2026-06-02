@@ -20,8 +20,8 @@ public class VentanaGestionComprobantes extends JFrame {
 
     private void initComponents() {
         setTitle("Gesti\u00f3n de Comprobantes");
-        setSize(1024, 720);
-        setMinimumSize(new Dimension(900, 650));
+        setSize(900, 640);
+        setMinimumSize(new Dimension(800, 580));
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(currentTheme.bgBase);

@@ -46,7 +46,9 @@ public class TablaRenderer extends DefaultTableCellRenderer {
         this.theme = theme;
     }
 
-    private static final DecimalFormat CURRENCY_FMT = new DecimalFormat("$ #,##0.00");
+    private static final DecimalFormat CURRENCY_FMT = new DecimalFormat(
+        "$ #,##0.00",
+        java.text.DecimalFormatSymbols.getInstance(new java.util.Locale("es", "AR")));
 
     @Override
     public Component getTableCellRendererComponent(JTable table, Object value,

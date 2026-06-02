@@ -24,7 +24,11 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.io.File;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import javax.swing.table.TableColumn;
 
 public class VentanaComprobantes extends javax.swing.JFrame {
 
@@ -58,7 +62,7 @@ public class VentanaComprobantes extends javax.swing.JFrame {
 
     private void initComponents() {
         setTitle("Historial de Comprobantes");
-        setSize(950, 520);
+        setSize(900, 540);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(currentTheme.bgBase);
@@ -151,6 +155,15 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         };
 
         tabla = new JTable(modeloTabla);
+
+        tabla.getColumnModel().moveColumn(3, 0);
+        TableColumn idCol = tabla.getColumnModel().getColumn(1);
+        idCol.setMinWidth(0);
+        idCol.setMaxWidth(0);
+        idCol.setPreferredWidth(0);
+        idCol.setWidth(0);
+        idCol.setResizable(false);
+
         scrollPane = new JScrollPane(tabla);
 
         add(panelSuperior, BorderLayout.NORTH);
@@ -302,7 +315,13 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         if (btnVerPDF != null) { btnVerPDF.setBackground(t.btnBg); btnVerPDF.setForeground(t.textPrimary); }
         if (scrollPane != null) scrollPane.getViewport().setBackground(t.bgBase);
         if (tabla != null) {
-            TablaRenderer.applyTo(tabla, t);
+            boolean isDarkTheme = t.bgBase.getRed() < 50;
+            Color evenBg = isDarkTheme ? new Color(30, 40, 62) : new Color(210, 222, 242);
+            Color oddBg  = isDarkTheme ? new Color(45, 58, 80) : new Color(235, 242, 252);
+            Set<Integer> currency = new HashSet<>(Arrays.asList(6));
+            Set<Integer> bold     = new HashSet<>(Arrays.asList(3));
+            Set<Integer> center   = new HashSet<>(Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+            TablaRenderer.applyTo(tabla, t, currency, bold, center, evenBg, oddBg);
             if (tabla.getTableHeader() != null) {
                 Theme.styleTableHeader(tabla.getTableHeader(), t);
             }
