@@ -2,7 +2,6 @@ package com.els.facturacion.vista;
 
 import com.els.facturacion.controlador.ControladorFacturacion;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Container;
 import java.awt.Dimension;
 import javax.swing.JFrame;
@@ -15,6 +14,7 @@ public class VentanaGestionComprobantes extends JFrame {
 
     public VentanaGestionComprobantes() {
         initComponents();
+        applyTheme(currentTheme);
         VentanaPrincipal.addThemeListener(this);
     }
 

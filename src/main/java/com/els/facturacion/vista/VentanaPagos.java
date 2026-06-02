@@ -18,8 +18,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.SwingConstants;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
@@ -38,6 +36,9 @@ import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 public class VentanaPagos extends javax.swing.JFrame {
@@ -73,6 +74,9 @@ public class VentanaPagos extends javax.swing.JFrame {
     private JButton btnRefresh;
     private JButton btnVerRecibo;
 
+    private JPanel statusBar;
+    private JLabel lblStatus;
+
     // FIX: live-theme — contenedores visibles (antes locales)
     private JSplitPane splitHorizontal;
     private JSplitPane splitVertical;
@@ -87,6 +91,10 @@ public class VentanaPagos extends javax.swing.JFrame {
     private JPanel box1;
     private JPanel box2;
     private JPanel panelAcciones;
+    private JPanel panelHistorialAcciones;
+    private JScrollPane scrollFacturas;
+    private JScrollPane scrollItems;
+    private JScrollPane scrollPagos;
 
     private int comprobanteSeleccionadoId = -1;
     private List<Integer> pagosIds;
@@ -111,11 +119,11 @@ public class VentanaPagos extends javax.swing.JFrame {
         setSize(1024, 750);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(currentTheme.bgBase);
+        getContentPane().setBackground(currentTheme.bgSurface);
 
         splitHorizontal = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitHorizontal.setBorder(null);
-        splitHorizontal.setBackground(currentTheme.bgBase);
+        splitHorizontal.setBackground(currentTheme.bgSurface);
 
         btnPagarItem = new JButton("PAGAR ITEM");
         estilizarBoton(btnPagarItem);
@@ -189,12 +197,22 @@ public class VentanaPagos extends javax.swing.JFrame {
         splitHorizontal.setRightComponent(panelDetalle);
 
         getContentPane().add(splitHorizontal);
+
+        boolean barIsLight = currentTheme.bgBase.getRed() > 128;
+        statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
+        statusBar.setBackground(barIsLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
+        lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica");
+        lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblStatus.setForeground(barIsLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
+        statusBar.add(lblStatus);
+        add(statusBar, BorderLayout.SOUTH);
+
         javax.swing.SwingUtilities.invokeLater(() -> splitHorizontal.setDividerLocation(0.45));
     }
 
     private JPanel crearPanelFacturas() {
         panelFacturas = new JPanel(new BorderLayout(5, 5));
-        panelFacturas.setBackground(currentTheme.bgBase);
+        panelFacturas.setBackground(currentTheme.bgSurface);
         panelFacturas.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createEmptyBorder(10, 10, 10, 5),
             BorderFactory.createTitledBorder(
@@ -229,7 +247,8 @@ public class VentanaPagos extends javax.swing.JFrame {
         tablaFacturas.getColumnModel().getColumn(4).setPreferredWidth(90);
         tablaFacturas.getColumnModel().getColumn(5).setPreferredWidth(70);
 
-        panelFacturas.add(new JScrollPane(tablaFacturas), BorderLayout.CENTER);
+        scrollFacturas = new JScrollPane(tablaFacturas);
+        panelFacturas.add(scrollFacturas, BorderLayout.CENTER);
 
         panelInferior = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         panelInferior.setBackground(currentTheme.bgBase);
@@ -241,7 +260,7 @@ public class VentanaPagos extends javax.swing.JFrame {
 
     private JPanel crearPanelDetalle() {
         panelDetalle = new JPanel(new BorderLayout(5, 5));
-        panelDetalle.setBackground(currentTheme.bgBase);
+        panelDetalle.setBackground(currentTheme.bgSurface);
         panelDetalle.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createEmptyBorder(10, 5, 10, 10),
             BorderFactory.createTitledBorder(
@@ -262,7 +281,7 @@ public class VentanaPagos extends javax.swing.JFrame {
     private JPanel crearPanelHeader() {
         panelHeader = new JPanel();
         panelHeader.setLayout(new BoxLayout(panelHeader, BoxLayout.Y_AXIS));
-        panelHeader.setBackground(currentTheme.bgBase);
+        panelHeader.setBackground(currentTheme.bgSurface);
         panelHeader.setBorder(BorderFactory.createEmptyBorder(6, 8, 10, 8));
 
         lblSaldoPendiente = new JLabel("Saldo Pendiente: $ 0,00");
@@ -292,21 +311,21 @@ public class VentanaPagos extends javax.swing.JFrame {
         splitVertical = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         splitVertical.setResizeWeight(0.4);
         splitVertical.setBorder(null);
-        splitVertical.setBackground(currentTheme.bgBase);
+        splitVertical.setBackground(currentTheme.bgSurface);
 
         splitVertical.setTopComponent(crearPanelItems());
         splitVertical.setBottomComponent(crearPanelHistorial());
         javax.swing.SwingUtilities.invokeLater(() -> splitVertical.setDividerLocation(0.4));
 
         wrapper = new JPanel(new BorderLayout());
-        wrapper.setBackground(currentTheme.bgBase);
+        wrapper.setBackground(currentTheme.bgSurface);
         wrapper.add(splitVertical);
         return wrapper;
     }
 
     private JPanel crearPanelItems() {
         panelItems = new JPanel(new BorderLayout(3, 3));
-        panelItems.setBackground(currentTheme.bgBase);
+        panelItems.setBackground(currentTheme.bgSurface);
         panelItems.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(currentTheme.brand),
             "ITEMS DE LA FACTURA",
@@ -334,13 +353,8 @@ public class VentanaPagos extends javax.swing.JFrame {
         tablaItems.getColumnModel().getColumn(4).setPreferredWidth(75);
         tablaItems.getColumnModel().getColumn(5).setPreferredWidth(55);
 
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        for (int c = 0; c < tablaItems.getColumnCount(); c++) {
-            if (c != 1) tablaItems.getColumnModel().getColumn(c).setCellRenderer(centerRenderer);
-        }
-
-        panelItems.add(new JScrollPane(tablaItems), BorderLayout.CENTER);
+        scrollItems = new JScrollPane(tablaItems);
+        panelItems.add(scrollItems, BorderLayout.CENTER);
 
         txtMontoPago = new JTextField();
         txtMontoPago.setFont(new Font("Segoe UI", Font.BOLD, 14));
@@ -434,7 +448,7 @@ public class VentanaPagos extends javax.swing.JFrame {
 
     private JPanel crearPanelHistorial() {
         panelHistorial = new JPanel(new BorderLayout(5, 5));
-        panelHistorial.setBackground(currentTheme.bgBase);
+        panelHistorial.setBackground(currentTheme.bgSurface);
         panelHistorial.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(currentTheme.brand),
             "HISTORIAL DE PAGOS",
@@ -468,23 +482,14 @@ public class VentanaPagos extends javax.swing.JFrame {
             tablaPagos.getColumnModel().getColumn(i).setPreferredWidth(pagosAnchos[i]);
         }
 
-        DefaultTableCellRenderer centerPagosRenderer = new DefaultTableCellRenderer();
-        centerPagosRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        for (int i = 0; i < tablaPagos.getColumnCount(); i++) {
-            if (i == 5) continue;
-            tablaPagos.getColumnModel().getColumn(i).setCellRenderer(centerPagosRenderer);
-        }
+        scrollPagos = new JScrollPane(tablaPagos);
+        panelHistorial.add(scrollPagos, BorderLayout.CENTER);
 
-        DefaultTableCellRenderer headerPagosRenderer = (DefaultTableCellRenderer) tablaPagos.getTableHeader().getDefaultRenderer();
-        headerPagosRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-
-        panelHistorial.add(new JScrollPane(tablaPagos), BorderLayout.CENTER);
-
-        JPanel panelAcciones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-        panelAcciones.setBackground(currentTheme.bgBase);
-        panelAcciones.add(btnGenerarRecibo);
-        panelAcciones.add(btnVerRecibo);
-        panelHistorial.add(panelAcciones, BorderLayout.SOUTH);
+        panelHistorialAcciones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        panelHistorialAcciones.setBackground(currentTheme.bgBase);
+        panelHistorialAcciones.add(btnGenerarRecibo);
+        panelHistorialAcciones.add(btnVerRecibo);
+        panelHistorial.add(panelHistorialAcciones, BorderLayout.SOUTH);
 
         return panelHistorial;
     }
@@ -860,16 +865,14 @@ public class VentanaPagos extends javax.swing.JFrame {
 
     private void applyTheme(Theme t) {
         currentTheme = t;
-        boolean isDark = t.bgBase.getRed() < 50;
-        Color hdrFg = isDark ? Color.WHITE : t.textPrimary;
         Font titledFont = new Font("Segoe UI", Font.BOLD, 11);
 
         // FIX: live-theme — contenedores raíz
-        if (splitHorizontal != null) { splitHorizontal.setBackground(t.bgBase); splitHorizontal.setBorder(null); }
-        if (splitVertical != null) { splitVertical.setBackground(t.bgBase); splitVertical.setBorder(null); }
-        if (wrapper != null) wrapper.setBackground(t.bgBase);
+        if (splitHorizontal != null) { splitHorizontal.setBackground(t.bgSurface); splitHorizontal.setBorder(null); }
+        if (splitVertical != null) { splitVertical.setBackground(t.bgSurface); splitVertical.setBorder(null); }
+        if (wrapper != null) wrapper.setBackground(t.bgSurface);
         if (panelFacturas != null) {
-            panelFacturas.setBackground(t.bgBase);
+            panelFacturas.setBackground(t.bgSurface);
             panelFacturas.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createEmptyBorder(10, 10, 10, 5),
                 BorderFactory.createTitledBorder(
@@ -880,7 +883,7 @@ public class VentanaPagos extends javax.swing.JFrame {
                     new Font("Segoe UI", Font.BOLD, 13), t.textPrimary)));
         }
         if (panelDetalle != null) {
-            panelDetalle.setBackground(t.bgBase);
+            panelDetalle.setBackground(t.bgSurface);
             panelDetalle.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createEmptyBorder(10, 5, 10, 10),
                 BorderFactory.createTitledBorder(
@@ -890,10 +893,10 @@ public class VentanaPagos extends javax.swing.JFrame {
                     javax.swing.border.TitledBorder.TOP,
                     new Font("Segoe UI", Font.BOLD, 13), t.textPrimary)));
         }
-        if (panelHeader != null) { panelHeader.setBackground(t.bgBase); }
-        if (panelCentral != null) { panelCentral.setBackground(t.bgBase); } // wrapper de splitVertical
+        if (panelHeader != null) { panelHeader.setBackground(t.bgSurface); }
+        if (panelCentral != null) { panelCentral.setBackground(t.bgSurface); } // wrapper de splitVertical
         if (panelItems != null) {
-            panelItems.setBackground(t.bgBase);
+            panelItems.setBackground(t.bgSurface);
             panelItems.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(t.brand),
                 "ITEMS DE LA FACTURA",
@@ -902,7 +905,7 @@ public class VentanaPagos extends javax.swing.JFrame {
                 titledFont, t.textPrimary));
         }
         if (panelHistorial != null) {
-            panelHistorial.setBackground(t.bgBase);
+            panelHistorial.setBackground(t.bgSurface);
             panelHistorial.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(t.brand),
                 "HISTORIAL DE PAGOS",
@@ -924,6 +927,15 @@ public class VentanaPagos extends javax.swing.JFrame {
                 BorderFactory.createEmptyBorder(4, 8, 4, 8)));
         }
         if (panelAcciones != null) panelAcciones.setBackground(t.bgBase);
+        if (panelHistorialAcciones != null) panelHistorialAcciones.setBackground(t.bgBase);
+        if (statusBar != null) {
+            boolean isLight = t.bgBase.getRed() > 128;
+            statusBar.setBackground(isLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
+        }
+        if (lblStatus != null) {
+            boolean isLight = t.bgBase.getRed() > 128;
+            lblStatus.setForeground(isLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
+        }
 
         if (lblSaldoPendiente != null) lblSaldoPendiente.setForeground(t.danger);
         if (lblInfoFactura != null) lblInfoFactura.setForeground(t.textPrimary);
@@ -936,64 +948,33 @@ public class VentanaPagos extends javax.swing.JFrame {
         if (btnVerRecibo != null) { btnVerRecibo.setBackground(t.btnBg); btnVerRecibo.setForeground(t.textPrimary); }
         if (cmbFormaPago != null) { cmbFormaPago.setForeground(t.textPrimary); cmbFormaPago.setBackground(t.bgElevated); }
         if (txtMontoPago != null) { txtMontoPago.setForeground(t.textPrimary); txtMontoPago.setBackground(t.bgInput); }
+        if (scrollFacturas != null) scrollFacturas.getViewport().setBackground(t.bgSurface);
+        if (scrollItems != null) scrollItems.getViewport().setBackground(t.bgSurface);
+        if (scrollPagos != null) scrollPagos.getViewport().setBackground(t.bgSurface);
         if (tablaFacturas != null) {
-            tablaFacturas.setBackground(t.bgInput);
-            tablaFacturas.setForeground(t.textPrimary);
-            tablaFacturas.setGridColor(t.borderLight);
-            tablaFacturas.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-                @Override
-                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
-                      boolean isSelected, boolean hasFocus, int row, int column) {
-                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                    if (!isSelected) {
-                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
-                        setForeground(t.textPrimary);
-                    }
-                    return this;
-                }
-            });
+            TablaRenderer.applyTo(tablaFacturas, t);
             if (tablaFacturas.getTableHeader() != null) {
-                Theme.styleTableHeader(tablaFacturas.getTableHeader(), t.bgElevated, hdrFg);
+                Theme.styleTableHeader(tablaFacturas.getTableHeader(), t);
             }
         }
         if (tablaItems != null) {
-            tablaItems.setBackground(t.bgInput);
-            tablaItems.setForeground(t.textPrimary);
-            tablaItems.setGridColor(t.borderLight);
-            tablaItems.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-                @Override
-                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
-                      boolean isSelected, boolean hasFocus, int row, int column) {
-                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                    if (!isSelected) {
-                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
-                        setForeground(t.textPrimary);
-                    }
-                    return this;
-                }
-            });
+            TablaRenderer.applyTo(tablaItems, t,
+                new HashSet<>(Arrays.asList(3, 4)),
+                new HashSet<>(Arrays.asList(0, 3, 4)),
+                new HashSet<>(Arrays.asList(0, 2, 3, 4, 5)),
+                t.bgSurface, t.bgElevated);
             if (tablaItems.getTableHeader() != null) {
-                Theme.styleTableHeader(tablaItems.getTableHeader(), t.bgElevated, hdrFg);
+                Theme.styleTableHeader(tablaItems.getTableHeader(), t);
             }
         }
         if (tablaPagos != null) {
-            tablaPagos.setBackground(t.bgInput);
-            tablaPagos.setForeground(t.textPrimary);
-            tablaPagos.setGridColor(t.borderLight);
-            tablaPagos.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-                @Override
-                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
-                      boolean isSelected, boolean hasFocus, int row, int column) {
-                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                    if (!isSelected) {
-                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
-                        setForeground(t.textPrimary);
-                    }
-                    return this;
-                }
-            });
+            TablaRenderer.applyTo(tablaPagos, t,
+                new HashSet<>(Arrays.asList(0)),
+                Collections.emptySet(),
+                new HashSet<>(Arrays.asList(1, 3, 4)),
+                t.bgSurface, t.bgElevated);
             if (tablaPagos.getTableHeader() != null) {
-                Theme.styleTableHeader(tablaPagos.getTableHeader(), t.bgElevated, hdrFg);
+                Theme.styleTableHeader(tablaPagos.getTableHeader(), t);
             }
         }
     }

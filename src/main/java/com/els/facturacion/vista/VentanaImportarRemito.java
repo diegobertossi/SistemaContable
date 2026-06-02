@@ -6,11 +6,9 @@ import com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem;
 import com.els.facturacion.util.UbicacionSistema;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.util.List;
 
 public class VentanaImportarRemito extends JDialog {
@@ -35,6 +33,8 @@ public class VentanaImportarRemito extends JDialog {
     private JScrollPane scrollItems;
     private JLabel lblBase;
     private JButton btnRefrescar;
+    private JPanel statusBar;
+    private JLabel lblStatus;
 
     private RemitoReparsoftDTO remitoSeleccionado;
     private List<RemitoReparsoftDTO> remitosCache;
@@ -52,6 +52,12 @@ public class VentanaImportarRemito extends JDialog {
     private void initComponents() {
         setSize(800, 600);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                remitoSeleccionado = null;
+            }
+        });
         getContentPane().setBackground(currentTheme.bgBase);
 
         panel = new JPanel(new BorderLayout(10, 10));
@@ -158,8 +164,8 @@ public class VentanaImportarRemito extends JDialog {
 
         btnImportar = new JButton("IMPORTAR REMITO");
         btnImportar.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnImportar.setForeground(Color.WHITE);
-        btnImportar.setBackground(currentTheme.brandDark);
+        btnImportar.setForeground(currentTheme.textPrimary);
+        btnImportar.setBackground(currentTheme.btnBg);
         btnImportar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnImportar.setFocusPainted(false);
         btnImportar.addActionListener(e -> importarRemito());
@@ -171,12 +177,24 @@ public class VentanaImportarRemito extends JDialog {
         btnCancelar.setBackground(currentTheme.btnBg);
         btnCancelar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnCancelar.setFocusPainted(false);
-        btnCancelar.addActionListener(e -> dispose());
+        btnCancelar.addActionListener(e -> {
+            remitoSeleccionado = null;
+            dispose();
+        });
         panelInferior.add(btnCancelar);
 
         panel.add(panelInferior, BorderLayout.SOUTH);
 
         add(panel);
+
+        boolean barIsLight = currentTheme.bgBase.getRed() > 128;
+        statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
+        statusBar.setBackground(barIsLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
+        lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica");
+        lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblStatus.setForeground(barIsLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
+        statusBar.add(lblStatus);
+        add(statusBar, BorderLayout.SOUTH);
     }
 
     private void cargarRemitos() {
@@ -307,94 +325,21 @@ public class VentanaImportarRemito extends JDialog {
             btnCancelar.setBackground(t.btnBg);
         }
         if (btnImportar != null) {
-            btnImportar.setBackground(t.brandDark);
-            btnImportar.setForeground(Color.WHITE);
+            btnImportar.setBackground(t.btnBg);
+            btnImportar.setForeground(t.textPrimary);
         }
         if (tablaRemitos != null) {
-            tablaRemitos.setBackground(t.bgInput);
-            tablaRemitos.setForeground(t.textPrimary);
-            tablaRemitos.setGridColor(t.borderLight);
-            tablaRemitos.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-                @Override
-                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
-                      boolean isSelected, boolean hasFocus, int row, int column) {
-                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                    if (!isSelected) {
-                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
-                        setForeground(t.textPrimary);
-                    }
-                    return this;
-                }
-            });
+            TablaRenderer.applyTo(tablaRemitos, t);
             if (tablaRemitos.getTableHeader() != null) {
-                boolean isDark = t.bgBase.getRed() < 50;
-                Color hdrFg = isDark ? Color.WHITE : t.textPrimary;
-                Theme.styleTableHeader(tablaRemitos.getTableHeader(), t.bgElevated, hdrFg);
-                for (int i = 0; i < tablaRemitos.getColumnCount(); i++) {
-                    final int col = i;
-                    tablaRemitos.getColumnModel().getColumn(col).setHeaderRenderer(
-                        new DefaultTableCellRenderer() {
-                            @Override
-                            public java.awt.Component getTableCellRendererComponent(
-                                  JTable table, Object value, boolean isSelected,
-                                  boolean hasFocus, int row, int column) {
-                                DefaultTableCellRenderer c = new DefaultTableCellRenderer();
-                                c.setText(value != null ? value.toString() : "");
-                                c.setForeground(hdrFg);
-                                c.setBackground(t.bgElevated);
-                                c.setHorizontalAlignment(SwingConstants.CENTER);
-                                c.setFont(table.getTableHeader().getFont());
-                                return c;
-                            }
-                        }
-                    );
-                }
+                Theme.styleTableHeader(tablaRemitos.getTableHeader(), t);
             }
             tablaRemitos.repaint();
         }
         if (tablaItems != null) {
-            tablaItems.setBackground(t.bgInput);
-            tablaItems.setForeground(t.textPrimary);
-            tablaItems.setGridColor(t.borderLight);
-            tablaItems.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-                @Override
-                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
-                      boolean isSelected, boolean hasFocus, int row, int column) {
-                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                    if (!isSelected) {
-                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
-                        setForeground(t.textPrimary);
-                    }
-                    return this;
-                }
-            });
-            // CORREGIDO: mismo tratamiento que tablaRemitos — renderer por columna con blanco forzado en modo oscuro
+            TablaRenderer.applyTo(tablaItems, t);
             if (tablaItems.getTableHeader() != null) {
-                boolean isDark = t.bgBase.getRed() < 50;
-                Color hdrFg = isDark ? Color.WHITE : t.textPrimary;
-                Theme.styleTableHeader(tablaItems.getTableHeader(), t.bgElevated, hdrFg);
-                for (int i = 0; i < tablaItems.getColumnCount(); i++) {
-                    final int col = i;
-                    tablaItems.getColumnModel().getColumn(col).setHeaderRenderer(
-                        new DefaultTableCellRenderer() {
-                            @Override
-                            public java.awt.Component getTableCellRendererComponent(
-                                  JTable table, Object value, boolean isSelected,
-                                  boolean hasFocus, int row, int column) {
-                                DefaultTableCellRenderer c = new DefaultTableCellRenderer();
-                                c.setText(value != null ? value.toString() : "");
-                                c.setForeground(hdrFg);
-                                c.setBackground(t.bgElevated);
-                                c.setHorizontalAlignment(SwingConstants.CENTER);
-                                c.setFont(table.getTableHeader().getFont());
-                                return c;
-                            }
-                        }
-                    );
-                }
-                tablaItems.getTableHeader().repaint();
+                Theme.styleTableHeader(tablaItems.getTableHeader(), t);
             }
-            tablaItems.repaint();
         }
         if (scrollRemitos != null) {
             scrollRemitos.getViewport().setBackground(t.bgBase);
@@ -404,6 +349,14 @@ public class VentanaImportarRemito extends JDialog {
                 TitledBorder.LEFT, TitledBorder.TOP,
                 new Font("Segoe UI", Font.BOLD, 12), t.textPrimary
             ));
+        }
+        if (statusBar != null) {
+            boolean isLight = t.bgBase.getRed() > 128;
+            statusBar.setBackground(isLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
+        }
+        if (lblStatus != null) {
+            boolean isLight = t.bgBase.getRed() > 128;
+            lblStatus.setForeground(isLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
         }
         if (scrollItems != null) {
             scrollItems.getViewport().setBackground(t.bgBase);

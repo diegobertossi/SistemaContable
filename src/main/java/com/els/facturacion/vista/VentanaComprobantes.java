@@ -11,12 +11,13 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
-import javax.swing.table.DefaultTableCellRenderer;
+
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Desktop;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -43,6 +44,8 @@ public class VentanaComprobantes extends javax.swing.JFrame {
     private JPanel panelSuperior;
     private JLabel lblBuscar;
     private JScrollPane scrollPane;
+    private JPanel statusBar;
+    private JLabel lblStatus;
     private DateTimeFormatter fechaFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     public VentanaComprobantes() {
@@ -148,14 +151,19 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         };
 
         tabla = new JTable(modeloTabla);
-        tabla.setFont(new Font("Segoe UI", Font.PLAIN, 10));
-        tabla.setRowHeight(22);
-        tabla.setShowGrid(true);
-        tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 10));
         scrollPane = new JScrollPane(tabla);
 
         add(panelSuperior, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
+
+        boolean barIsLight = currentTheme.bgBase.getRed() > 128;
+        statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
+        statusBar.setBackground(barIsLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
+        lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica");
+        lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblStatus.setForeground(barIsLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
+        statusBar.add(lblStatus);
+        add(statusBar, BorderLayout.SOUTH);
     }
 
     private void cargarComprobantes() {
@@ -282,50 +290,30 @@ public class VentanaComprobantes extends javax.swing.JFrame {
     private void applyTheme(Theme t) {
         currentTheme = t;
         if (getContentPane() != null) getContentPane().setBackground(t.bgBase);
-        boolean isDark = t.bgBase.getRed() < 50;
-        Color hdrFg = isDark ? Color.WHITE : t.textPrimary;
         if (panelSuperior != null) panelSuperior.setBackground(t.bgSurface);
         if (lblTitulo != null) lblTitulo.setForeground(t.brand);
         if (lblBuscar != null) lblBuscar.setForeground(t.textPrimary);
-        if (scrollPane != null) {
-            scrollPane.getViewport().setBackground(t.bgBase);
-            scrollPane.setBorder(BorderFactory.createLineBorder(t.borderLight));
-        }
-        if (btnBuscar != null) {
-            btnBuscar.setBackground(t.btnBg);
-            btnBuscar.setForeground(t.textPrimary);
-        }
-        if (btnActualizar != null) {
-            btnActualizar.setBackground(t.btnBg);
-            btnActualizar.setForeground(t.textPrimary);
-        }
-        if (btnVerPDF != null) {
-            btnVerPDF.setBackground(t.btnBg);
-            btnVerPDF.setForeground(t.textPrimary);
-        }
-        if (tabla != null) {
-            tabla.setBackground(t.bgInput);
-            tabla.setForeground(t.textPrimary);
-            tabla.setGridColor(t.borderLight);
-            tabla.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-                @Override
-                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
-                      boolean isSelected, boolean hasFocus, int row, int column) {
-                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                    if (!isSelected) {
-                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
-                        setForeground(t.textPrimary);
-                    }
-                    return this;
-                }
-            });
-            if (tabla.getTableHeader() != null) {
-                Theme.styleTableHeader(tabla.getTableHeader(), t.bgElevated, hdrFg);
-            }
-        }
         if (txtBuscarCAE != null) {
             txtBuscarCAE.setForeground(t.textPrimary);
             txtBuscarCAE.setBackground(t.bgInput);
+        }
+        if (btnBuscar != null) { btnBuscar.setBackground(t.btnBg); btnBuscar.setForeground(t.textPrimary); }
+        if (btnActualizar != null) { btnActualizar.setBackground(t.btnBg); btnActualizar.setForeground(t.textPrimary); }
+        if (btnVerPDF != null) { btnVerPDF.setBackground(t.btnBg); btnVerPDF.setForeground(t.textPrimary); }
+        if (scrollPane != null) scrollPane.getViewport().setBackground(t.bgBase);
+        if (tabla != null) {
+            TablaRenderer.applyTo(tabla, t);
+            if (tabla.getTableHeader() != null) {
+                Theme.styleTableHeader(tabla.getTableHeader(), t);
+            }
+        }
+        if (statusBar != null) {
+            boolean isLight = t.bgBase.getRed() > 128;
+            statusBar.setBackground(isLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
+        }
+        if (lblStatus != null) {
+            boolean isLight = t.bgBase.getRed() > 128;
+            lblStatus.setForeground(isLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
         }
     }
 

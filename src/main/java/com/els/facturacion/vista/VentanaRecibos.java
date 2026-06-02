@@ -12,8 +12,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
-import javax.swing.SwingConstants;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -28,6 +26,9 @@ import java.time.format.DateTimeFormatter;
 import java.awt.Desktop;
 import java.io.File;
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 public class VentanaRecibos extends javax.swing.JFrame {
@@ -66,6 +67,8 @@ public class VentanaRecibos extends javax.swing.JFrame {
     private DefaultTableModel modeloTablaFacturas;
 
     private JLabel lblInfoRecibo;
+    private JPanel statusBar;
+    private JLabel lblStatus;
 
     public VentanaRecibos() {
         controlador = new ControladorRecibos();
@@ -80,23 +83,32 @@ public class VentanaRecibos extends javax.swing.JFrame {
         setSize(1100, 700);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(currentTheme.bgBase);
+        getContentPane().setBackground(currentTheme.bgSurface);
 
         splitHorizontal = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitHorizontal.setResizeWeight(0.35);
         splitHorizontal.setBorder(null);
-        splitHorizontal.setBackground(currentTheme.bgBase);
+        splitHorizontal.setBackground(currentTheme.bgSurface);
 
         splitHorizontal.setLeftComponent(crearPanelLista());
         splitHorizontal.setRightComponent(crearPanelDetalle());
 
         add(splitHorizontal);
+
+        boolean barIsLight = currentTheme.bgBase.getRed() > 128;
+        statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
+        statusBar.setBackground(barIsLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
+        lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica");
+        lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblStatus.setForeground(barIsLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
+        statusBar.add(lblStatus);
+        add(statusBar, BorderLayout.SOUTH);
     }
 
     private JPanel crearPanelLista() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         panelLista = panel;
-        panel.setBackground(currentTheme.bgBase);
+        panel.setBackground(currentTheme.bgSurface);
         panel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createEmptyBorder(10, 10, 10, 5),
             BorderFactory.createTitledBorder(
@@ -160,7 +172,7 @@ public class VentanaRecibos extends javax.swing.JFrame {
     private JPanel crearPanelDetalle() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         panelDetalle = panel;
-        panel.setBackground(currentTheme.bgBase);
+        panel.setBackground(currentTheme.bgSurface);
         panel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createEmptyBorder(10, 5, 10, 10),
             BorderFactory.createTitledBorder(
@@ -181,7 +193,7 @@ public class VentanaRecibos extends javax.swing.JFrame {
     private JPanel crearPanelHeader() {
         JPanel panel = new JPanel(new GridBagLayout());
         panelHeader = panel;
-        panel.setBackground(currentTheme.bgBase);
+        panel.setBackground(currentTheme.bgSurface);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 10, 5, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -200,13 +212,13 @@ public class VentanaRecibos extends javax.swing.JFrame {
         splitVertical = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         splitVertical.setResizeWeight(0.5);
         splitVertical.setBorder(null);
-        splitVertical.setBackground(currentTheme.bgBase);
+        splitVertical.setBackground(currentTheme.bgSurface);
 
         splitVertical.setTopComponent(crearPanelFormasPago());
         splitVertical.setBottomComponent(crearPanelFacturas());
 
         panelCentralWrapper = new JPanel(new BorderLayout());
-        panelCentralWrapper.setBackground(currentTheme.bgBase);
+        panelCentralWrapper.setBackground(currentTheme.bgSurface);
         panelCentralWrapper.add(splitVertical);
         return panelCentralWrapper;
     }
@@ -214,7 +226,7 @@ public class VentanaRecibos extends javax.swing.JFrame {
     private JPanel crearPanelFormasPago() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         panelFormasPago = panel;
-        panel.setBackground(currentTheme.bgBase);
+        panel.setBackground(currentTheme.bgSurface);
         panel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(currentTheme.brand),
             "FORMAS DE PAGO",
@@ -239,10 +251,6 @@ public class VentanaRecibos extends javax.swing.JFrame {
         tablaPagos.getColumnModel().getColumn(1).setPreferredWidth(120);
         tablaPagos.getColumnModel().getColumn(2).setPreferredWidth(200);
 
-        DefaultTableCellRenderer montoRenderer = new DefaultTableCellRenderer();
-        montoRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
-        tablaPagos.getColumnModel().getColumn(1).setCellRenderer(montoRenderer);
-
         scrollPagos = new JScrollPane(tablaPagos);
         panel.add(scrollPagos, BorderLayout.CENTER);
 
@@ -252,7 +260,7 @@ public class VentanaRecibos extends javax.swing.JFrame {
     private JPanel crearPanelFacturas() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         panelFacturas = panel;
-        panel.setBackground(currentTheme.bgBase);
+        panel.setBackground(currentTheme.bgSurface);
         panel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(currentTheme.brand),
             "FACTURAS ASOCIADAS",
@@ -277,9 +285,6 @@ public class VentanaRecibos extends javax.swing.JFrame {
         tablaFacturas.getColumnModel().getColumn(1).setPreferredWidth(130);
         tablaFacturas.getColumnModel().getColumn(2).setPreferredWidth(120);
 
-        DefaultTableCellRenderer montoRenderer = new DefaultTableCellRenderer();
-        montoRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
-        tablaFacturas.getColumnModel().getColumn(2).setCellRenderer(montoRenderer);
 
         scrollFacturas = new JScrollPane(tablaFacturas);
         panel.add(scrollFacturas, BorderLayout.CENTER);
@@ -376,14 +381,12 @@ public class VentanaRecibos extends javax.swing.JFrame {
 
     private void applyTheme(Theme t) {
         currentTheme = t;
-        boolean isDark = t.bgBase.getRed() < 50;
-        Color hdrFg = isDark ? Color.WHITE : t.textPrimary;
         Color titledFg = t.textPrimary;
         Color titledLine = t.brand;
         Font titledFont = new Font("Segoe UI", Font.BOLD, 12);
 
         if (panelLista != null) {
-            panelLista.setBackground(t.bgBase);
+            panelLista.setBackground(t.bgSurface);
             panelLista.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createEmptyBorder(10, 10, 10, 5),
                 BorderFactory.createTitledBorder(
@@ -397,7 +400,7 @@ public class VentanaRecibos extends javax.swing.JFrame {
         }
         if (panelInferiorLista != null) panelInferiorLista.setBackground(t.bgBase);
         if (panelDetalle != null) {
-            panelDetalle.setBackground(t.bgBase);
+            panelDetalle.setBackground(t.bgSurface);
             panelDetalle.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createEmptyBorder(10, 5, 10, 10),
                 BorderFactory.createTitledBorder(
@@ -409,10 +412,10 @@ public class VentanaRecibos extends javax.swing.JFrame {
                 )
             ));
         }
-        if (panelHeader != null) panelHeader.setBackground(t.bgBase);
-        if (panelCentralWrapper != null) panelCentralWrapper.setBackground(t.bgBase);
+        if (panelHeader != null) panelHeader.setBackground(t.bgSurface);
+        if (panelCentralWrapper != null) panelCentralWrapper.setBackground(t.bgSurface);
         if (panelFormasPago != null) {
-            panelFormasPago.setBackground(t.bgBase);
+            panelFormasPago.setBackground(t.bgSurface);
             panelFormasPago.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(titledLine),
                 "FORMAS DE PAGO",
@@ -422,7 +425,7 @@ public class VentanaRecibos extends javax.swing.JFrame {
             ));
         }
         if (panelFacturas != null) {
-            panelFacturas.setBackground(t.bgBase);
+            panelFacturas.setBackground(t.bgSurface);
             panelFacturas.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(titledLine),
                 "FACTURAS ASOCIADAS",
@@ -432,8 +435,8 @@ public class VentanaRecibos extends javax.swing.JFrame {
             ));
         }
 
-        if (splitHorizontal != null) splitHorizontal.setBackground(t.bgBase);
-        if (splitVertical != null) splitVertical.setBackground(t.bgBase);
+        if (splitHorizontal != null) splitHorizontal.setBackground(t.bgSurface);
+        if (splitVertical != null) splitVertical.setBackground(t.bgSurface);
 
         if (lblInfoRecibo != null) lblInfoRecibo.setForeground(t.textPrimary);
 
@@ -447,71 +450,41 @@ public class VentanaRecibos extends javax.swing.JFrame {
         }
 
         if (tablaRecibos != null) {
-            tablaRecibos.setBackground(t.bgInput);
-            tablaRecibos.setForeground(t.textPrimary);
-            tablaRecibos.setGridColor(t.borderLight);
-            tablaRecibos.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-                @Override
-                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
-                      boolean isSelected, boolean hasFocus, int row, int column) {
-                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                    if (!isSelected) {
-                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
-                        setForeground(t.textPrimary);
-                    }
-                    return this;
-                }
-            });
+            TablaRenderer.applyTo(tablaRecibos, t);
             if (tablaRecibos.getTableHeader() != null) {
-                Theme.styleTableHeader(tablaRecibos.getTableHeader(), t.bgElevated, hdrFg);
+                Theme.styleTableHeader(tablaRecibos.getTableHeader(), t);
             }
         }
         if (tablaPagos != null) {
-            tablaPagos.setBackground(t.bgInput);
-            tablaPagos.setForeground(t.textPrimary);
-            tablaPagos.setGridColor(t.borderLight);
-            tablaPagos.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-                @Override
-                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
-                      boolean isSelected, boolean hasFocus, int row, int column) {
-                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                    if (!isSelected) {
-                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
-                        setForeground(t.textPrimary);
-                    }
-                    return this;
-                }
-            });
+            TablaRenderer.applyTo(tablaPagos, t,
+                new HashSet<>(Arrays.asList(1)),
+                Collections.emptySet());
             if (tablaPagos.getTableHeader() != null) {
-                Theme.styleTableHeader(tablaPagos.getTableHeader(), t.bgElevated, hdrFg);
+                Theme.styleTableHeader(tablaPagos.getTableHeader(), t);
             }
         }
         if (tablaFacturas != null) {
-            tablaFacturas.setBackground(t.bgInput);
-            tablaFacturas.setForeground(t.textPrimary);
-            tablaFacturas.setGridColor(t.borderLight);
-            tablaFacturas.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-                @Override
-                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
-                      boolean isSelected, boolean hasFocus, int row, int column) {
-                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                    if (!isSelected) {
-                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
-                        setForeground(t.textPrimary);
-                    }
-                    return this;
-                }
-            });
+            TablaRenderer.applyTo(tablaFacturas, t,
+                new HashSet<>(Arrays.asList(2)),
+                Collections.emptySet());
             if (tablaFacturas.getTableHeader() != null) {
-                Theme.styleTableHeader(tablaFacturas.getTableHeader(), t.bgElevated, hdrFg);
+                Theme.styleTableHeader(tablaFacturas.getTableHeader(), t);
             }
         }
 
         if (scrollRecibos != null && scrollRecibos.getViewport() != null)
-            scrollRecibos.getViewport().setBackground(t.bgBase);
+            scrollRecibos.getViewport().setBackground(t.bgSurface);
         if (scrollPagos != null && scrollPagos.getViewport() != null)
-            scrollPagos.getViewport().setBackground(t.bgBase);
+            scrollPagos.getViewport().setBackground(t.bgSurface);
         if (scrollFacturas != null && scrollFacturas.getViewport() != null)
-            scrollFacturas.getViewport().setBackground(t.bgBase);
+            scrollFacturas.getViewport().setBackground(t.bgSurface);
+        if (statusBar != null) {
+            boolean isLight = t.bgBase.getRed() > 128;
+            statusBar.setBackground(isLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
+        }
+        if (lblStatus != null) {
+            boolean isLight = t.bgBase.getRed() > 128;
+            lblStatus.setForeground(isLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
+        }
     }
 }

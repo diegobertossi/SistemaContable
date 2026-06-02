@@ -13,6 +13,7 @@ public class VentanaCajaGastos extends JFrame {
 
     public VentanaCajaGastos() {
         initComponents();
+        applyTheme(currentTheme);
         VentanaPrincipal.addThemeListener(this);
     }
 
@@ -22,6 +23,7 @@ public class VentanaCajaGastos extends JFrame {
             getContentPane().setBackground(t.bgBase);
         }
         if (tabbedPane != null) {
+            tabbedPane.setBackground(t.bgSurface);
             tabbedPane.setForeground(t.textPrimary);
         }
     }

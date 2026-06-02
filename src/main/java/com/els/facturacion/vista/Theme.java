@@ -2,8 +2,11 @@ package com.els.facturacion.vista;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Font;
+import javax.swing.BorderFactory;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
+import javax.swing.border.Border;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 
@@ -90,12 +93,45 @@ public class Theme {
     );
 
     /**
-     * Installs a custom header renderer that uses the given background and
-     * foreground colors, bypassing JTattoo's BaseDefaultHeaderRenderer
-     * (which ignores JTableHeader.setForeground() and reads from UIManager).
+     * Installs a custom header renderer using the given theme.
+     *
+     * In light mode uses a pastel blue background derived from the brand color.
+     * In dark mode uses a slightly elevated background.
+     * Applies: uppercase, Segoe UI Bold 11, centered, column divider borders.
+     *
+     * @param header the table header to style
+     * @param theme  the current theme (for colors and mode detection)
      */
-    public static void styleTableHeader(JTableHeader header, Color bg, Color fg) {
-        header.setBackground(bg);
+    public static void styleTableHeader(JTableHeader header, Theme theme) {
+        boolean isDark = theme.bgBase.getRed() < 50;
+        Color fg = isDark ? Color.WHITE : theme.textPrimary;
+        Color headerBg;
+        if (isDark) {
+            headerBg = new Color(
+                Math.min(255, theme.bgElevated.getRed() + 20),
+                Math.min(255, theme.bgElevated.getGreen() + 20),
+                Math.min(255, theme.bgElevated.getBlue() + 20));
+        } else {
+            headerBg = new Color(
+                Math.min(255, theme.brand.getRed() + 115),
+                Math.min(255, theme.brand.getGreen() + 110),
+                Math.min(255, theme.brand.getBlue() + 10));
+        }
+        header.setBackground(headerBg);
+        int divAvg = (headerBg.getRed() + headerBg.getGreen() + headerBg.getBlue()) / 3;
+        Color divider;
+        if (divAvg < 80) {
+            divider = new Color(
+                Math.min(255, headerBg.getRed() + 30),
+                Math.min(255, headerBg.getGreen() + 30),
+                Math.min(255, headerBg.getBlue() + 30));
+        } else {
+            divider = new Color(
+                Math.max(0, headerBg.getRed() - 25),
+                Math.max(0, headerBg.getGreen() - 25),
+                Math.max(0, headerBg.getBlue() - 25));
+        }
+        Border colBorder = BorderFactory.createMatteBorder(0, 0, 1, 1, divider);
         header.setDefaultRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
@@ -103,9 +139,11 @@ public class Theme {
                 DefaultTableCellRenderer c = (DefaultTableCellRenderer)
                     super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 c.setForeground(fg);
-                c.setBackground(header.getBackground());
+                c.setBackground(headerBg);
                 c.setHorizontalAlignment(SwingConstants.CENTER);
-                c.setFont(table.getTableHeader().getFont());
+                c.setFont(new Font("Segoe UI", Font.BOLD, 11));
+                c.setText(value != null ? value.toString().toUpperCase() : "");
+                c.setBorder(colBorder);
                 return c;
             }
         });

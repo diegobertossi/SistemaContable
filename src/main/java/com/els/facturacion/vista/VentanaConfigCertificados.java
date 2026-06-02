@@ -14,11 +14,12 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
-import javax.swing.table.DefaultTableCellRenderer;
+
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -50,6 +51,8 @@ public class VentanaConfigCertificados extends JFrame {
     private JScrollPane scrollTabla;
     private JLabel lblTitulo;
     private JButton btnAgregar;
+    private JPanel statusBar;
+    private JLabel lblStatus;
     private JButton btnModificar;
     private JButton btnEliminar;
     private JButton btnLimpiar;
@@ -301,7 +304,18 @@ public class VentanaConfigCertificados extends JFrame {
 
         add(panelSuperior, BorderLayout.NORTH);
         add(scrollTabla, BorderLayout.CENTER);
-        add(panelSur, BorderLayout.SOUTH);
+        JPanel southWrapper = new JPanel(new BorderLayout());
+        southWrapper.setBackground(currentTheme.bgBase);
+        southWrapper.add(panelSur, BorderLayout.CENTER);
+        boolean barIsLight = currentTheme.bgBase.getRed() > 128;
+        statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
+        statusBar.setBackground(barIsLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
+        lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica");
+        lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblStatus.setForeground(barIsLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
+        statusBar.add(lblStatus);
+        southWrapper.add(statusBar, BorderLayout.SOUTH);
+        add(southWrapper, BorderLayout.SOUTH);
     }
 
     private void cargarTabla() {
@@ -458,9 +472,20 @@ public class VentanaConfigCertificados extends JFrame {
             lblTitulo.setForeground(t.brand);
             lblTitulo.setBackground(t.bgSurface);
         }
-        if (panelFormulario != null) panelFormulario.setBackground(t.bgSurface);
+        if (panelFormulario != null) {
+            panelFormulario.setBackground(t.bgSurface);
+            themeLabels(panelFormulario, t);
+        }
         if (panelBotones != null) panelBotones.setBackground(t.bgSurface);
         if (panelSur != null) panelSur.setBackground(t.bgSurface);
+        if (statusBar != null) {
+            boolean isLight = t.bgBase.getRed() > 128;
+            statusBar.setBackground(isLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
+        }
+        if (lblStatus != null) {
+            boolean isLight = t.bgBase.getRed() > 128;
+            lblStatus.setForeground(isLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
+        }
         if (txtCuit != null) {
             txtCuit.setForeground(t.textPrimary);
             txtCuit.setBackground(t.bgInput);
@@ -506,29 +531,24 @@ public class VentanaConfigCertificados extends JFrame {
             btnLimpiar.setBackground(t.btnBg);
         }
         if (tabla != null) {
-            tabla.setBackground(t.bgInput);
-            tabla.setForeground(t.textPrimary);
-            tabla.setGridColor(t.borderLight);
-            boolean isDark = t.bgBase.getRed() < 50;
-            Color hdrFg = isDark ? Color.WHITE : t.textPrimary;
-            tabla.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-                @Override
-                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
-                      boolean isSelected, boolean hasFocus, int row, int column) {
-                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                    if (!isSelected) {
-                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
-                        setForeground(t.textPrimary);
-                    }
-                    return this;
-                }
-            });
+            TablaRenderer.applyTo(tabla, t);
             if (tabla.getTableHeader() != null) {
-                Theme.styleTableHeader(tabla.getTableHeader(), t.bgElevated, hdrFg);
+                Theme.styleTableHeader(tabla.getTableHeader(), t);
             }
         }
         if (scrollTabla != null) {
             scrollTabla.getViewport().setBackground(t.bgBase);
+        }
+    }
+
+    private void themeLabels(java.awt.Container c, Theme t) {
+        for (java.awt.Component comp : c.getComponents()) {
+            if (comp instanceof JLabel) {
+                ((JLabel) comp).setForeground(t.textPrimary);
+            }
+            if (comp instanceof java.awt.Container) {
+                themeLabels((java.awt.Container) comp, t);
+            }
         }
     }
 }

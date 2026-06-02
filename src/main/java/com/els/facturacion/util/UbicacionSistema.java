@@ -2,8 +2,8 @@ package com.els.facturacion.util;
 
 public class UbicacionSistema {
 
-    public static final String BSAS = "Buenos Aires";
-    public static final String BRC = "Bariloche";
+    public static final String BSAS = "BUENOS AIRES";
+    public static final String BRC = "BARILOCHE";
 
     private static String ubicacionActual = null;
 

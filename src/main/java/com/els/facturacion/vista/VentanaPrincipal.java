@@ -4,6 +4,7 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
+import java.awt.FlowLayout;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -95,7 +96,6 @@ public class VentanaPrincipal extends JFrame {
     private JLabel lblDescripcion;
     private JLabel lblImagen;
     private JLabel lblUbicacion;
-    private JPanel ubPanel;
     private JSeparator separatorBottom1;
     private JSeparator separatorBottom2;
     private JSeparator separatorTop1;
@@ -139,8 +139,8 @@ public class VentanaPrincipal extends JFrame {
         panel.setLayout(null);
 
         // ── Theme toggle ────────────────────────────────────────────
-        btnThemeToggle = new RoundedButton("", 50);
-        btnThemeToggle.setBounds(202, 426, 100, 35);
+        btnThemeToggle = new JButton("");
+        btnThemeToggle.setBounds(217, 429, 70, 32);
         ImageIcon sunIcon = loadToggleIcon("/img/sol.png", "\u2600");
         btnThemeToggle.setIcon(sunIcon);
         btnThemeToggle.setFocusPainted(false);
@@ -156,37 +156,29 @@ public class VentanaPrincipal extends JFrame {
         panel.add(lblFacturaSoft);
 
         // ── Close session ───────────────────────────────────────────
-        btnCerrarSesion = new RoundedButton("<html><center>CERRAR SESI\u00d3N</html>", 50);
-        btnCerrarSesion.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnCerrarSesion = new JButton("<html><center>CERRAR SESI\u00d3N</html>");
         btnCerrarSesion.setHorizontalTextPosition(SwingConstants.RIGHT);
         btnCerrarSesion.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        btnCerrarSesion.setForeground(currentTheme.textPrimary);
+        btnCerrarSesion.setBackground(currentTheme.btnBg);
+        btnCerrarSesion.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnCerrarSesion.setFocusPainted(false);
         btnCerrarSesion.setBounds(10, 10, 100, 35);
-        btnCerrarSesion.addMouseListener(new MouseAdapter() {
-            @Override public void mouseEntered(MouseEvent e) {
-                btnCerrarSesion.setBackground(currentTheme.hoverBg);
-            }
-            @Override public void mouseExited(MouseEvent e) {
-                btnCerrarSesion.setBackground(currentTheme.btnBg);
-            }
-        });
+        // fix: mouseEntered/mouseExited listeners removed — estilo referencia
         try {
             btnCerrarSesion.setIcon(new ImageIcon(getClass().getResource("/img/Icono cerrar sesion.png")));
         } catch (Exception e) { }
         panel.add(btnCerrarSesion);
 
         // ── Exit button ─────────────────────────────────────────────
-        btnSalir = new RoundedButton("SALIR", 50);
+        btnSalir = new JButton("SALIR");
         btnSalir.setBounds(399, 10, 100, 35);
-        btnSalir.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnSalir.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        btnSalir.addMouseListener(new MouseAdapter() {
-            @Override public void mouseEntered(MouseEvent e) {
-                btnSalir.setBackground(currentTheme.hoverBg);
-            }
-            @Override public void mouseExited(MouseEvent e) {
-                btnSalir.setBackground(currentTheme.btnBg);
-            }
-        });
+        btnSalir.setForeground(currentTheme.textPrimary);
+        btnSalir.setBackground(currentTheme.btnBg);
+        btnSalir.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnSalir.setFocusPainted(false);
+        // fix: mouseEntered/mouseExited listeners removed — estilo referencia
         try {
             btnSalir.setIcon(new ImageIcon(getClass().getResource("/img/Icono salir.png")));
         } catch (Exception e) { }
@@ -234,17 +226,17 @@ public class VentanaPrincipal extends JFrame {
 
         // ── Control panel ───────────────────────────────────────────
         panelDeControl = new JPanel();
-        panelDeControl.setBounds(10, 198, 490, 209);
+        panelDeControl.setBounds(10, 198, 490, 215);
         panelDeControl.setLayout(null);
         panel.add(panelDeControl);
 
         int btnW = 210;
-        int btnH = 42;
+        int btnH = 48;
         int col1X = 25;
         int col2X = 255;
         int row1Y = 12;
-        int row2Y = 58;
-        int row3Y = 104;
+        int row2Y = 64;
+        int row3Y = 116;
 
         btnComprobantes = crearBoton("COMPROBANTES");
         btnComprobantes.setBounds(col1X, row1Y, btnW, btnH);
@@ -283,23 +275,19 @@ public class VentanaPrincipal extends JFrame {
         btnCajaGastos.addActionListener(e -> new VentanaCajaGastos().setVisible(true));
         panelDeControl.add(btnCajaGastos);
 
-        // ── Location panel ──────────────────────────────────────────
-        ubPanel = new JPanel(null);
-        ubPanel.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
-        ubPanel.setBounds(15, 160, 460, 38);
-        panelDeControl.add(ubPanel);
-
+        // ── Location ─────────────────────────────────────────────────
         lblUbicacion = new JLabel("UBICACI\u00d3N:");
-        lblUbicacion.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lblUbicacion.setBounds(98, 7, 80, 24);
-        ubPanel.add(lblUbicacion);
+        lblUbicacion.setPreferredSize(new Dimension(61, 12));
+        lblUbicacion.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblUbicacion.setBounds(127, 182, 74, 20);
+        panelDeControl.add(lblUbicacion);
 
         cmbUbicacion = new JComboBox<>();
         cmbUbicacion.addItem("");
         cmbUbicacion.addItem(UbicacionSistema.BSAS);
         cmbUbicacion.addItem(UbicacionSistema.BRC);
-        cmbUbicacion.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        cmbUbicacion.setBounds(184, 5, 185, 28);
+        cmbUbicacion.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        cmbUbicacion.setBounds(198, 182, 145, 20);
         cmbUbicacion.addActionListener(e -> {
             String selected = (String) cmbUbicacion.getSelectedItem();
             if (selected != null && !selected.isEmpty()) {
@@ -310,14 +298,14 @@ public class VentanaPrincipal extends JFrame {
                 for (JButton btn : botones) btn.setEnabled(false);
             }
         });
-        ubPanel.add(cmbUbicacion);
+        panelDeControl.add(cmbUbicacion);
 
         // ── Bottom separators ───────────────────────────────────────
         separatorBottom1 = new JSeparator();
-        separatorBottom1.setBounds(52, 416, 400, 2);
+        separatorBottom1.setBounds(52, 418, 400, 2);
         panel.add(separatorBottom1);
         separatorBottom2 = new JSeparator();
-        separatorBottom2.setBounds(52, 420, 400, 2);
+        separatorBottom2.setBounds(52, 422, 400, 2);
         panel.add(separatorBottom2);
 
         // ── Footer fields ───────────────────────────────────────────
@@ -371,23 +359,12 @@ public class VentanaPrincipal extends JFrame {
     // ─── Button factory with hover/press effects ───────────────────────
 
     private JButton crearBoton(String texto) {
-        RoundedButton btn = new RoundedButton(texto, 50);
+        JButton btn = new JButton(texto);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btn.setForeground(currentTheme.textPrimary);
+        btn.setBackground(currentTheme.btnBg);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.addMouseListener(new MouseAdapter() {
-            @Override public void mouseEntered(MouseEvent e) {
-                if (btn.isEnabled()) btn.setBackground(currentTheme.hoverBg);
-            }
-            @Override public void mouseExited(MouseEvent e) {
-                if (btn.isEnabled()) btn.setBackground(currentTheme.btnBg);
-            }
-            @Override public void mousePressed(MouseEvent e) {
-                if (btn.isEnabled()) btn.setBackground(currentTheme.pressedBg);
-            }
-            @Override public void mouseReleased(MouseEvent e) {
-                if (btn.isEnabled()) btn.setBackground(currentTheme.hoverBg);
-            }
-        });
+        btn.setFocusPainted(false);
         botones.add(btn);
         return btn;
     }
@@ -420,17 +397,10 @@ public class VentanaPrincipal extends JFrame {
         currentTheme = t;
         getContentPane().setBackground(t.bgBase);
 
-        Color btnBright = t.brandDark;
         Border surfaceBorder = BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(t.borderLight, 1),
             BorderFactory.createEmptyBorder(6, 6, 6, 6)
         );
-        Border ubBorder = BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(t.borderLight, 1),
-            BorderFactory.createEmptyBorder(4, 8, 4, 8)
-        );
-        Border btnBorder = new RoundedBorder(t.borderLight, 50, 1, 12, 6);
-
         // Canvas
         if (panel != null) panel.setBackground(t.bgBase);
 
@@ -445,11 +415,6 @@ public class VentanaPrincipal extends JFrame {
             panelDeControl.setBorder(surfaceBorder);
         }
 
-        // Location panel
-        if (ubPanel != null) {
-            ubPanel.setBackground(t.bgSurface);
-            ubPanel.setBorder(ubBorder);
-        }
         if (lblUbicacion != null) lblUbicacion.setForeground(t.brand);
         if (cmbUbicacion != null) {
             cmbUbicacion.setBackground(t.bgElevated);
@@ -458,29 +423,24 @@ public class VentanaPrincipal extends JFrame {
 
         // Main buttons
         for (JButton btn : botones) {
-            btn.setForeground(btnBright);
+            btn.setForeground(t.textPrimary);
             btn.setBackground(t.btnBg);
-            btn.setBorder(btnBorder);
         }
 
         // Side buttons
-        Border sideBorder = new RoundedBorder(t.borderLight, 50, 1, 8, 4);
         if (btnCerrarSesion != null) {
-            btnCerrarSesion.setForeground(t.textSecondary);
+            btnCerrarSesion.setForeground(t.textPrimary);
             btnCerrarSesion.setBackground(t.btnBg);
-            btnCerrarSesion.setBorder(sideBorder);
         }
         if (btnSalir != null) {
-            btnSalir.setForeground(t.danger);
+            btnSalir.setForeground(t.textPrimary);
             btnSalir.setBackground(t.btnBg);
-            btnSalir.setBorder(sideBorder);
         }
 
         // Theme toggle
         if (btnThemeToggle != null) {
             btnThemeToggle.setBackground(t.btnBg);
             btnThemeToggle.setForeground(t.textPrimary);
-            btnThemeToggle.setBorder(sideBorder);
             btnThemeToggle.setToolTipText(isDarkMode
                 ? "Cambiar a tema claro"
                 : "Cambiar a tema oscuro");
@@ -556,5 +516,4 @@ public class VentanaPrincipal extends JFrame {
     public JComboBox<String> getCmbUbicacion() { return cmbUbicacion; }
     public List<JButton> getBotones() { return botones; }
     public boolean isDarkMode() { return isDarkMode; }
-
 }

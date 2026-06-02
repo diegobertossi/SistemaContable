@@ -15,7 +15,6 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -28,11 +27,13 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Container;
-import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.LineBorder;
@@ -127,16 +128,16 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         setMinimumSize(new Dimension(900, 650));
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(currentTheme.bgBase);
+        getContentPane().setBackground(currentTheme.bgSurface);
 
         // ===================== CARD LAYOUT =====================
         cardLayout = new CardLayout();
         panelPrincipal = new JPanel(cardLayout);
-        panelPrincipal.setBackground(currentTheme.bgBase);
+        panelPrincipal.setBackground(currentTheme.bgSurface);
 
         // ===================== DATOS CARD =====================
         datosWrapper = new JPanel(new GridBagLayout());
-        datosWrapper.setBackground(currentTheme.bgBase);
+        datosWrapper.setBackground(currentTheme.bgSurface);
 
         centerCol = new JPanel(new GridBagLayout());
         centerCol.setBorder(new CompoundBorder(new LineBorder(currentTheme.brand), new EmptyBorder(10, 10, 10, 10)));
@@ -151,8 +152,12 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         chkModoPrueba.setForeground(currentTheme.danger);
         chkModoPrueba.setBackground(currentTheme.bgBase);
         
-        btnSiguiente = new RoundedButton("SIGUIENTE >>", 50);
-        estilizarBoton(btnSiguiente);
+        btnSiguiente = new JButton("SIGUIENTE >>");
+        btnSiguiente.setFont(FUENTE_BOTON);
+        btnSiguiente.setForeground(currentTheme.textPrimary);
+        btnSiguiente.setBackground(currentTheme.btnBg);
+        btnSiguiente.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnSiguiente.setFocusPainted(false);
         panelNav = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 3));
         panelNav.setBackground(currentTheme.bgBase);
         panelNav.add(chkModoPrueba);
@@ -165,18 +170,22 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         scrollDatos.setBorder(null);
         scrollDatos.getVerticalScrollBar().setUnitIncrement(16);
         datosCard = new JPanel(new BorderLayout());
-        datosCard.setBackground(currentTheme.bgBase);
+        datosCard.setBackground(currentTheme.bgSurface);
         datosCard.add(scrollDatos);
 
         // ===================== OPERACION CARD =====================
         panelOperacion = new JPanel(new BorderLayout(5, 5));
-        panelOperacion.setBackground(currentTheme.bgBase);
+        panelOperacion.setBackground(currentTheme.bgSurface);
         panelOperacion.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         panelSuperiorOp = new JPanel(new BorderLayout());
-        panelSuperiorOp.setBackground(currentTheme.bgBase);
-        btnAnterior = new RoundedButton("<< ANTERIOR", 50);
-        estilizarBoton(btnAnterior);
+        panelSuperiorOp.setBackground(currentTheme.bgSurface);
+        btnAnterior = new JButton("<< ANTERIOR");
+        btnAnterior.setFont(FUENTE_BOTON);
+        btnAnterior.setForeground(currentTheme.textPrimary);
+        btnAnterior.setBackground(currentTheme.btnBg);
+        btnAnterior.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnAnterior.setFocusPainted(false);
         lblTituloOp = new JLabel("DATOS DE LA OPERACION", SwingConstants.CENTER);
         lblTituloOp.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lblTituloOp.setForeground(currentTheme.textPrimary);
@@ -195,13 +204,6 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             }
         };
         tablaItems = new JTable(modeloTablaItems);
-        tablaItems.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        tablaItems.setForeground(currentTheme.textPrimary);
-        tablaItems.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
-        tablaItems.getTableHeader().setBackground(currentTheme.btnBg);
-        tablaItems.setRowHeight(22);
-        tablaItems.setShowGrid(true);
-        tablaItems.setGridColor(currentTheme.borderLight);
         tablaItems.getColumnModel().getColumn(0).setPreferredWidth(60);
         tablaItems.getColumnModel().getColumn(1).setPreferredWidth(200);
         tablaItems.getColumnModel().getColumn(2).setPreferredWidth(50);
@@ -209,40 +211,6 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         tablaItems.getColumnModel().getColumn(4).setPreferredWidth(80);
         tablaItems.getColumnModel().getColumn(5).setPreferredWidth(80);
         tablaItems.getColumnModel().getColumn(6).setPreferredWidth(40);
-
-        // Centered headers
-        DefaultTableCellRenderer headerRenderer = (DefaultTableCellRenderer) tablaItems.getTableHeader().getDefaultRenderer();
-        headerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-
-        // Center renderer for ELS, CANTIDAD, U. MEDIDA
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        tablaItems.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
-        tablaItems.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
-        tablaItems.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
-
-        // Currency renderer for P. UNITARIO and SUBTOTAL
-        DecimalFormat currencyFormat = new DecimalFormat("$ #,##0.00");
-        DefaultTableCellRenderer currencyRenderer = new DefaultTableCellRenderer() {
-            @Override
-            protected void setValue(Object value) {
-                if (value != null) {
-                    String text = value.toString().trim();
-                    if (!text.isEmpty()) {
-                        try {
-                            String clean = text.replace("$", "").replace(".", "").replace(",", ".");
-                            BigDecimal num = new BigDecimal(clean);
-                            setText(currencyFormat.format(num));
-                            return;
-                        } catch (Exception ignored) {}
-                    }
-                }
-                setText(value != null ? value.toString() : "");
-            }
-        };
-        currencyRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        tablaItems.getColumnModel().getColumn(4).setCellRenderer(currencyRenderer);
-        tablaItems.getColumnModel().getColumn(5).setCellRenderer(currencyRenderer);
 
         scrollTabla = new JScrollPane(tablaItems);
 
@@ -310,32 +278,20 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelEmitir = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 4));
         panelEmitir.setBackground(currentTheme.bgBase);
 
-        btnEmitir = new RoundedButton("GUARDAR / EMITIR FACTURA", 50);
-        btnEmitir.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnEmitir = new JButton("GUARDAR / EMITIR FACTURA");
+        btnEmitir.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnEmitir.setBackground(currentTheme.brandDark);
         btnEmitir.setForeground(Color.WHITE);
         btnEmitir.setFocusPainted(false);
         btnEmitir.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnEmitir.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent e) {
-                btnEmitir.setBackground(currentTheme.brand);
-            }
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent e) {
-                btnEmitir.setBackground(currentTheme.brandDark);
-            }
-            @Override
-            public void mousePressed(java.awt.event.MouseEvent e) {
-                btnEmitir.setBackground(currentTheme.brandDark.darker());
-            }
-            @Override
-            public void mouseReleased(java.awt.event.MouseEvent e) {
-                btnEmitir.setBackground(currentTheme.brand);
-            }
-        });
-        btnLimpiar = new RoundedButton("LIMPIAR", 50);
-        estilizarBoton(btnLimpiar);
+        btnEmitir.setMargin(new Insets(10, 24, 10, 24));
+        btnLimpiar = new JButton("LIMPIAR");
+        btnLimpiar.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnLimpiar.setForeground(currentTheme.textPrimary);
+        btnLimpiar.setBackground(currentTheme.btnBg);
+        btnLimpiar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnLimpiar.setFocusPainted(false);
+        btnLimpiar.setMargin(new Insets(8, 20, 8, 20));
 
         panelEmitir.add(btnEmitir);
         panelEmitir.add(btnLimpiar);
@@ -351,14 +307,15 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
         // ===================== WRAPPER + STATUS BAR =====================
         panelPrincipalWrapper = new JPanel(new BorderLayout());
-        panelPrincipalWrapper.setBackground(currentTheme.bgBase);
+        panelPrincipalWrapper.setBackground(currentTheme.bgSurface);
         panelPrincipalWrapper.add(panelPrincipal, BorderLayout.CENTER);
 
+        boolean barIsLight = currentTheme.bgBase.getRed() > 128;
         statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
-        statusBar.setBackground(currentTheme.bgElevated);
+        statusBar.setBackground(barIsLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
         lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica");
         lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        lblStatus.setForeground(currentTheme.textSecondary);
+        lblStatus.setForeground(barIsLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
         statusBar.add(lblStatus);
         panelPrincipalWrapper.add(statusBar, BorderLayout.SOUTH);
 
@@ -569,8 +526,12 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         JLabel lblCompAsoc = new JLabel("Comp. Asoc.:");
         secReceptor.add(lblCompAsoc, new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
         secReceptor.add(txtComprobanteAsoc, new GridBagConstraints(1, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        btnImportarRemito = new RoundedButton("Importar ReparSoft", 50);
+        btnImportarRemito = new JButton("Importar ReparSoft");
         btnImportarRemito.setFont(FUENTE_BOTON);
+        btnImportarRemito.setForeground(currentTheme.textPrimary);
+        btnImportarRemito.setBackground(currentTheme.btnBg);
+        btnImportarRemito.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnImportarRemito.setFocusPainted(false);
         secReceptor.add(btnImportarRemito, new GridBagConstraints(2, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
 
         return secReceptor;
@@ -623,28 +584,32 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
     private void applyTheme(Theme t) {
         currentTheme = t;
-        boolean isDark = t.bgBase.getRed() < 50;
-        Color hdrFg = isDark ? Color.WHITE : t.textPrimary;
         Color titledFg = t.textPrimary;
         Color titledLine = t.brand;
         Font titledFont = new Font("Segoe UI", Font.BOLD, 11);
 
         // FIX: live-theme — contenedores raíz (no usar getContentPane(), está fuera del árbol)
-        if (panelPrincipalWrapper != null) panelPrincipalWrapper.setBackground(t.bgBase);
-        if (panelPrincipal != null) panelPrincipal.setBackground(t.bgBase);
-        if (datosCard != null) datosCard.setBackground(t.bgBase);
-        if (datosWrapper != null) datosWrapper.setBackground(t.bgBase);
+        if (panelPrincipalWrapper != null) panelPrincipalWrapper.setBackground(t.bgSurface);
+        if (panelPrincipal != null) panelPrincipal.setBackground(t.bgSurface);
+        if (datosCard != null) datosCard.setBackground(t.bgSurface);
+        if (datosWrapper != null) datosWrapper.setBackground(t.bgSurface);
         if (panelOperacion != null) {
-            panelOperacion.setBackground(t.bgBase);
+            panelOperacion.setBackground(t.bgSurface);
             panelOperacion.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         }
-        if (panelSuperiorOp != null) panelSuperiorOp.setBackground(t.bgBase);
+        if (panelSuperiorOp != null) panelSuperiorOp.setBackground(t.bgSurface);
         if (panelSur != null) panelSur.setBackground(t.bgBase);
         if (panelItems != null) panelItems.setBackground(t.bgBase);
         if (panelTotales != null) panelTotales.setBackground(t.bgBase);
         if (panelEmitir != null) panelEmitir.setBackground(t.bgBase);
-        if (statusBar != null) statusBar.setBackground(t.bgElevated);
-        if (lblStatus != null) lblStatus.setForeground(t.textSecondary);
+        if (statusBar != null) {
+            boolean isLight = t.bgBase.getRed() > 128;
+            statusBar.setBackground(isLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
+        }
+        if (lblStatus != null) {
+            boolean isLight = t.bgBase.getRed() > 128;
+            lblStatus.setForeground(isLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
+        }
         if (lblTituloOp != null) lblTituloOp.setForeground(t.textPrimary);
         if (centerCol != null) {
             centerCol.setBackground(t.bgBase);
@@ -676,11 +641,11 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         if (panelChecks != null) panelChecks.setBackground(t.bgBase);
         // Scroll panes
         if (scrollDatos != null) {
-            scrollDatos.getViewport().setBackground(t.bgBase);
+            scrollDatos.getViewport().setBackground(t.bgSurface);
             scrollDatos.setBorder(null);
         }
         if (scrollTabla != null) {
-            scrollTabla.getViewport().setBackground(t.bgBase);
+            scrollTabla.getViewport().setBackground(t.bgSurface);
             scrollTabla.setBorder(BorderFactory.createLineBorder(t.borderLight));
         }
 
@@ -713,23 +678,15 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         if (btnImportarRemito != null) { btnImportarRemito.setBackground(t.btnBg); btnImportarRemito.setForeground(t.textPrimary); }
         if (btnAnterior != null) { btnAnterior.setBackground(t.btnBg); btnAnterior.setForeground(t.textPrimary); }
         if (tablaItems != null) {
-            tablaItems.setForeground(t.textPrimary);
-            tablaItems.setBackground(t.bgInput);
-            tablaItems.setGridColor(t.borderLight);
-            tablaItems.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-                @Override
-                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
-                      boolean isSelected, boolean hasFocus, int row, int column) {
-                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                    if (!isSelected) {
-                        setBackground(row % 2 == 0 ? t.bgSurface : t.bgElevated);
-                        setForeground(t.textPrimary);
-                    }
-                    return this;
-                }
-            });
+            boolean isDarkTheme = t.bgBase.getRed() < 50;
+            Color evenBg = isDarkTheme ? new Color(30, 40, 62) : new Color(210, 222, 242);
+            Color oddBg  = isDarkTheme ? new Color(45, 58, 80) : new Color(235, 242, 252);
+            Set<Integer> currency = new HashSet<>(Arrays.asList(4, 5));
+            Set<Integer> bold     = new HashSet<>(Arrays.asList(0));
+            Set<Integer> center   = new HashSet<>(Arrays.asList(0, 2, 3, 4, 5));
+            TablaRenderer.applyTo(tablaItems, t, currency, bold, center, evenBg, oddBg);
             if (tablaItems.getTableHeader() != null) {
-                Theme.styleTableHeader(tablaItems.getTableHeader(), t.bgElevated, hdrFg);
+                Theme.styleTableHeader(tablaItems.getTableHeader(), t);
             }
         }
         if (lblTotal != null) { lblTotal.setForeground(t.brandDark); }

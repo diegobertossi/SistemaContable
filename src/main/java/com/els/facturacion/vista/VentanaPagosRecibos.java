@@ -13,6 +13,7 @@ public class VentanaPagosRecibos extends JFrame {
 
     public VentanaPagosRecibos() {
         initComponents();
+        applyTheme(currentTheme);
         VentanaPrincipal.addThemeListener(this);
     }
 
@@ -44,6 +45,9 @@ public class VentanaPagosRecibos extends JFrame {
 
     private void applyTheme(Theme t) {
         currentTheme = t;
+        if (getContentPane() != null) {
+            getContentPane().setBackground(t.bgBase);
+        }
         if (tabbedPane != null) {
             tabbedPane.setBackground(t.bgSurface);
             tabbedPane.setForeground(t.textPrimary);
