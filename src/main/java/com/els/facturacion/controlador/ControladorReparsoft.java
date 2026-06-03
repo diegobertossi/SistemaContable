@@ -12,6 +12,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -143,7 +144,19 @@ public class ControladorReparsoft {
     }
 
     public List<RemitoReparsoftItem> listarEquiposPorCliente(String baseDatos, String nombreCliente) {
-        List<RemitoReparsoftItem> items = reparacionDAO.listarEquiposPorCliente(baseDatos, nombreCliente);
+        List<RemitoReparsoftItem> items = new ArrayList<>();
+        Set<Integer> visto = new HashSet<>();
+
+        String[] bases = {"ordenesbrc", "ordenesbsas"};
+        for (String base : bases) {
+            List<RemitoReparsoftItem> resultado = reparacionDAO.listarEquiposPorCliente(base, nombreCliente);
+            for (RemitoReparsoftItem item : resultado) {
+                if (visto.add(item.getEls())) {
+                    items.add(item);
+                }
+            }
+        }
+
         Set<Integer> elsFacturados = obtenerELSFacturados();
         if (!elsFacturados.isEmpty()) {
             for (RemitoReparsoftItem item : items) {

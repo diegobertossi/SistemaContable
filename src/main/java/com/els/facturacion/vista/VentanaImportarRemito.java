@@ -5,8 +5,11 @@ import com.els.facturacion.modelo.RemitoReparsoftDTO;
 import com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem;
 import com.els.facturacion.util.UbicacionSistema;
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.List;
@@ -91,7 +94,7 @@ public class VentanaImportarRemito extends JDialog {
         splitPane.setResizeWeight(0.6);
         splitPane.setBorder(null);
 
-        String[] colRemitos = {"Nro Remito", "Cliente", "CUIT", "Items"};
+        String[] colRemitos = {"REMITO", "Cliente", "CUIT", "ITEMS"};
         modeloTablaRemitos = new DefaultTableModel(colRemitos, 0) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
@@ -112,6 +115,9 @@ public class VentanaImportarRemito extends JDialog {
                 }
             }
         });
+        tablaRemitos.getColumnModel().getColumn(0).setPreferredWidth(130);
+        tablaRemitos.getColumnModel().getColumn(2).setPreferredWidth(110);
+        tablaRemitos.getColumnModel().getColumn(3).setPreferredWidth(50);
         scrollRemitos = new JScrollPane(tablaRemitos);
         scrollRemitos.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(currentTheme.brand),
@@ -120,15 +126,15 @@ public class VentanaImportarRemito extends JDialog {
             new Font("Segoe UI", Font.BOLD, 12), currentTheme.textPrimary
         ));
 
-        String[] colItems = {"Seleccionar", "ELS", "Equipo", "Nro Serie", "Modelo", "Marca", "Precio"};
+        String[] colItems = {"ELS", "Equipo", "Nro Serie", "Modelo", "Marca", "Precio", "SEL"};
         modeloTablaItems = new DefaultTableModel(colItems, 0) {
             @Override
             public Class<?> getColumnClass(int column) {
-                return column == 0 ? Boolean.class : String.class;
+                return column == 6 ? Boolean.class : String.class;
             }
             @Override
             public boolean isCellEditable(int row, int column) {
-                if (column == 0) {
+                if (column == 6) {
                     RemitoReparsoftItem item = getItemAtRow(row);
                     return item != null && !item.isFacturado();
                 }
@@ -140,13 +146,13 @@ public class VentanaImportarRemito extends JDialog {
         tablaItems.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
         tablaItems.setRowHeight(22);
         tablaItems.setShowGrid(true);
-        tablaItems.getColumnModel().getColumn(0).setPreferredWidth(20);
-        tablaItems.getColumnModel().getColumn(1).setPreferredWidth(60);
-        tablaItems.getColumnModel().getColumn(2).setPreferredWidth(140);
+        tablaItems.getColumnModel().getColumn(0).setPreferredWidth(50);
+        tablaItems.getColumnModel().getColumn(1).setPreferredWidth(140);
+        tablaItems.getColumnModel().getColumn(2).setPreferredWidth(80);
         tablaItems.getColumnModel().getColumn(3).setPreferredWidth(80);
         tablaItems.getColumnModel().getColumn(4).setPreferredWidth(80);
         tablaItems.getColumnModel().getColumn(5).setPreferredWidth(80);
-        tablaItems.getColumnModel().getColumn(6).setPreferredWidth(80);
+        tablaItems.getColumnModel().getColumn(6).setPreferredWidth(30);
         scrollItems = new JScrollPane(tablaItems);
         scrollItems.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(currentTheme.brand),
@@ -246,13 +252,14 @@ public class VentanaImportarRemito extends JDialog {
         if (remitoSeleccionado != null && remitoSeleccionado.getItems() != null) {
             for (RemitoReparsoftItem item : remitoSeleccionado.getItems()) {
                 modeloTablaItems.addRow(new Object[]{
-                    item.isFacturado(),
-                    item.getEls(),
+                    String.valueOf(item.getEls()),
                     item.getEquipoNombre() != null ? item.getEquipoNombre() : "",
                     item.getNumeroSerie() != null ? item.getNumeroSerie() : "",
                     item.getModelo() != null ? item.getModelo() : "",
                     item.getMarca() != null ? item.getMarca() : "",
-                    item.getPrecioPeso() != null ? "$ " + String.format("%.2f", item.getPrecioPeso()) : "$ 0.00"
+                    item.getPrecioPeso() != null ? new java.text.DecimalFormat("#,##0.00",
+                        java.text.DecimalFormatSymbols.getInstance(new java.util.Locale("es", "AR"))).format(item.getPrecioPeso()) : "0,00",
+                    item.isFacturado()
                 });
             }
         }
@@ -273,7 +280,7 @@ public class VentanaImportarRemito extends JDialog {
         }
 
         for (int i = 0; i < modeloTablaItems.getRowCount(); i++) {
-            boolean checked = Boolean.TRUE.equals(modeloTablaItems.getValueAt(i, 0));
+            boolean checked = Boolean.TRUE.equals(modeloTablaItems.getValueAt(i, 6));
             RemitoReparsoftItem item = getItemAtRow(i);
             if (item != null) {
                 item.setSeleccionado(checked);
@@ -329,16 +336,29 @@ public class VentanaImportarRemito extends JDialog {
             btnImportar.setForeground(t.textPrimary);
         }
         if (tablaRemitos != null) {
-            TablaRenderer.applyTo(tablaRemitos, t);
+            java.util.Set<Integer> boldRemitos = new java.util.HashSet<>();
+            boldRemitos.add(0);
+            java.util.Set<Integer> centerRemitos = new java.util.HashSet<>();
+            centerRemitos.add(0);
+            centerRemitos.add(2);
+            centerRemitos.add(3);
+            TablaRenderer.applyTo(tablaRemitos, t, java.util.Collections.emptySet(), boldRemitos, centerRemitos, t.bgSurface, t.bgElevated);
             if (tablaRemitos.getTableHeader() != null) {
-                Theme.styleTableHeader(tablaRemitos.getTableHeader(), t);
+                styleHeaderBold(tablaRemitos.getTableHeader(), t);
             }
             tablaRemitos.repaint();
         }
         if (tablaItems != null) {
-            TablaRenderer.applyTo(tablaItems, t);
+            java.util.Set<Integer> currency = new java.util.HashSet<>();
+            currency.add(5);
+            java.util.Set<Integer> bold = new java.util.HashSet<>();
+            bold.add(0);
+            java.util.Set<Integer> center = new java.util.HashSet<>();
+            center.add(0);
+            center.add(5);
+            TablaRenderer.applyTo(tablaItems, t, currency, bold, center, t.bgSurface, t.bgElevated);
             if (tablaItems.getTableHeader() != null) {
-                Theme.styleTableHeader(tablaItems.getTableHeader(), t);
+                styleHeaderBold(tablaItems.getTableHeader(), t);
             }
         }
         if (scrollRemitos != null) {
@@ -367,5 +387,33 @@ public class VentanaImportarRemito extends JDialog {
                 new Font("Segoe UI", Font.BOLD, 12), t.textPrimary
             ));
         }
+    }
+
+    private static void styleHeaderBold(JTableHeader header, Theme theme) {
+        boolean isDark = theme.bgBase.getRed() < 50;
+        Color fg = isDark ? Color.WHITE : theme.textPrimary;
+        Color headerBg = isDark
+            ? new Color(Math.min(255, theme.bgElevated.getRed() + 20), Math.min(255, theme.bgElevated.getGreen() + 20), Math.min(255, theme.bgElevated.getBlue() + 20))
+            : new Color(Math.min(255, theme.brand.getRed() + 115), Math.min(255, theme.brand.getGreen() + 110), Math.min(255, theme.brand.getBlue() + 10));
+        int avg = (headerBg.getRed() + headerBg.getGreen() + headerBg.getBlue()) / 3;
+        Color divider = avg < 80
+            ? new Color(Math.min(255, headerBg.getRed() + 60), Math.min(255, headerBg.getGreen() + 60), Math.min(255, headerBg.getBlue() + 60))
+            : new Color(Math.max(0, headerBg.getRed() - 60), Math.max(0, headerBg.getGreen() - 60), Math.max(0, headerBg.getBlue() - 60));
+        Border colBorder = BorderFactory.createMatteBorder(0, 0, 1, 2, divider);
+        header.setDefaultRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                  boolean isSelected, boolean hasFocus, int row, int column) {
+                DefaultTableCellRenderer c = (DefaultTableCellRenderer)
+                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                c.setForeground(fg);
+                c.setBackground(headerBg);
+                c.setHorizontalAlignment(SwingConstants.CENTER);
+                c.setFont(new Font("Segoe UI", Font.BOLD, 11));
+                c.setText(value != null ? value.toString().toUpperCase() : "");
+                c.setBorder(colBorder);
+                return c;
+            }
+        });
     }
 }

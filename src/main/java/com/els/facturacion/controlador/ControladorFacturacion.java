@@ -296,7 +296,12 @@ public class ControladorFacturacion {
         model.setRowCount(0);
         if (remito.getItems() != null) {
             for (RemitoReparsoftItem item : remito.getItems()) {
-                String descripcion = item.getDescripcion();
+                String descripcion = "Reparaci\u00f3n de "
+                    + (item.getEquipoNombre() != null ? item.getEquipoNombre() : "Sin equipo") + " "
+                    + (item.getMarca() != null ? item.getMarca() : "") + " "
+                    + (item.getModelo() != null ? item.getModelo() : "")
+                    + " s/n: " + (item.getNumeroSerie() != null ? item.getNumeroSerie() : "")
+                    + " ELS: " + item.getEls();
                 BigDecimal precio = item.getPrecioPeso() != null ? item.getPrecioPeso() : BigDecimal.ZERO;
                 String precioStr = precio.compareTo(BigDecimal.ZERO) > 0
                     ? DF.format(precio)
@@ -324,7 +329,12 @@ public class ControladorFacturacion {
 
         DefaultTableModel model = view.getModeloItems();
         for (RemitoReparsoftItem item : equipos) {
-            String descripcion = item.getDescripcion();
+            String descripcion = "Reparaci\u00f3n de "
+                + (item.getEquipoNombre() != null ? item.getEquipoNombre() : "Sin equipo") + " "
+                + (item.getMarca() != null ? item.getMarca() : "") + " "
+                + (item.getModelo() != null ? item.getModelo() : "")
+                + " s/n: " + (item.getNumeroSerie() != null ? item.getNumeroSerie() : "")
+                + " ELS: " + item.getEls();
             BigDecimal precio = item.getPrecioPeso() != null ? item.getPrecioPeso() : BigDecimal.ZERO;
             String precioStr = precio.compareTo(BigDecimal.ZERO) > 0
                 ? DF.format(precio)

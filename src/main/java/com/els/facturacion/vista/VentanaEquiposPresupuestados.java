@@ -4,8 +4,11 @@ import com.els.facturacion.controlador.ControladorReparsoft;
 import com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem;
 import com.els.facturacion.util.UbicacionSistema;
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
@@ -14,6 +17,34 @@ import java.util.List;
 public class VentanaEquiposPresupuestados extends JDialog {
 
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
+
+    private static void styleHeaderBold(JTableHeader header, Theme theme) {
+        boolean isDark = theme.bgBase.getRed() < 50;
+        Color fg = isDark ? Color.WHITE : theme.textPrimary;
+        Color headerBg = isDark
+            ? new Color(Math.min(255, theme.bgElevated.getRed() + 20), Math.min(255, theme.bgElevated.getGreen() + 20), Math.min(255, theme.bgElevated.getBlue() + 20))
+            : new Color(Math.min(255, theme.brand.getRed() + 115), Math.min(255, theme.brand.getGreen() + 110), Math.min(255, theme.brand.getBlue() + 10));
+        int avg = (headerBg.getRed() + headerBg.getGreen() + headerBg.getBlue()) / 3;
+        Color divider = avg < 80
+            ? new Color(Math.min(255, headerBg.getRed() + 60), Math.min(255, headerBg.getGreen() + 60), Math.min(255, headerBg.getBlue() + 60))
+            : new Color(Math.max(0, headerBg.getRed() - 60), Math.max(0, headerBg.getGreen() - 60), Math.max(0, headerBg.getBlue() - 60));
+        Border colBorder = BorderFactory.createMatteBorder(0, 0, 1, 2, divider);
+        header.setDefaultRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                  boolean isSelected, boolean hasFocus, int row, int column) {
+                DefaultTableCellRenderer c = (DefaultTableCellRenderer)
+                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                c.setForeground(fg);
+                c.setBackground(headerBg);
+                c.setHorizontalAlignment(SwingConstants.CENTER);
+                c.setFont(new Font("Segoe UI", Font.BOLD, 11));
+                c.setText(value != null ? value.toString().toUpperCase() : "");
+                c.setBorder(colBorder);
+                return c;
+            }
+        });
+    }
 
     private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
     private static final Font FUENTE_LABEL = new Font("Segoe UI", Font.BOLD, 11);
@@ -49,7 +80,7 @@ public class VentanaEquiposPresupuestados extends JDialog {
     }
 
     private void initComponents() {
-        setSize(750, 500);
+        setSize(850, 500);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
@@ -86,15 +117,15 @@ public class VentanaEquiposPresupuestados extends JDialog {
 
         panel.add(panelSuperior, BorderLayout.NORTH);
 
-        String[] colEquipos = {"Seleccionar", "ELS", "Equipo", "Nro Serie", "Modelo", "Marca", "Precio"};
+        String[] colEquipos = {"ELS", "Equipo", "Nro Serie", "Modelo", "Marca", "Precio", "REMITO", "SEL"};
         modeloTablaEquipos = new DefaultTableModel(colEquipos, 0) {
             @Override
             public Class<?> getColumnClass(int column) {
-                return column == 0 ? Boolean.class : String.class;
+                return column == 7 ? Boolean.class : String.class;
             }
             @Override
             public boolean isCellEditable(int row, int column) {
-                if (column == 0) {
+                if (column == 7) {
                     RemitoReparsoftItem item = getItemAtRow(row);
                     return item != null && !item.isFacturado();
                 }
@@ -114,13 +145,14 @@ public class VentanaEquiposPresupuestados extends JDialog {
                 }
             }
         });
-        tablaEquipos.getColumnModel().getColumn(0).setPreferredWidth(20);
-        tablaEquipos.getColumnModel().getColumn(1).setPreferredWidth(60);
-        tablaEquipos.getColumnModel().getColumn(2).setPreferredWidth(140);
+        tablaEquipos.getColumnModel().getColumn(0).setPreferredWidth(50);
+        tablaEquipos.getColumnModel().getColumn(1).setPreferredWidth(140);
+        tablaEquipos.getColumnModel().getColumn(2).setPreferredWidth(80);
         tablaEquipos.getColumnModel().getColumn(3).setPreferredWidth(80);
         tablaEquipos.getColumnModel().getColumn(4).setPreferredWidth(80);
         tablaEquipos.getColumnModel().getColumn(5).setPreferredWidth(80);
-        tablaEquipos.getColumnModel().getColumn(6).setPreferredWidth(80);
+        tablaEquipos.getColumnModel().getColumn(6).setPreferredWidth(100);
+        tablaEquipos.getColumnModel().getColumn(7).setPreferredWidth(30);
         scrollEquipos = new JScrollPane(tablaEquipos);
         scrollEquipos.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(currentTheme.brand),
@@ -187,15 +219,18 @@ public class VentanaEquiposPresupuestados extends JDialog {
             @Override
             protected void done() {
                 if (equiposCache != null) {
+                    java.text.DecimalFormat precioFmt = new java.text.DecimalFormat("#,##0.00",
+                        java.text.DecimalFormatSymbols.getInstance(new java.util.Locale("es", "AR")));
                     for (RemitoReparsoftItem item : equiposCache) {
                         modeloTablaEquipos.addRow(new Object[]{
-                            item.isFacturado(),
-                            item.getEls(),
+                            String.valueOf(item.getEls()),
                             item.getEquipoNombre() != null ? item.getEquipoNombre() : "",
                             item.getNumeroSerie() != null ? item.getNumeroSerie() : "",
                             item.getModelo() != null ? item.getModelo() : "",
                             item.getMarca() != null ? item.getMarca() : "",
-                            item.getPrecioPeso() != null ? "$ " + String.format("%.2f", item.getPrecioPeso()) : "$ 0.00"
+                            item.getPrecioPeso() != null ? precioFmt.format(item.getPrecioPeso()) : "0,00",
+                            item.getNumeroRemito() != null ? item.getNumeroRemito() : "",
+                            item.isFacturado()
                         });
                     }
                     tablaEquipos.getTableHeader().repaint();
@@ -216,7 +251,7 @@ public class VentanaEquiposPresupuestados extends JDialog {
     private void seleccionarEquipos() {
         List<RemitoReparsoftItem> seleccionadosTemp = new ArrayList<>();
         for (int i = 0; i < modeloTablaEquipos.getRowCount(); i++) {
-            boolean checked = Boolean.TRUE.equals(modeloTablaEquipos.getValueAt(i, 0));
+            boolean checked = Boolean.TRUE.equals(modeloTablaEquipos.getValueAt(i, 7));
             RemitoReparsoftItem item = getItemAtRow(i);
             if (item != null && checked && !item.isFacturado()) {
                 seleccionadosTemp.add(item);
@@ -264,9 +299,17 @@ public class VentanaEquiposPresupuestados extends JDialog {
             btnSeleccionar.setForeground(t.textPrimary);
         }
         if (tablaEquipos != null) {
-            TablaRenderer.applyTo(tablaEquipos, t);
+            java.util.Set<Integer> currency = new java.util.HashSet<>();
+            currency.add(5);
+            java.util.Set<Integer> bold = new java.util.HashSet<>();
+            bold.add(0);
+            java.util.Set<Integer> center = new java.util.HashSet<>();
+            center.add(0);
+            center.add(5);
+            center.add(6);
+            TablaRenderer.applyTo(tablaEquipos, t, currency, bold, center, t.bgSurface, t.bgElevated);
             if (tablaEquipos.getTableHeader() != null) {
-                Theme.styleTableHeader(tablaEquipos.getTableHeader(), t);
+                styleHeaderBold(tablaEquipos.getTableHeader(), t);
             }
         }
         if (scrollEquipos != null) {

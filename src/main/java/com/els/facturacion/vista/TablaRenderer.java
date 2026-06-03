@@ -7,10 +7,12 @@ import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.util.Collections;
 import java.util.Set;
+import javax.swing.JCheckBox;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableCellRenderer;
 
 public class TablaRenderer extends DefaultTableCellRenderer {
 
@@ -121,5 +123,34 @@ public class TablaRenderer extends DefaultTableCellRenderer {
         table.getTableHeader().setReorderingAllowed(false);
         table.setDefaultRenderer(Object.class,
             new TablaRenderer(theme, currencyColumns, boldColumns, centerColumns, evenBg, oddBg));
+        table.setDefaultRenderer(Boolean.class, new BooleanRenderer(theme, evenBg, oddBg));
+    }
+
+    private static class BooleanRenderer extends JCheckBox implements TableCellRenderer {
+        private final Theme theme;
+        private final Color evenBg;
+        private final Color oddBg;
+
+        BooleanRenderer(Theme theme, Color evenBg, Color oddBg) {
+            this.theme = theme;
+            this.evenBg = evenBg;
+            this.oddBg = oddBg;
+            setHorizontalAlignment(SwingConstants.CENTER);
+            setOpaque(true);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+              boolean isSelected, boolean hasFocus, int row, int column) {
+            setSelected(Boolean.TRUE.equals(value));
+            if (!isSelected) {
+                setBackground(row % 2 == 0 ? evenBg : oddBg);
+                setForeground(theme.textPrimary);
+            } else {
+                setBackground(theme.brandDark);
+                setForeground(Color.WHITE);
+            }
+            return this;
+        }
     }
 }

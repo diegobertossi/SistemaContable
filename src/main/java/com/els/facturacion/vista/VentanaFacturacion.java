@@ -14,11 +14,15 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -196,13 +200,14 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             }
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column != 5;
+                return column != 0 && column != 5;
             }
         };
         tablaItems = new JTable(modeloTablaItems);
-        tablaItems.getColumnModel().getColumn(0).setPreferredWidth(60);
-        tablaItems.getColumnModel().getColumn(1).setPreferredWidth(200);
-        tablaItems.getColumnModel().getColumn(2).setPreferredWidth(50);
+        tablaItems.setRowHeight(36);
+        tablaItems.getColumnModel().getColumn(0).setPreferredWidth(50);
+        tablaItems.getColumnModel().getColumn(1).setPreferredWidth(400);
+        tablaItems.getColumnModel().getColumn(2).setPreferredWidth(60);
         tablaItems.getColumnModel().getColumn(3).setPreferredWidth(60);
         tablaItems.getColumnModel().getColumn(4).setPreferredWidth(80);
         tablaItems.getColumnModel().getColumn(5).setPreferredWidth(80);
@@ -711,7 +716,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             Set<Integer> center   = new HashSet<>(Arrays.asList(0, 2, 3, 4, 5));
             TablaRenderer.applyTo(tablaItems, t, currency, bold, center, evenBg, oddBg);
             if (tablaItems.getTableHeader() != null) {
-                Theme.styleTableHeader(tablaItems.getTableHeader(), t);
+                styleHeaderBold(tablaItems.getTableHeader(), t);
             }
         }
         if (lblTotal != null) { lblTotal.setForeground(t.brandDark); }
@@ -745,6 +750,34 @@ public class VentanaFacturacion extends javax.swing.JFrame {
                 themeLabels((Container) comp, t);
             }
         }
+    }
+
+    private static void styleHeaderBold(JTableHeader header, Theme theme) {
+        boolean isDark = theme.bgBase.getRed() < 50;
+        Color fg = isDark ? Color.WHITE : theme.textPrimary;
+        Color headerBg = isDark
+            ? new Color(Math.min(255, theme.bgElevated.getRed() + 20), Math.min(255, theme.bgElevated.getGreen() + 20), Math.min(255, theme.bgElevated.getBlue() + 20))
+            : new Color(Math.min(255, theme.brand.getRed() + 115), Math.min(255, theme.brand.getGreen() + 110), Math.min(255, theme.brand.getBlue() + 10));
+        int avg = (headerBg.getRed() + headerBg.getGreen() + headerBg.getBlue()) / 3;
+        Color divider = avg < 80
+            ? new Color(Math.min(255, headerBg.getRed() + 60), Math.min(255, headerBg.getGreen() + 60), Math.min(255, headerBg.getBlue() + 60))
+            : new Color(Math.max(0, headerBg.getRed() - 60), Math.max(0, headerBg.getGreen() - 60), Math.max(0, headerBg.getBlue() - 60));
+        Border colBorder = BorderFactory.createMatteBorder(0, 0, 1, 2, divider);
+        header.setDefaultRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                  boolean isSelected, boolean hasFocus, int row, int column) {
+                DefaultTableCellRenderer c = (DefaultTableCellRenderer)
+                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                c.setForeground(fg);
+                c.setBackground(headerBg);
+                c.setHorizontalAlignment(SwingConstants.CENTER);
+                c.setFont(new Font("Segoe UI", Font.BOLD, 11));
+                c.setText(value != null ? value.toString().toUpperCase() : "");
+                c.setBorder(colBorder);
+                return c;
+            }
+        });
     }
 
     // ===================== GETTERS =====================

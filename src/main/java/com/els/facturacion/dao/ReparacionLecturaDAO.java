@@ -167,7 +167,7 @@ public class ReparacionLecturaDAO {
         Connection conn = ConexionReparsoft.getInstancia().getConexion(baseDatos);
         if (conn == null) return lista;
 
-        String sql = "SELECT r.idRemito, r.NumeroRemitoSalida, "
+        String sql = "SELECT r.idRemito, r.NumeroRemitoSalida, r.IdUbicacion, "
                 + "rep.ELS, rep.RemitoCliente, rep.idEquipo, "
                 + "e.Nombre as equipo_nombre, e.NumeroDeSerie, e.Modelo, e.Marca, "
                 + "c.nombre as cliente_nombre, c.CUIT, "
@@ -187,6 +187,8 @@ public class ReparacionLecturaDAO {
             while (rs.next()) {
                 int idRemito = rs.getInt("idRemito");
                 Integer numSalida = rs.getObject("NumeroRemitoSalida") != null ? rs.getInt("NumeroRemitoSalida") : null;
+                int idUbicacion = 0;
+                try { idUbicacion = rs.getInt("IdUbicacion"); if (rs.wasNull()) idUbicacion = 0; } catch (Exception e) {}
                 String clienteNombre = "";
                 String cuit = "";
                 try { clienteNombre = rs.getString("cliente_nombre"); } catch (Exception e) {}
@@ -194,7 +196,7 @@ public class ReparacionLecturaDAO {
 
                 com.els.facturacion.modelo.RemitoReparsoftDTO dto = map.get(idRemito);
                 if (dto == null) {
-                    dto = new com.els.facturacion.modelo.RemitoReparsoftDTO(idRemito, numSalida, clienteNombre, cuit);
+                    dto = new com.els.facturacion.modelo.RemitoReparsoftDTO(idRemito, numSalida, clienteNombre, cuit, idUbicacion);
                     dto.setItems(new ArrayList<>());
                     map.put(idRemito, dto);
                 }
@@ -233,10 +235,12 @@ public class ReparacionLecturaDAO {
         if (conn == null) return lista;
 
         String sql = "SELECT rep.ELS, e.Nombre as equipo_nombre, e.NumeroDeSerie, e.Modelo, e.Marca, "
-                + "rep.Falla, rep.PrecioPeso "
+                + "rep.Falla, rep.PrecioPeso, "
+                + "r.IdUbicacion, r.NumeroRemitoSalida "
                 + "FROM " + baseDatos + ".reparaciones rep "
                 + "JOIN " + baseDatos + ".equipos e ON rep.idEquipo = e.IdEquipo "
                 + "JOIN " + baseDatos + ".cliente c ON e.idCliente = c.idCliente "
+                + "LEFT JOIN " + baseDatos + ".remitos r ON rep.idRemito = r.idRemito "
                 + "WHERE c.nombre = ? AND rep.PrecioPeso > 0 "
                 + "ORDER BY rep.ELS DESC";
 
@@ -252,6 +256,7 @@ public class ReparacionLecturaDAO {
                 String modelo = "";
                 String marca = "";
                 double precio = 0;
+                String numeroRemito = "";
                 try { els = rs.getInt("ELS"); } catch (Exception e) {}
                 try { equipoNombre = rs.getString("equipo_nombre"); } catch (Exception e) {}
                 try { serie = rs.getString("NumeroDeSerie"); } catch (Exception e) {}
@@ -259,13 +264,36 @@ public class ReparacionLecturaDAO {
                 try { modelo = rs.getString("Modelo"); } catch (Exception e) {}
                 try { marca = rs.getString("Marca"); } catch (Exception e) {}
                 try { precio = rs.getDouble("PrecioPeso"); } catch (Exception e) {}
+                try {
+                    int idUbicacion = rs.getInt("IdUbicacion");
+                    if (!rs.wasNull()) {
+                        int nroSalida = rs.getInt("NumeroRemitoSalida");
+                        if (!rs.wasNull()) {
+                            int displayUbicacion = idUbicacionADisplay(idUbicacion);
+                            numeroRemito = String.format("%04d-%08d", displayUbicacion, nroSalida);
+                        }
+                    }
+                } catch (Exception e) {}
 
                 lista.add(new com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem(
-                    els, equipoNombre, serie, falla, modelo, marca, java.math.BigDecimal.valueOf(precio), false));
+                    els, equipoNombre, serie, falla, modelo, marca, java.math.BigDecimal.valueOf(precio), false, numeroRemito));
             }
         } catch (SQLException e) {
             System.err.println("Error listando equipos por cliente desde " + baseDatos + ": " + e.getMessage());
         }
         return lista;
+    }
+
+    private static int idUbicacionADisplay(int idUbicacion) {
+        switch (idUbicacion) {
+            case 1: return 5;
+            case 2: return 2;
+            case 3: return 1000;
+            case 4: return 2000;
+            case 5: return 3000;
+            case 7: return 6;
+            case 8: return 7;
+            default: return idUbicacion;
+        }
     }
 }
