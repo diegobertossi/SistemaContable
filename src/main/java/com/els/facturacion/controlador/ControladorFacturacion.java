@@ -74,6 +74,9 @@ public class ControladorFacturacion {
         view.getChkModoPrueba().addActionListener(e -> modoPrueba = view.getChkModoPrueba().isSelected());
         view.getBtnSiguiente().addActionListener(e -> {
             if (validarDatosReceptor()) {
+                String tipo = (String) view.getCmbTipoComprobante().getSelectedItem();
+                String cliente = view.getCmbRazonSocial().getEditorText().trim();
+                view.setSubtituloOp(tipo + " para " + cliente);
                 view.getCardLayout().show(view.getPanelPrincipal(), "operacion");
             }
         });
@@ -82,8 +85,12 @@ public class ControladorFacturacion {
         // Emission
         view.getBtnEmitir().addActionListener(e -> btnEmitirAction());
         view.getBtnLimpiar().addActionListener(e -> limpiarTodo());
-        view.getBtnImportarRemito().addActionListener(e -> importarRemitoReparsoft());
-        view.getBtnVerEquipos().addActionListener(e -> verEquiposPresupuestados());
+        view.getBtnImportarRemito().addActionListener(e -> {
+            if (validarDatosReceptor()) importarRemitoReparsoft();
+        });
+        view.getBtnVerEquipos().addActionListener(e -> {
+            if (validarDatosReceptor()) verEquiposPresupuestados();
+        });
 
         // Items table
         view.getBtnAgregarItem().addActionListener(e -> agregarItem());
@@ -141,6 +148,8 @@ public class ControladorFacturacion {
         List<ClienteDTO> clientes = listarClientes();
         List<String> razones = new ArrayList<>();
         List<String> docs = new ArrayList<>();
+        razones.add("");
+        docs.add("");
         for (ClienteDTO c : clientes) {
             razones.add(c.getRazonSocial());
             docs.add(c.getNroDocumento());
@@ -260,7 +269,7 @@ public class ControladorFacturacion {
         RemitoReparsoftDTO remito = VentanaImportarRemito.mostrarDialog(view);
         if (remito == null) return;
 
-        view.getTxtComprobanteAsoc().setText(remito.getNumeroRemitoDisplay());
+       // view.getTxtComprobanteAsoc().setText(remito.getNumeroRemitoDisplay());
 
         if (remito.getRazonSocialCliente() != null && !remito.getRazonSocialCliente().isEmpty()) {
             boolean encontrado = false;
@@ -291,6 +300,9 @@ public class ControladorFacturacion {
             }
         }
 
+        String tipo = (String) view.getCmbTipoComprobante().getSelectedItem();
+        String cliente = view.getCmbRazonSocial().getEditorText().trim();
+        view.setSubtituloOp(tipo + " para " + cliente);
         view.getCardLayout().show(view.getPanelPrincipal(), "operacion");
         DefaultTableModel model = view.getModeloItems();
         model.setRowCount(0);
@@ -343,6 +355,9 @@ public class ControladorFacturacion {
             model.addRow(new Object[]{codigo, descripcion, "1", "Unidad", precioStr, "0,00", true});
         }
 
+        String tipo = (String) view.getCmbTipoComprobante().getSelectedItem();
+        String cliente = view.getCmbRazonSocial().getEditorText().trim();
+        view.setSubtituloOp(tipo + " para " + cliente);
         view.getCardLayout().show(view.getPanelPrincipal(), "operacion");
         recalcularTotales();
     }
@@ -391,7 +406,7 @@ public class ControladorFacturacion {
             comprobante.setDomicilioReceptor(view.getTxtDomicilio().getText().trim());
             comprobante.setEmailReceptor(view.getTxtEmail().getText().trim());
             comprobante.setCondicionesVenta(obtenerCondicionesVenta());
-            comprobante.setComprobanteAsociado(view.getTxtComprobanteAsoc().getText().trim());
+            //comprobante.setComprobanteAsociado(view.getTxtComprobanteAsoc().getText().trim());
             comprobante.setDescripcion(obtenerDescripcionItems());
             comprobante.setEstadoPago("pendiente");
             try {
@@ -473,12 +488,46 @@ public class ControladorFacturacion {
     // ===================== HELPERS =====================
 
     private boolean validarDatosReceptor() {
+        if (view.getCmbPuntoVenta().getSelectedItem() == null || view.getCmbPuntoVenta().getSelectedItem().toString().isEmpty()) {
+            JOptionPane.showMessageDialog(view, "Seleccione un Punto de Venta", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        if (view.getCmbTipoComprobante().getSelectedItem() == null || view.getCmbTipoComprobante().getSelectedItem().toString().isEmpty()) {
+            JOptionPane.showMessageDialog(view, "Seleccione un Tipo de Comprobante", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        if (view.getCmbConcepto().getSelectedItem() == null || view.getCmbConcepto().getSelectedItem().toString().isEmpty()) {
+            JOptionPane.showMessageDialog(view, "Seleccione un Concepto", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
+        String condVenta = obtenerCondicionesVenta();
+        if (condVenta.isEmpty()) {
+            JOptionPane.showMessageDialog(view,
+                "Debe seleccionar al menos una Condicion de Venta",
+                "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
+        String condIva = (String) view.getCmbCondicionIva().getSelectedItem();
+        if ("Consumidor Final".equals(condIva)) return true;
+
         if (view.getCmbNroDoc().getEditorText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(view, "Ingrese numero de documento", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(view,
+                "El CUIT/Nro.Doc es obligatorio para la condici\u00f3n IVA seleccionada",
+                "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
         if (view.getCmbRazonSocial().getEditorText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(view, "Ingrese razon social", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(view,
+                "La Raz\u00f3n Social es obligatoria para la condici\u00f3n IVA seleccionada",
+                "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        if (view.getTxtDomicilio().getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(view,
+                "El Domicilio es obligatorio para la condici\u00f3n IVA seleccionada",
+                "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
         return true;
@@ -569,7 +618,7 @@ public class ControladorFacturacion {
         view.getCmbCondicionIva().setSelectedIndex(0);
         view.getTxtDomicilio().setText("");
         view.getTxtEmail().setText("");
-        view.getTxtComprobanteAsoc().setText("");
+        //view.getTxtComprobanteAsoc().setText("");
         limpiarItems();
         view.getCardLayout().show(view.getPanelPrincipal(), "datos");
     }
