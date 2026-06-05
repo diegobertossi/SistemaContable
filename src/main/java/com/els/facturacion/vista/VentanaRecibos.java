@@ -80,7 +80,7 @@ public class VentanaRecibos extends javax.swing.JFrame {
 
     private void initComponents() {
         setTitle("Gesti\u00f3n de Recibos");
-        setSize(1100, 700);
+        setSize(1024, 768);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(currentTheme.bgSurface);

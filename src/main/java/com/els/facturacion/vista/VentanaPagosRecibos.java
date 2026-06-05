@@ -19,8 +19,8 @@ public class VentanaPagosRecibos extends JFrame {
 
     private void initComponents() {
         setTitle("Gesti\u00f3n de Pagos y Recibos");
-        setSize(1000, 640);
-        setMinimumSize(new Dimension(800, 500));
+        setSize(1024, 768);
+        setMinimumSize(new Dimension(900, 600));
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(currentTheme.bgBase);
