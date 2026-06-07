@@ -114,7 +114,7 @@ public class VentanaClientes extends javax.swing.JFrame {
 
         cmbTipoDoc = new JComboBox<>(new String[]{"CUIT", "DNI"});
         cmbCondicionIva = new JComboBox<>(new String[]{
-            "IVA Responsable Inscripto", "IVA Sujeto Exento", "Consumidor Final",
+            "", "IVA Responsable Inscripto", "IVA Sujeto Exento", "Consumidor Final",
             "Responsable Monotributo", "Proveedor del Exterior", "Cliente del Exterior",
             "IVA Liberado - Ley 19.640", "Monotributista Social", "IVA No Alcanzado"
         });
@@ -133,6 +133,15 @@ public class VentanaClientes extends javax.swing.JFrame {
         groupTipoPersona = new ButtonGroup();
         groupTipoPersona.add(rdParticular);
         groupTipoPersona.add(rdEmpresa);
+
+        rdParticular.addActionListener(e -> {
+            cmbTipoDoc.setSelectedItem("DNI");
+            cmbCondicionIva.setSelectedItem("Consumidor Final");
+        });
+        rdEmpresa.addActionListener(e -> {
+            cmbTipoDoc.setSelectedItem("CUIT");
+            cmbCondicionIva.setSelectedIndex(0);
+        });
 
         GridBagConstraints fgc_tipoLabel = new GridBagConstraints();
         fgc_tipoLabel.insets = new Insets(3, 5, 3, 5);
@@ -397,7 +406,7 @@ public class VentanaClientes extends javax.swing.JFrame {
                 return;
             }
             if (nroDoc.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Nro Documento es obligatorio para Empresa",
+                JOptionPane.showMessageDialog(this, "El CUIT es obligatorio para Empresa",
                     "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -427,7 +436,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         }
         cli.setTipoPersona(esParticular ? "particular" : "empresa");
         cli.setTipoDocumento((String) cmbTipoDoc.getSelectedItem());
-        cli.setNroDocumento(nroDoc.isEmpty() ? null : nroDoc);
+        cli.setNroDocumento(nroDoc.isEmpty() ? "" : nroDoc);
         cli.setRazonSocial(razonSocial);
         cli.setCondicionIva(condicionIva);
         cli.setDomicilio(domicilio);
