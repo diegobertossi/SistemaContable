@@ -3,11 +3,13 @@ package com.els.facturacion.vista;
 import com.els.facturacion.controlador.ControladorClientes;
 import com.els.facturacion.modelo.ClienteDTO;
 import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -44,15 +46,20 @@ public class VentanaClientes extends javax.swing.JFrame {
     private JComboBox<String> cmbCondicionIva;
     private JPanel panelSuperior;
     private JLabel lblTitulo;
-    private JButton btnImportar;
+    private JRadioButton rdParticular;
+    private JRadioButton rdEmpresa;
+    private ButtonGroup groupTipoPersona;
     private JPanel panelForm;
     private JPanel panelBotonesForm;
     private JPanel statusBar;
     private JLabel lblStatus;
     private JButton btnGuardar;
     private JButton btnNuevo;
+    private JButton btnEditar;
     private JScrollPane scrollTabla;
     private JPanel southWrapper;
+    private boolean modoEdicion;
+    private boolean guardando;
 
     public VentanaClientes() {
         controlador = new ControladorClientes();
@@ -60,6 +67,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         applyTheme(currentTheme);
         VentanaPrincipal.addThemeListener(this);
         cargarClientes();
+        sincronizarConReparsoft();
     }
 
     private void initComponents() {
@@ -87,13 +95,6 @@ public class VentanaClientes extends javax.swing.JFrame {
             public void removeUpdate(DocumentEvent e) { buscarCliente(); }
             public void changedUpdate(DocumentEvent e) { buscarCliente(); }
         });
-        btnImportar = new JButton("IMPORTAR DE REPARSOFT");
-        btnImportar.setFont(FUENTE_BOTON);
-        btnImportar.setForeground(currentTheme.textPrimary);
-        btnImportar.setBackground(currentTheme.btnBg);
-        btnImportar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnImportar.setFocusPainted(false);
-        btnImportar.addActionListener(e -> importarClientes());
 
         GridBagConstraints gbc_buscar_label = new GridBagConstraints();
         gbc_buscar_label.insets = new Insets(5, 5, 5, 5);
@@ -105,14 +106,8 @@ public class VentanaClientes extends javax.swing.JFrame {
         gbc_txtBuscar.fill = GridBagConstraints.HORIZONTAL;
         gbc_txtBuscar.gridwidth = 1; gbc_txtBuscar.gridx = 1; gbc_txtBuscar.gridy = 1;
 
-        GridBagConstraints gbc_btnImportar = new GridBagConstraints();
-        gbc_btnImportar.insets = new Insets(5, 5, 5, 5);
-        gbc_btnImportar.fill = GridBagConstraints.HORIZONTAL;
-        gbc_btnImportar.gridwidth = 1; gbc_btnImportar.gridx = 2; gbc_btnImportar.gridy = 1;
-
         panelSuperior.add(new JLabel("Buscar:"), gbc_buscar_label);
         panelSuperior.add(txtBuscar, gbc_txtBuscar);
-        panelSuperior.add(btnImportar, gbc_btnImportar);
 
         panelForm = new JPanel(new GridBagLayout());
         panelForm.setBackground(currentTheme.bgSurface);
@@ -131,6 +126,33 @@ public class VentanaClientes extends javax.swing.JFrame {
         txtEmail = new JTextField(20);
 
         int row = 0;
+
+        rdParticular = new JRadioButton("Particular");
+        rdEmpresa = new JRadioButton("Empresa");
+        rdEmpresa.setSelected(true);
+        groupTipoPersona = new ButtonGroup();
+        groupTipoPersona.add(rdParticular);
+        groupTipoPersona.add(rdEmpresa);
+
+        GridBagConstraints fgc_tipoLabel = new GridBagConstraints();
+        fgc_tipoLabel.insets = new Insets(3, 5, 3, 5);
+        fgc_tipoLabel.fill = GridBagConstraints.HORIZONTAL;
+        fgc_tipoLabel.gridx = 0; fgc_tipoLabel.gridy = row;
+        panelForm.add(new JLabel("Tipo:"), fgc_tipoLabel);
+
+        GridBagConstraints fgc_rdParticular = new GridBagConstraints();
+        fgc_rdParticular.insets = new Insets(3, 5, 3, 5);
+        fgc_rdParticular.fill = GridBagConstraints.HORIZONTAL;
+        fgc_rdParticular.gridx = 1; fgc_rdParticular.gridy = row;
+        panelForm.add(rdParticular, fgc_rdParticular);
+
+        GridBagConstraints fgc_rdEmpresa = new GridBagConstraints();
+        fgc_rdEmpresa.insets = new Insets(3, 5, 3, 5);
+        fgc_rdEmpresa.fill = GridBagConstraints.HORIZONTAL;
+        fgc_rdEmpresa.gridx = 2; fgc_rdEmpresa.gridy = row;
+        panelForm.add(rdEmpresa, fgc_rdEmpresa);
+
+        row++;
 
         GridBagConstraints fgc_tipoDoc_label = new GridBagConstraints();
         fgc_tipoDoc_label.insets = new Insets(3, 5, 3, 5);
@@ -232,7 +254,15 @@ public class VentanaClientes extends javax.swing.JFrame {
         btnGuardar.setBackground(currentTheme.btnBg);
         btnGuardar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnGuardar.setFocusPainted(false);
-        btnGuardar.addActionListener(e -> guardarCliente());
+        btnGuardar.addActionListener(e -> {
+            if (guardando) return;
+            guardando = true;
+            try {
+                guardarCliente();
+            } finally {
+                guardando = false;
+            }
+        });
         btnNuevo = new JButton("NUEVO");
         btnNuevo.setFont(FUENTE_BOTON);
         btnNuevo.setForeground(currentTheme.textPrimary);
@@ -242,6 +272,15 @@ public class VentanaClientes extends javax.swing.JFrame {
         btnNuevo.addActionListener(e -> limpiarFormulario());
         panelBotonesForm.add(btnNuevo);
         panelBotonesForm.add(btnGuardar);
+        btnEditar = new JButton("EDITAR");
+        btnEditar.setFont(FUENTE_BOTON);
+        btnEditar.setForeground(currentTheme.brand);
+        btnEditar.setBackground(currentTheme.bgSurface);
+        btnEditar.setBorder(BorderFactory.createLineBorder(currentTheme.brand));
+        btnEditar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnEditar.setFocusPainted(false);
+        btnEditar.addActionListener(e -> habilitarEdicion(true));
+        panelBotonesForm.add(btnEditar);
 
         row++;
 
@@ -251,7 +290,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         fgc_panelBotones.gridx = 0; fgc_panelBotones.gridy = row; fgc_panelBotones.gridwidth = 4;
         panelForm.add(panelBotonesForm, fgc_panelBotones);
 
-        String[] columnas = {"ID", "Razon Social", "Tipo Doc", "Nro Doc", "Condicion IVA", "Telefono", "Email"};
+        String[] columnas = {"ID", "Tipo", "Razon Social", "Tipo Doc", "Nro Doc", "Condicion IVA", "Domicilio", "Telefono", "Email"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             public boolean isCellEditable(int row, int column) { return false; }
         };
@@ -278,16 +317,18 @@ public class VentanaClientes extends javax.swing.JFrame {
         statusBar.add(lblStatus);
         southWrapper.add(statusBar, BorderLayout.SOUTH);
         add(southWrapper, BorderLayout.SOUTH);
+        setFormEditable(false);
     }
 
     private void cargarClientes() {
         modeloTabla.setRowCount(0);
         List<ClienteDTO> lista = controlador.listarTodos();
         for (ClienteDTO c : lista) {
+            String tipo = "empresa".equals(c.getTipoPersona()) ? "Empresa" : "Particular";
             modeloTabla.addRow(new Object[]{
-                c.getId(), c.getRazonSocial(), c.getTipoDocumento(),
+                c.getId(), tipo, c.getRazonSocial(), c.getTipoDocumento(),
                 c.getNroDocumento(), c.getCondicionIva(),
-                c.getTelefono(), c.getEmail()
+                c.getDomicilio(), c.getTelefono(), c.getEmail()
             });
         }
     }
@@ -298,68 +339,141 @@ public class VentanaClientes extends javax.swing.JFrame {
         modeloTabla.setRowCount(0);
         List<ClienteDTO> lista = controlador.buscarPorRazonSocial(termino);
         for (ClienteDTO c : lista) {
+            String tipo = "empresa".equals(c.getTipoPersona()) ? "Empresa" : "Particular";
             modeloTabla.addRow(new Object[]{
-                c.getId(), c.getRazonSocial(), c.getTipoDocumento(),
+                c.getId(), tipo, c.getRazonSocial(), c.getTipoDocumento(),
                 c.getNroDocumento(), c.getCondicionIva(),
-                c.getTelefono(), c.getEmail()
+                c.getDomicilio(), c.getTelefono(), c.getEmail()
             });
         }
     }
 
     private void cargarClienteSeleccionado() {
         int row = tabla.getSelectedRow();
-        if (row < 0) return;
-        txtRazonSocial.setText(modeloTabla.getValueAt(row, 1) != null ? modeloTabla.getValueAt(row, 1).toString() : "");
-        cmbTipoDoc.setSelectedItem(modeloTabla.getValueAt(row, 2));
-        txtNroDoc.setText(modeloTabla.getValueAt(row, 3) != null ? modeloTabla.getValueAt(row, 3).toString() : "");
-        cmbCondicionIva.setSelectedItem(modeloTabla.getValueAt(row, 4) != null ? modeloTabla.getValueAt(row, 4).toString() : "Consumidor Final");
-        txtTelefono.setText(modeloTabla.getValueAt(row, 5) != null ? modeloTabla.getValueAt(row, 5).toString() : "");
-        txtEmail.setText(modeloTabla.getValueAt(row, 6) != null ? modeloTabla.getValueAt(row, 6).toString() : "");
+        if (row < 0) {
+            modoEdicion = false;
+            setFormEditable(false);
+            return;
+        }
+        String tipo = modeloTabla.getValueAt(row, 1) != null ? modeloTabla.getValueAt(row, 1).toString() : "Empresa";
+        if ("Particular".equals(tipo)) {
+            rdParticular.setSelected(true);
+        } else {
+            rdEmpresa.setSelected(true);
+        }
+        txtRazonSocial.setText(modeloTabla.getValueAt(row, 2) != null ? modeloTabla.getValueAt(row, 2).toString() : "");
+        cmbTipoDoc.setSelectedItem(modeloTabla.getValueAt(row, 3));
+        txtNroDoc.setText(modeloTabla.getValueAt(row, 4) != null ? modeloTabla.getValueAt(row, 4).toString() : "");
+        cmbCondicionIva.setSelectedItem(modeloTabla.getValueAt(row, 5) != null ? modeloTabla.getValueAt(row, 5).toString() : "Consumidor Final");
+        txtDomicilio.setText(modeloTabla.getValueAt(row, 6) != null ? modeloTabla.getValueAt(row, 6).toString() : "");
+        txtTelefono.setText(modeloTabla.getValueAt(row, 7) != null ? modeloTabla.getValueAt(row, 7).toString() : "");
+        txtEmail.setText(modeloTabla.getValueAt(row, 8) != null ? modeloTabla.getValueAt(row, 8).toString() : "");
+        modoEdicion = false;
+        setFormEditable(false);
     }
 
     private void guardarCliente() {
-        if (txtRazonSocial.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Razon Social es obligatorio", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        ClienteDTO cli = new ClienteDTO();
-        int row = tabla.getSelectedRow();
-        if (row >= 0 && modeloTabla.getValueAt(row, 0) != null) {
-            cli.setId((Integer) modeloTabla.getValueAt(row, 0));
-        }
-        cli.setTipoDocumento((String) cmbTipoDoc.getSelectedItem());
+        boolean esParticular = rdParticular.isSelected();
+        String razonSocial = txtRazonSocial.getText().trim();
+        String telefono = txtTelefono.getText().trim();
         String nroDoc = txtNroDoc.getText().trim();
-        cli.setNroDocumento(nroDoc.isEmpty() ? "0" : nroDoc);
-        cli.setRazonSocial(txtRazonSocial.getText().trim());
-        cli.setCondicionIva((String) cmbCondicionIva.getSelectedItem());
-        cli.setDomicilio(txtDomicilio.getText().trim());
-        cli.setTelefono(txtTelefono.getText().trim());
+        String condicionIva = (String) cmbCondicionIva.getSelectedItem();
+        String domicilio = txtDomicilio.getText().trim();
+
+        if (esParticular) {
+            if (razonSocial.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Nombre es obligatorio para clientes Particular",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (telefono.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Tel\u00e9fono es obligatorio para clientes Particular",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        } else {
+            if (razonSocial.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Razon Social es obligatorio", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (nroDoc.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Nro Documento es obligatorio para Empresa",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (domicilio.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Domicilio es obligatorio para Empresa",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (telefono.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Tel\u00e9fono es obligatorio para Empresa",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        }
+
+        ClienteDTO cli = new ClienteDTO();
+        if (modoEdicion) {
+            int row = tabla.getSelectedRow();
+            if (row >= 0 && modeloTabla.getValueAt(row, 0) != null) {
+                Integer id = (Integer) modeloTabla.getValueAt(row, 0);
+                cli.setId(id);
+                ClienteDTO existente = controlador.buscarPorId(id);
+                if (existente != null) {
+                    cli.setElsReferencia(existente.getElsReferencia());
+                }
+            }
+        }
+        cli.setTipoPersona(esParticular ? "particular" : "empresa");
+        cli.setTipoDocumento((String) cmbTipoDoc.getSelectedItem());
+        cli.setNroDocumento(nroDoc.isEmpty() ? null : nroDoc);
+        cli.setRazonSocial(razonSocial);
+        cli.setCondicionIva(condicionIva);
+        cli.setDomicilio(domicilio);
+        cli.setTelefono(telefono);
         cli.setEmail(txtEmail.getText().trim());
 
         int id = controlador.guardarCliente(cli);
         if (id > 0 || cli.getId() != null) {
             JOptionPane.showMessageDialog(this, "Cliente guardado correctamente", "Exito", JOptionPane.INFORMATION_MESSAGE);
+            modoEdicion = false;
             cargarClientes();
+            setFormEditable(false);
         } else {
             JOptionPane.showMessageDialog(this, "Error al guardar cliente", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void importarClientes() {
-        int opcion = JOptionPane.showConfirmDialog(this,
-            "Desea importar clientes desde ReparSoft? (Se importaran solo clientes nuevos)",
-            "Importar Clientes", JOptionPane.YES_NO_OPTION);
-        if (opcion != JOptionPane.YES_OPTION) return;
-
+    private void sincronizarConReparsoft() {
         List<ClienteDTO> importados = controlador.importarDesdeReparsoft();
-        JOptionPane.showMessageDialog(this,
-            "Importacion completada.\nClientes importados: " + importados.size(),
-            "Resultado", JOptionPane.INFORMATION_MESSAGE);
-        cargarClientes();
+        if (!importados.isEmpty()) {
+            cargarClientes();
+        }
+    }
+
+    private void setFormEditable(boolean editable) {
+        txtNroDoc.setEnabled(editable);
+        txtRazonSocial.setEnabled(editable);
+        txtDomicilio.setEnabled(editable);
+        txtTelefono.setEnabled(editable);
+        txtEmail.setEnabled(editable);
+        cmbTipoDoc.setEnabled(editable);
+        cmbCondicionIva.setEnabled(editable);
+        rdParticular.setEnabled(editable);
+        rdEmpresa.setEnabled(editable);
+        btnGuardar.setEnabled(editable);
+        btnEditar.setEnabled(!editable && tabla.getSelectedRow() >= 0);
+    }
+
+    private void habilitarEdicion(boolean editable) {
+        modoEdicion = editable;
+        setFormEditable(editable);
     }
 
     private void limpiarFormulario() {
         tabla.clearSelection();
+        rdEmpresa.setSelected(true);
         cmbTipoDoc.setSelectedIndex(0);
         txtNroDoc.setText("");
         txtRazonSocial.setText("");
@@ -367,6 +481,8 @@ public class VentanaClientes extends javax.swing.JFrame {
         txtDomicilio.setText("");
         txtTelefono.setText("");
         txtEmail.setText("");
+        modoEdicion = false;
+        setFormEditable(true);
     }
 
     private void applyTheme(Theme t) {
@@ -378,7 +494,14 @@ public class VentanaClientes extends javax.swing.JFrame {
             txtBuscar.setForeground(t.textPrimary);
             txtBuscar.setBackground(t.bgInput);
         }
-        if (btnImportar != null) { btnImportar.setBackground(t.btnBg); btnImportar.setForeground(t.textPrimary); }
+        if (rdParticular != null) {
+            rdParticular.setForeground(t.textPrimary);
+            rdParticular.setBackground(t.bgSurface);
+        }
+        if (rdEmpresa != null) {
+            rdEmpresa.setForeground(t.textPrimary);
+            rdEmpresa.setBackground(t.bgSurface);
+        }
         if (panelForm != null) {
             panelForm.setBackground(t.bgSurface);
             themeLabels(panelForm, t);
@@ -414,6 +537,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         }
         if (btnGuardar != null) { btnGuardar.setBackground(t.btnBg); btnGuardar.setForeground(t.textPrimary); }
         if (btnNuevo != null) { btnNuevo.setBackground(t.btnBg); btnNuevo.setForeground(t.textPrimary); }
+        if (btnEditar != null) { btnEditar.setForeground(t.brand); btnEditar.setBackground(t.bgSurface); btnEditar.setBorder(BorderFactory.createLineBorder(t.brand)); }
         if (southWrapper != null) southWrapper.setBackground(t.bgBase);
         if (scrollTabla != null) scrollTabla.getViewport().setBackground(t.bgBase);
         if (tabla != null) {

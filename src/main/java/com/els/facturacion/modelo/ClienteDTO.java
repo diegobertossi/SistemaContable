@@ -12,11 +12,13 @@ public class ClienteDTO {
     private String origen;
     private Integer elsReferencia;
     private Boolean activo;
+    private String tipoPersona;
 
     public ClienteDTO() {
         this.tipoDocumento = "CUIT";
         this.activo = true;
         this.origen = "manual";
+        this.tipoPersona = "empresa";
     }
 
     public Integer getId() { return id; }
@@ -41,4 +43,6 @@ public class ClienteDTO {
     public void setElsReferencia(Integer elsReferencia) { this.elsReferencia = elsReferencia; }
     public Boolean getActivo() { return activo; }
     public void setActivo(Boolean activo) { this.activo = activo; }
+    public String getTipoPersona() { return tipoPersona; }
+    public void setTipoPersona(String tipoPersona) { this.tipoPersona = tipoPersona; }
 }

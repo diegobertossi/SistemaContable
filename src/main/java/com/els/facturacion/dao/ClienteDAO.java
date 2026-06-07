@@ -21,8 +21,8 @@ public class ClienteDAO {
 
     public int insertar(ClienteDTO cliente) {
         String sql = "INSERT INTO clientes (tipo_documento, nro_documento, razon_social, condicion_iva, "
-                + "domicilio, telefono, email, origen, els_referencia, activo) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "domicilio, telefono, email, origen, els_referencia, activo, tipo_persona) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement ps = getConn().prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, cliente.getTipoDocumento());
@@ -39,6 +39,7 @@ public class ClienteDAO {
                 ps.setNull(9, java.sql.Types.INTEGER);
             }
             ps.setBoolean(10, cliente.getActivo() != null ? cliente.getActivo() : true);
+            ps.setString(11, cliente.getTipoPersona() != null ? cliente.getTipoPersona() : "empresa");
 
             int affected = ps.executeUpdate();
             if (affected > 0) {
@@ -55,7 +56,8 @@ public class ClienteDAO {
 
     public boolean actualizar(ClienteDTO cliente) {
         String sql = "UPDATE clientes SET tipo_documento = ?, nro_documento = ?, razon_social = ?, "
-                + "condicion_iva = ?, domicilio = ?, telefono = ?, email = ?, activo = ? WHERE id = ?";
+                + "condicion_iva = ?, domicilio = ?, telefono = ?, email = ?, activo = ?, "
+                + "tipo_persona = ?, els_referencia = ? WHERE id = ?";
 
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
             ps.setString(1, cliente.getTipoDocumento());
@@ -66,7 +68,13 @@ public class ClienteDAO {
             ps.setString(6, cliente.getTelefono());
             ps.setString(7, cliente.getEmail());
             ps.setBoolean(8, cliente.getActivo() != null ? cliente.getActivo() : true);
-            ps.setInt(9, cliente.getId());
+            ps.setString(9, cliente.getTipoPersona() != null ? cliente.getTipoPersona() : "empresa");
+            if (cliente.getElsReferencia() != null) {
+                ps.setInt(10, cliente.getElsReferencia());
+            } else {
+                ps.setNull(10, java.sql.Types.INTEGER);
+            }
+            ps.setInt(11, cliente.getId());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error actualizando cliente: " + e.getMessage());
@@ -106,6 +114,18 @@ public class ClienteDAO {
             if (rs.next()) return mapear(rs);
         } catch (SQLException e) {
             System.err.println("Error buscando cliente por documento: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public ClienteDTO buscarPorElsReferencia(int elsReferencia) {
+        String sql = "SELECT * FROM clientes WHERE els_referencia = ?";
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+            ps.setInt(1, elsReferencia);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) return mapear(rs);
+        } catch (SQLException e) {
+            System.err.println("Error buscando cliente por els_referencia: " + e.getMessage());
         }
         return null;
     }
@@ -193,7 +213,16 @@ public class ClienteDAO {
                     }
 
                     ClienteDTO existente = buscarPorDocumento(tipoDoc, nroDoc);
-                    if (existente != null) continue;
+                    if (existente == null) {
+                        existente = buscarPorElsReferencia(idCliente);
+                    }
+                    if (existente != null) {
+                        if (existente.getElsReferencia() == null || existente.getElsReferencia() == 0) {
+                            existente.setElsReferencia(idCliente);
+                            actualizar(existente);
+                        }
+                        continue;
+                    }
 
                     ClienteDTO cli = new ClienteDTO();
                     cli.setTipoDocumento(tipoDoc);
@@ -203,6 +232,7 @@ public class ClienteDAO {
                     cli.setDomicilio(domicilio != null ? domicilio.trim() : "");
                     cli.setTelefono(telefono != null ? telefono.trim() : "");
                     cli.setEmail(email != null ? email.trim() : "");
+                    cli.setElsReferencia(idCliente);
                     cli.setOrigen("reparsoft");
                     int id = insertar(cli);
                     if (id > 0) {
@@ -230,6 +260,7 @@ public class ClienteDAO {
         dto.setOrigen(rs.getString("origen"));
         dto.setElsReferencia(rs.getObject("els_referencia") != null ? rs.getInt("els_referencia") : null);
         dto.setActivo(rs.getBoolean("activo"));
+        dto.setTipoPersona(rs.getString("tipo_persona"));
         return dto;
     }
 }

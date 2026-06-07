@@ -3,7 +3,10 @@ package com.els.facturacion.vista;
 import com.els.facturacion.controlador.ControladorFacturacion;
 import com.els.facturacion.modelo.ComprobanteDTO;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -11,46 +14,54 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
-
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Desktop;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
 import java.io.File;
+import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import javax.swing.table.TableColumn;
 
 public class VentanaComprobantes extends javax.swing.JFrame {
 
     private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
-    private static final Font FUENTE_TITULO = new Font("Segoe UI", Font.BOLD, 14);
+    private static final DecimalFormat DF = new DecimalFormat("#,##0.00");
+    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
     private ControladorFacturacion controlador;
     private JTable tabla;
     private DefaultTableModel modeloTabla;
-    private JTextField txtBuscarCAE;
     private JLabel lblTitulo;
-    private JButton btnBuscar;
     private JButton btnActualizar;
     private JButton btnVerPDF;
     private JPanel panelSuperior;
-    private JLabel lblBuscar;
     private JScrollPane scrollPane;
     private JPanel statusBar;
     private JLabel lblStatus;
-    private DateTimeFormatter fechaFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    private JLabel lblFiltroCliente;
+    private JComboBox<String> cmbFiltroCliente;
+    private JPanel panelFiltroComprobantes;
+    private JTextField editorFiltroComprobantes;
+
+    private List<ComprobanteDTO> allComprobantes;
+    private List<String> allClientes;
+    private List<Integer> listaIds;
+    private boolean actualizandoComboComprobantes;
 
     public VentanaComprobantes() {
         controlador = new ControladorFacturacion();
@@ -60,41 +71,122 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         cargarComprobantes();
     }
 
+    private static String formatearTipo(String tipoStr) {
+        if (tipoStr == null || tipoStr.isEmpty()) return "";
+        if (tipoStr.contains("FCE")) return "FCE";
+        String[] parts = tipoStr.split(" ");
+        if (parts.length < 2) return tipoStr;
+        String abbr;
+        switch (parts[0]) {
+            case "Factura":       abbr = "F";  break;
+            case "Nota":
+                boolean isCredito = false;
+                for (String p : parts) if (p.startsWith("C") || p.startsWith("Cr")) { isCredito = true; break; }
+                abbr = isCredito ? "NC" : "ND";
+                break;
+            case "Recibo":        abbr = "R";  break;
+            default:              abbr = parts[0]; break;
+        }
+        String letra = parts[parts.length - 1];
+        return abbr + "-" + letra;
+    }
+
+    private void ajustarAnchoColumnas(JTable table, int... priorizar) {
+        Set<Integer> prio = new HashSet<>();
+        for (int p : priorizar) prio.add(p);
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            javax.swing.table.TableColumn col = table.getColumnModel().getColumn(i);
+            int width = 60;
+            javax.swing.table.TableCellRenderer hr = table.getTableHeader().getDefaultRenderer();
+            java.awt.Component hc = hr.getTableCellRendererComponent(table, col.getHeaderValue(), false, false, 0, i);
+            width = Math.max(width, hc.getPreferredSize().width + 6);
+            for (int r = 0; r < Math.min(table.getRowCount(), 30); r++) {
+                javax.swing.table.TableCellRenderer rnd = table.getCellRenderer(r, i);
+                java.awt.Component cmp = table.prepareRenderer(rnd, r, i);
+                width = Math.max(width, cmp.getPreferredSize().width + 6);
+            }
+            if (prio.contains(i)) width = (int) (width * 1.35);
+            col.setPreferredWidth(width);
+        }
+    }
+
     private void initComponents() {
         setTitle("Historial de Comprobantes");
-        setSize(900, 540);
+        setSize(1024, 600);
+        setMinimumSize(new Dimension(1024, 600));
+        setMaximumSize(new Dimension(1024, 600));
+        setResizable(false);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(currentTheme.bgBase);
 
-        panelSuperior = new JPanel(new GridBagLayout());
+        panelSuperior = new JPanel();
+        panelSuperior.setLayout(new BoxLayout(panelSuperior, BoxLayout.Y_AXIS));
         panelSuperior.setBackground(currentTheme.bgSurface);
+        panelSuperior.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
 
         lblTitulo = new JLabel("HISTORIAL DE COMPROBANTES", SwingConstants.CENTER);
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblTitulo.setForeground(currentTheme.brand);
+        lblTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelSuperior.add(lblTitulo);
+        panelSuperior.add(Box.createRigidArea(new Dimension(0, 6)));
 
-        GridBagConstraints gbc_titulo = new GridBagConstraints();
-        gbc_titulo.insets = new Insets(5, 5, 5, 5);
-        gbc_titulo.fill = GridBagConstraints.HORIZONTAL;
-        gbc_titulo.gridx = 0; gbc_titulo.gridy = 0; gbc_titulo.gridwidth = 5;
-        panelSuperior.add(lblTitulo, gbc_titulo);
+        // --- FILTER ---
+        lblFiltroCliente = new JLabel("CLIENTE:");
+        lblFiltroCliente.setFont(FUENTE_BOTON);
+        lblFiltroCliente.setForeground(currentTheme.textPrimary);
 
-        lblBuscar = new JLabel("Buscar por CAE:");
-        lblBuscar.setFont(FUENTE_BOTON);
-        lblBuscar.setForeground(currentTheme.textPrimary);
+        cmbFiltroCliente = new JComboBox<>();
+        cmbFiltroCliente.setEditable(true);
+        cmbFiltroCliente.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        cmbFiltroCliente.setMaximumRowCount(12);
 
-        txtBuscarCAE = new JTextField(20);
-        txtBuscarCAE.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        panelFiltroComprobantes = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
+        panelFiltroComprobantes.setBackground(currentTheme.bgSurface);
+        panelFiltroComprobantes.add(lblFiltroCliente);
+        panelFiltroComprobantes.add(cmbFiltroCliente);
+        panelSuperior.add(panelFiltroComprobantes);
 
-        btnBuscar = new JButton("BUSCAR");
-        btnBuscar.setFont(FUENTE_BOTON);
-        btnBuscar.setForeground(currentTheme.textPrimary);
-        btnBuscar.setBackground(currentTheme.btnBg);
-        btnBuscar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnBuscar.setFocusPainted(false);
-        btnBuscar.addActionListener(e -> btnBuscarAction());
+        // --- TABLE ---
+        String[] columnas = {"N\u00famero", "Tipo", "Fecha", "Cliente", "Total", "Estado"};
+        modeloTabla = new DefaultTableModel(columnas, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
 
+        tabla = new JTable(modeloTabla);
+        tabla.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
+        tabla.getTableHeader().setBackground(currentTheme.btnBg);
+        tabla.setRowHeight(22);
+        tabla.setShowGrid(true);
+        tabla.setAutoCreateRowSorter(true);
+        tabla.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+
+        // --- DocumentListener + ActionListener on editable combo ---
+        editorFiltroComprobantes = (JTextField) cmbFiltroCliente.getEditor().getEditorComponent();
+        editorFiltroComprobantes.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { onFiltroCambiado(); }
+            @Override public void removeUpdate(DocumentEvent e) { onFiltroCambiado(); }
+            @Override public void changedUpdate(DocumentEvent e) { onFiltroCambiado(); }
+        });
+        cmbFiltroCliente.addActionListener(e -> {
+            if (actualizandoComboComprobantes) return;
+            Object sel = cmbFiltroCliente.getSelectedItem();
+            if (sel != null) {
+                String txt = sel.toString();
+                if (!txt.equals(editorFiltroComprobantes.getText())) {
+                    editorFiltroComprobantes.setText(txt);
+                }
+            }
+        });
+
+        scrollPane = new JScrollPane(tabla);
+
+        // --- BOTTOM BUTTONS ---
         btnActualizar = new JButton("ACTUALIZAR");
         btnActualizar.setFont(FUENTE_BOTON);
         btnActualizar.setForeground(currentTheme.textPrimary);
@@ -111,63 +203,18 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         btnVerPDF.setFocusPainted(false);
         btnVerPDF.addActionListener(e -> btnVerPDFAction());
 
-        GridBagConstraints gbc_lblBuscar = new GridBagConstraints();
-        gbc_lblBuscar.insets = new Insets(5, 5, 5, 5);
-        gbc_lblBuscar.fill = GridBagConstraints.HORIZONTAL;
-        gbc_lblBuscar.gridwidth = 1;
-        gbc_lblBuscar.gridx = 0; gbc_lblBuscar.gridy = 1;
-        panelSuperior.add(lblBuscar, gbc_lblBuscar);
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 4));
+        panelBotones.setBackground(currentTheme.bgBase);
+        panelBotones.add(btnActualizar);
+        panelBotones.add(btnVerPDF);
 
-        GridBagConstraints gbc_txtBuscarCAE = new GridBagConstraints();
-        gbc_txtBuscarCAE.insets = new Insets(5, 5, 5, 5);
-        gbc_txtBuscarCAE.fill = GridBagConstraints.HORIZONTAL;
-        gbc_txtBuscarCAE.gridwidth = 1;
-        gbc_txtBuscarCAE.gridx = 1; gbc_txtBuscarCAE.gridy = 1;
-        panelSuperior.add(txtBuscarCAE, gbc_txtBuscarCAE);
-
-        GridBagConstraints gbc_btnBuscar = new GridBagConstraints();
-        gbc_btnBuscar.insets = new Insets(5, 5, 5, 5);
-        gbc_btnBuscar.fill = GridBagConstraints.HORIZONTAL;
-        gbc_btnBuscar.gridwidth = 1;
-        gbc_btnBuscar.gridx = 2; gbc_btnBuscar.gridy = 1;
-        panelSuperior.add(btnBuscar, gbc_btnBuscar);
-
-        GridBagConstraints gbc_btnActualizar = new GridBagConstraints();
-        gbc_btnActualizar.insets = new Insets(5, 5, 5, 5);
-        gbc_btnActualizar.fill = GridBagConstraints.HORIZONTAL;
-        gbc_btnActualizar.gridwidth = 1;
-        gbc_btnActualizar.gridx = 3; gbc_btnActualizar.gridy = 1;
-        panelSuperior.add(btnActualizar, gbc_btnActualizar);
-
-        GridBagConstraints gbc_btnVerPDF = new GridBagConstraints();
-        gbc_btnVerPDF.insets = new Insets(5, 5, 5, 5);
-        gbc_btnVerPDF.fill = GridBagConstraints.HORIZONTAL;
-        gbc_btnVerPDF.gridwidth = 1;
-        gbc_btnVerPDF.gridx = 4; gbc_btnVerPDF.gridy = 1;
-        panelSuperior.add(btnVerPDF, gbc_btnVerPDF);
-
-        String[] columnas = {"ID", "Tipo", "PtoVta", "Numero", "Fecha", "CUIT Receptor", "Total", "Estado Pago", "CAE", "Vto CAE", "Email"};
-        modeloTabla = new DefaultTableModel(columnas, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-
-        tabla = new JTable(modeloTabla);
-
-        tabla.getColumnModel().moveColumn(3, 0);
-        TableColumn idCol = tabla.getColumnModel().getColumn(1);
-        idCol.setMinWidth(0);
-        idCol.setMaxWidth(0);
-        idCol.setPreferredWidth(0);
-        idCol.setWidth(0);
-        idCol.setResizable(false);
-
-        scrollPane = new JScrollPane(tabla);
+        JPanel panelCentro = new JPanel(new BorderLayout(0, 4));
+        panelCentro.setBackground(currentTheme.bgSurface);
+        panelCentro.add(scrollPane, BorderLayout.CENTER);
+        panelCentro.add(panelBotones, BorderLayout.SOUTH);
 
         add(panelSuperior, BorderLayout.NORTH);
-        add(scrollPane, BorderLayout.CENTER);
+        add(panelCentro, BorderLayout.CENTER);
 
         boolean barIsLight = currentTheme.bgBase.getRed() > 128;
         statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
@@ -180,73 +227,111 @@ public class VentanaComprobantes extends javax.swing.JFrame {
     }
 
     private void cargarComprobantes() {
-        modeloTabla.setRowCount(0);
-        List<ComprobanteDTO> lista = controlador.listarComprobantes();
-        for (ComprobanteDTO dto : lista) {
-            modeloTabla.addRow(new Object[]{
-                dto.getId(),
-                dto.getTipoComprobanteStr(),
-                dto.getPuntoVenta(),
-                dto.getNumero(),
-                dto.getFechaEmision() != null ? dto.getFechaEmision().format(fechaFormatter) : "",
-                dto.getCuitReceptor(),
-                dto.getImporteTotal() != null ? dto.getImporteTotal().toString() : "",
-                obtenerEstadoPagoDisplay(dto.getEstadoPago()),
-                dto.getCae(),
-                dto.getVencimientoCae() != null ? dto.getVencimientoCae().format(fechaFormatter) : "",
-                dto.getEmailEnviado() ? "Si" : "No"
-            });
+        allComprobantes = controlador.listarComprobantes();
+        if (allComprobantes == null) allComprobantes = new ArrayList<>();
+
+        allClientes = new ArrayList<>();
+        for (ComprobanteDTO c : allComprobantes) {
+            String cli = c.getRazonSocialRec();
+            if (cli != null && !cli.isEmpty() && !allClientes.contains(cli)) {
+                allClientes.add(cli);
+            }
         }
+
+        aplicarFiltro();
+        actualizarSugerenciasCombo();
+
+        tabla.clearSelection();
     }
 
-    private String obtenerEstadoPagoDisplay(String estado) {
-        if (estado == null) return "Pendiente";
-        switch (estado) {
-            case "pendiente": return "Pendiente";
-            case "pagada_parcial": return "Pagada Parcial";
-            case "pagada_total": return "Pagada Total";
-            case "anulada": return "Anulada";
-            default: return estado;
+    private void aplicarFiltro() {
+        modeloTabla.setRowCount(0);
+        listaIds = new ArrayList<>();
+        if (allComprobantes == null) return;
+
+        String filtro = obtenerTextoFiltro();
+        String filtroLower = filtro.toLowerCase();
+
+        for (ComprobanteDTO c : allComprobantes) {
+            String cli = c.getRazonSocialRec() != null ? c.getRazonSocialRec() : "";
+            if (!filtro.isEmpty() && !cli.toLowerCase().contains(filtroLower)) {
+                continue;
+            }
+            listaIds.add(c.getId());
+            String estado = c.getEstadoPago();
+            String estadoDisplay = "pendiente".equals(estado) ? "Pendiente"
+                : "pagada_parcial".equals(estado) ? "Parcial"
+                : "pagada_total".equals(estado) ? "Pagada" : estado;
+            String totalStr = c.getImporteTotal() != null ? "$ " + DF.format(c.getImporteTotal()) : "";
+            modeloTabla.addRow(new Object[]{
+                String.format("%04d-%08d", c.getPuntoVenta(), c.getNumero()),
+                formatearTipo(c.getTipoComprobanteStr()),
+                c.getFechaEmision() != null ? c.getFechaEmision().format(FMT) : "",
+                cli,
+                totalStr,
+                estadoDisplay
+            });
         }
+        ajustarAnchoColumnas(tabla, 0, 4);
     }
 
-    private void btnBuscarAction() {
-        String cae = txtBuscarCAE.getText().trim();
-        if (cae.isEmpty()) {
-            cargarComprobantes();
-            return;
-        }
+    private void onFiltroCambiado() {
+        if (actualizandoComboComprobantes) return;
+        aplicarFiltro();
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            if (!actualizandoComboComprobantes) {
+                actualizarSugerenciasCombo();
+            }
+        });
+    }
 
-        modeloTabla.setRowCount(0);
-        ComprobanteDTO comp = controlador.buscarComprobante(cae);
-        if (comp != null) {
-            modeloTabla.addRow(new Object[]{
-                comp.getId(),
-                comp.getTipoComprobanteStr(),
-                comp.getPuntoVenta(),
-                comp.getNumero(),
-                comp.getFechaEmision() != null ? comp.getFechaEmision().format(fechaFormatter) : "",
-                comp.getCuitReceptor(),
-                comp.getImporteTotal() != null ? comp.getImporteTotal().toString() : "",
-                obtenerEstadoPagoDisplay(comp.getEstadoPago()),
-                comp.getCae(),
-                comp.getVencimientoCae() != null ? comp.getVencimientoCae().format(fechaFormatter) : "",
-                comp.getEmailEnviado() ? "Si" : "No"
-            });
-        } else {
-            JOptionPane.showMessageDialog(this, "No se encontro comprobante con ese CAE", "Buscar", JOptionPane.INFORMATION_MESSAGE);
-            cargarComprobantes();
+    private String obtenerTextoFiltro() {
+        if (editorFiltroComprobantes != null) {
+            return editorFiltroComprobantes.getText().trim();
+        }
+        return "";
+    }
+
+    private void actualizarSugerenciasCombo() {
+        if (allClientes == null || editorFiltroComprobantes == null) return;
+        String texto = editorFiltroComprobantes.getText();
+        String textoLower = texto.toLowerCase();
+
+        actualizandoComboComprobantes = true;
+        try {
+            cmbFiltroCliente.hidePopup();
+            cmbFiltroCliente.removeAllItems();
+            cmbFiltroCliente.addItem("");
+            int agregados = 0;
+            for (String cli : allClientes) {
+                if (texto.isEmpty() || cli.toLowerCase().contains(textoLower)) {
+                    cmbFiltroCliente.addItem(cli);
+                    agregados++;
+                    if (agregados >= 15) break;
+                }
+            }
+            String textoActualEditor = editorFiltroComprobantes.getText();
+            if (!textoActualEditor.equals(texto)) {
+                editorFiltroComprobantes.setText(texto);
+            }
+            boolean tieneFoco = editorFiltroComprobantes.hasFocus();
+            if (tieneFoco && !texto.isEmpty()) {
+                cmbFiltroCliente.setPopupVisible(true);
+            }
+        } finally {
+            actualizandoComboComprobantes = false;
         }
     }
 
     private void btnVerPDFAction() {
-        int selectedRow = tabla.getSelectedRow();
-        if (selectedRow < 0) {
+        int viewRow = tabla.getSelectedRow();
+        if (viewRow < 0) {
             JOptionPane.showMessageDialog(this, "Seleccione un comprobante", "Advertencia", JOptionPane.WARNING_MESSAGE);
             return;
         }
-
-        int id = (int) modeloTabla.getValueAt(selectedRow, 0);
+        int modelRow = tabla.convertRowIndexToModel(viewRow);
+        if (modelRow < 0 || modelRow >= listaIds.size()) return;
+        int id = listaIds.get(modelRow);
         ComprobanteDTO comp = controlador.buscarComprobante(id);
 
         if (comp == null) {
@@ -304,13 +389,13 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         currentTheme = t;
         if (getContentPane() != null) getContentPane().setBackground(t.bgBase);
         if (panelSuperior != null) panelSuperior.setBackground(t.bgSurface);
+        if (panelFiltroComprobantes != null) panelFiltroComprobantes.setBackground(t.bgSurface);
         if (lblTitulo != null) lblTitulo.setForeground(t.brand);
-        if (lblBuscar != null) lblBuscar.setForeground(t.textPrimary);
-        if (txtBuscarCAE != null) {
-            txtBuscarCAE.setForeground(t.textPrimary);
-            txtBuscarCAE.setBackground(t.bgInput);
+        if (lblFiltroCliente != null) lblFiltroCliente.setForeground(t.textPrimary);
+        if (cmbFiltroCliente != null) {
+            cmbFiltroCliente.setBackground(t.bgInput);
+            cmbFiltroCliente.setForeground(t.textPrimary);
         }
-        if (btnBuscar != null) { btnBuscar.setBackground(t.btnBg); btnBuscar.setForeground(t.textPrimary); }
         if (btnActualizar != null) { btnActualizar.setBackground(t.btnBg); btnActualizar.setForeground(t.textPrimary); }
         if (btnVerPDF != null) { btnVerPDF.setBackground(t.btnBg); btnVerPDF.setForeground(t.textPrimary); }
         if (scrollPane != null) scrollPane.getViewport().setBackground(t.bgBase);
@@ -318,9 +403,9 @@ public class VentanaComprobantes extends javax.swing.JFrame {
             boolean isDarkTheme = t.bgBase.getRed() < 50;
             Color evenBg = isDarkTheme ? new Color(30, 40, 62) : new Color(210, 222, 242);
             Color oddBg  = isDarkTheme ? new Color(45, 58, 80) : new Color(235, 242, 252);
-            Set<Integer> currency = new HashSet<>(Arrays.asList(6));
-            Set<Integer> bold     = new HashSet<>(Arrays.asList(3));
-            Set<Integer> center   = new HashSet<>(Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+            Set<Integer> currency = new HashSet<>(Arrays.asList(4));
+            Set<Integer> bold     = new HashSet<>(Arrays.asList(0));
+            Set<Integer> center   = new HashSet<>(Arrays.asList(0, 1, 2, 3, 4, 5));
             TablaRenderer.applyTo(tabla, t, currency, bold, center, evenBg, oddBg);
             if (tabla.getTableHeader() != null) {
                 Theme.styleTableHeader(tabla.getTableHeader(), t);

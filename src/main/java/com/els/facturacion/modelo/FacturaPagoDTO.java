@@ -12,6 +12,7 @@ public class FacturaPagoDTO {
     private Integer reciboId;
     private String reciboNumero;
     private String comprobanteStr;
+    private String clienteRazonSocial;
     private String observaciones;
 
     public FacturaPagoDTO() {}
@@ -32,6 +33,8 @@ public class FacturaPagoDTO {
     public void setReciboNumero(String reciboNumero) { this.reciboNumero = reciboNumero; }
     public String getComprobanteStr() { return comprobanteStr; }
     public void setComprobanteStr(String comprobanteStr) { this.comprobanteStr = comprobanteStr; }
+    public String getClienteRazonSocial() { return clienteRazonSocial; }
+    public void setClienteRazonSocial(String clienteRazonSocial) { this.clienteRazonSocial = clienteRazonSocial; }
     public String getObservaciones() { return observaciones; }
     public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
 }

@@ -93,7 +93,7 @@ public class FacturaPagoDAO {
 
     public List<FacturaPagoDTO> buscarTodos() {
         String sql = "SELECT fp.*, r.numero_recibo, "
-                + "c.tipo_comprobante, c.punto_venta, c.numero "
+                + "c.tipo_comprobante, c.punto_venta, c.numero, c.razon_social_rec "
                 + "FROM factura_pagos fp "
                 + "LEFT JOIN recibos r ON r.id = fp.recibo_id "
                 + "LEFT JOIN comprobantes c ON c.id = fp.comprobante_id "
@@ -112,7 +112,7 @@ public class FacturaPagoDAO {
 
     public List<FacturaPagoDTO> buscarPorComprobante(int comprobanteId) {
         String sql = "SELECT fp.*, r.numero_recibo, "
-                + "c.tipo_comprobante, c.punto_venta, c.numero "
+                + "c.tipo_comprobante, c.punto_venta, c.numero, c.razon_social_rec "
                 + "FROM factura_pagos fp "
                 + "LEFT JOIN recibos r ON r.id = fp.recibo_id "
                 + "LEFT JOIN comprobantes c ON c.id = fp.comprobante_id "
@@ -140,6 +140,7 @@ public class FacturaPagoDAO {
         dto.setReciboId(rs.getObject("recibo_id") != null ? rs.getInt("recibo_id") : null);
         dto.setReciboNumero(rs.getString("numero_recibo"));
         dto.setObservaciones(rs.getString("observaciones"));
+        dto.setClienteRazonSocial(rs.getString("razon_social_rec"));
         String tipo = rs.getString("tipo_comprobante");
         int pv = rs.getInt("punto_venta");
         long num = rs.getLong("numero");

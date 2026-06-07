@@ -221,7 +221,7 @@ Recibo           →  tiene muchos →  Formas de pago (recibo_pagos)
 
 1. **Facturación**: El comprobante se registra en ARCA ANTES de guardar en BD local. Si el sistema falla entre ambos pasos, el comprobante ya existe en ARCA.
 2. **PDF sin CAE**: El DAO debe poder regenerar PDFs para comprobantes que tienen CAE pero no PDF.
-3. **ReparSoft**: Solo lectura, NUNCA escribir en sus bases.
+3. **ReparSoft**: Sincronización bidireccional en tabla `cliente`. Las modificaciones de clientes en FacturaSoft se reflejan en ReparSoft (tabla `cliente`, base según ubicación) y viceversa. No escribir en otras tablas de ReparSoft sin autorización.
 4. **Certificados**: Los archivos .p12 se almacenan en `src/main/resources/certificados/`
 5. **Items de factura**: Se persisten en `factura_items` después de emitir el comprobante en ARCA.
 6. **Estado de pago**: Se actualiza automáticamente al registrar pagos en el módulo de Pagos o Recibos.

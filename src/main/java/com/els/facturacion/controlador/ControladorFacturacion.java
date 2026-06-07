@@ -406,7 +406,7 @@ public class ControladorFacturacion {
             comprobante.setDomicilioReceptor(view.getTxtDomicilio().getText().trim());
             comprobante.setEmailReceptor(view.getTxtEmail().getText().trim());
             comprobante.setCondicionesVenta(obtenerCondicionesVenta());
-            //comprobante.setComprobanteAsociado(view.getTxtComprobanteAsoc().getText().trim());
+            comprobante.setComprobanteAsociado(view.getTxtComprobanteAsoc().getText().trim());
             comprobante.setDescripcion(obtenerDescripcionItems());
             comprobante.setEstadoPago("pendiente");
             try {
@@ -618,7 +618,7 @@ public class ControladorFacturacion {
         view.getCmbCondicionIva().setSelectedIndex(0);
         view.getTxtDomicilio().setText("");
         view.getTxtEmail().setText("");
-        //view.getTxtComprobanteAsoc().setText("");
+        view.getTxtComprobanteAsoc().setText("");
         limpiarItems();
         view.getCardLayout().show(view.getPanelPrincipal(), "datos");
     }

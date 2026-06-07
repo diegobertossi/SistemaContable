@@ -1,31 +1,33 @@
 package com.els.facturacion.vista;
 
-import com.els.facturacion.controlador.ControladorRecibos;
-import com.els.facturacion.modelo.ReciboDTO;
-import com.els.facturacion.modelo.ReciboFacturaDTO;
-import com.els.facturacion.modelo.ReciboPagoDTO;
+import com.els.facturacion.controlador.ControladorPagos;
+import com.els.facturacion.modelo.FacturaPagoDTO;
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
+import java.awt.Desktop;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
+import java.io.File;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
-import java.awt.Desktop;
-import java.io.File;
-import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -34,47 +36,39 @@ import java.util.List;
 public class VentanaRecibos extends javax.swing.JFrame {
 
     private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
-    private static final Font FUENTE_LABEL = new Font("Segoe UI", Font.BOLD, 12);
     private static final DecimalFormat DF = new DecimalFormat("#,##0.00");
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
-    private JPanel panelLista;
-    private JPanel panelInferiorLista;
-    private JPanel panelDetalle;
-    private JPanel panelHeader;
-    private JPanel panelCentralWrapper;
-    private JPanel panelFormasPago;
-    private JPanel panelFacturas;
-    private JButton btnRefrescar;
-    private JButton btnVerRecibo;
-    private JSplitPane splitHorizontal;
-    private JSplitPane splitVertical;
-    private JScrollPane scrollRecibos;
-    private JScrollPane scrollPagos;
-    private JScrollPane scrollFacturas;
-
-    private ControladorRecibos controlador;
-
-    private JTable tablaRecibos;
-    private DefaultTableModel modeloTablaRecibos;
+    private ControladorPagos controlador;
 
     private JTable tablaPagos;
     private DefaultTableModel modeloTablaPagos;
-
-    private JTable tablaFacturas;
-    private DefaultTableModel modeloTablaFacturas;
-
-    private JLabel lblInfoRecibo;
+    private JScrollPane scrollPagos;
+    private JPanel panelPagos;
+    private JPanel panelAcciones;
+    private JButton btnGenerarRecibo;
+    private JButton btnVerRecibo;
     private JPanel statusBar;
     private JLabel lblStatus;
+    private JLabel lblTitulo;
+    private JLabel lblFiltroCliente;
+    private JComboBox<String> cmbFiltroCliente;
+    private JPanel panelFiltro;
+    private JPanel panelTitulo;
+
+    private List<Integer> pagosIds;
+    private List<String> reciboOriginalNums;
+    private List<FacturaPagoDTO> allPagos;
+    private List<String> allClientes;
+    private boolean actualizandoCombo;
 
     public VentanaRecibos() {
-        controlador = new ControladorRecibos();
+        controlador = new ControladorPagos();
         initComponents();
         applyTheme(currentTheme);
-        cargarRecibos();
+        cargarHistorialCompleto();
         VentanaPrincipal.addThemeListener(this);
     }
 
@@ -85,15 +79,112 @@ public class VentanaRecibos extends javax.swing.JFrame {
         setLocationRelativeTo(null);
         getContentPane().setBackground(currentTheme.bgSurface);
 
-        splitHorizontal = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitHorizontal.setResizeWeight(0.35);
-        splitHorizontal.setBorder(null);
-        splitHorizontal.setBackground(currentTheme.bgSurface);
+        lblTitulo = new JLabel("GESTI\u00d3N DE RECIBOS", SwingConstants.CENTER);
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblTitulo.setForeground(currentTheme.brand);
 
-        splitHorizontal.setLeftComponent(crearPanelLista());
-        splitHorizontal.setRightComponent(crearPanelDetalle());
+        panelTitulo = new JPanel(new BorderLayout());
+        panelTitulo.setBackground(currentTheme.bgSurface);
+        panelTitulo.setBorder(BorderFactory.createEmptyBorder(6, 10, 4, 10));
+        panelTitulo.add(lblTitulo, BorderLayout.CENTER);
 
-        add(splitHorizontal);
+        lblFiltroCliente = new JLabel("CLIENTE:");
+        lblFiltroCliente.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblFiltroCliente.setForeground(currentTheme.textPrimary);
+
+        cmbFiltroCliente = new JComboBox<>();
+        cmbFiltroCliente.setEditable(true);
+        cmbFiltroCliente.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        cmbFiltroCliente.setPreferredSize(new Dimension(260, 26));
+        cmbFiltroCliente.setMaximumRowCount(12);
+
+        panelFiltro = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
+        panelFiltro.setBackground(currentTheme.bgSurface);
+        panelFiltro.setBorder(BorderFactory.createEmptyBorder(0, 14, 6, 10));
+        panelFiltro.add(lblFiltroCliente);
+        panelFiltro.add(cmbFiltroCliente);
+
+        JPanel panelNorte = new JPanel();
+        panelNorte.setLayout(new BoxLayout(panelNorte, BoxLayout.Y_AXIS));
+        panelNorte.setBackground(currentTheme.bgSurface);
+        panelNorte.add(panelTitulo);
+        panelNorte.add(panelFiltro);
+
+        JTextField editorFiltro = (JTextField) cmbFiltroCliente.getEditor().getEditorComponent();
+        editorFiltro.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { onFiltroCambiado(); }
+            @Override public void removeUpdate(DocumentEvent e) { onFiltroCambiado(); }
+            @Override public void changedUpdate(DocumentEvent e) { onFiltroCambiado(); }
+        });
+        cmbFiltroCliente.addActionListener(e -> {
+            if (actualizandoCombo) return;
+            Object sel = cmbFiltroCliente.getSelectedItem();
+            if (sel != null) {
+                String txt = sel.toString();
+                if (!txt.equals(editorFiltro.getText())) {
+                    editorFiltro.setText(txt);
+                }
+            }
+        });
+
+        panelPagos = new JPanel(new BorderLayout(5, 5));
+        panelPagos.setBackground(currentTheme.bgSurface);
+        panelPagos.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createEmptyBorder(6, 10, 10, 10),
+            BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(currentTheme.brand),
+                "PAGOS Y RECIBOS",
+                javax.swing.border.TitledBorder.LEFT,
+                javax.swing.border.TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 13), currentTheme.textPrimary
+            )
+        ));
+
+        String[] colPagos = {"Fecha", "Cliente", "Factura", "Recibo", "Monto", "Forma de Pago", "SEL"};
+        modeloTablaPagos = new DefaultTableModel(colPagos, 0) {
+            @Override
+            public boolean isCellEditable(int row, int col) {
+                if (col != 6) return false;
+                Object reciboVal = getValueAt(row, 3);
+                return reciboVal == null || reciboVal.toString().isEmpty();
+            }
+            @Override
+            public Class<?> getColumnClass(int col) {
+                return col == 6 ? Boolean.class : Object.class;
+            }
+        };
+        tablaPagos = new JTable(modeloTablaPagos);
+        tablaPagos.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        tablaPagos.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
+        tablaPagos.getTableHeader().setBackground(currentTheme.btnBg);
+        tablaPagos.setRowHeight(22);
+        tablaPagos.setShowGrid(true);
+        tablaPagos.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+
+        scrollPagos = new JScrollPane(tablaPagos);
+        panelPagos.add(scrollPagos, BorderLayout.CENTER);
+
+        btnGenerarRecibo = new JButton("GENERAR RECIBO");
+        estilizarBoton(btnGenerarRecibo);
+        btnGenerarRecibo.setPreferredSize(new java.awt.Dimension(140, 28));
+        btnGenerarRecibo.addActionListener(e -> {
+            if (JOptionPane.showConfirmDialog(this, "\u00bfEst\u00e1 seguro de generar el recibo?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION)
+                generarReciboDesdePago();
+        });
+
+        btnVerRecibo = new JButton("VER RECIBO");
+        estilizarBoton(btnVerRecibo);
+        btnVerRecibo.setPreferredSize(new java.awt.Dimension(110, 28));
+        btnVerRecibo.addActionListener(e -> verReciboPagoSeleccionado());
+
+        panelAcciones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        panelAcciones.setBackground(bgAzulado(currentTheme));
+        panelAcciones.add(btnGenerarRecibo);
+        panelAcciones.add(btnVerRecibo);
+        panelPagos.add(panelAcciones, BorderLayout.SOUTH);
+
+        getContentPane().add(panelNorte, BorderLayout.NORTH);
+        getContentPane().add(panelPagos);
 
         boolean barIsLight = currentTheme.bgBase.getRed() > 128;
         statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
@@ -102,224 +193,155 @@ public class VentanaRecibos extends javax.swing.JFrame {
         lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         lblStatus.setForeground(barIsLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
         statusBar.add(lblStatus);
-        add(statusBar, BorderLayout.SOUTH);
+        getContentPane().add(statusBar, BorderLayout.SOUTH);
     }
 
-    private JPanel crearPanelLista() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panelLista = panel;
-        panel.setBackground(currentTheme.bgSurface);
-        panel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createEmptyBorder(10, 10, 10, 5),
-            BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(currentTheme.brand),
-                "RECIBOS",
-                javax.swing.border.TitledBorder.LEFT,
-                javax.swing.border.TitledBorder.TOP,
-                new Font("Segoe UI", Font.BOLD, 13), currentTheme.textPrimary
-            )
-        ));
-
-        String[] colRecibos = {"ID", "N\u00famero", "Fecha", "Cliente", "Total"};
-        modeloTablaRecibos = new DefaultTableModel(colRecibos, 0) {
-            @Override
-            public boolean isCellEditable(int row, int col) { return false; }
-        };
-        tablaRecibos = new JTable(modeloTablaRecibos);
-        tablaRecibos.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        tablaRecibos.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
-        tablaRecibos.getTableHeader().setBackground(currentTheme.btnBg);
-        tablaRecibos.setRowHeight(22);
-        tablaRecibos.setShowGrid(true);
-        tablaRecibos.setAutoCreateRowSorter(true);
-        tablaRecibos.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) cargarReciboSeleccionado();
-        });
-
-        tablaRecibos.getColumnModel().getColumn(0).setPreferredWidth(30);
-        tablaRecibos.getColumnModel().getColumn(1).setPreferredWidth(100);
-        tablaRecibos.getColumnModel().getColumn(2).setPreferredWidth(80);
-        tablaRecibos.getColumnModel().getColumn(3).setPreferredWidth(180);
-        tablaRecibos.getColumnModel().getColumn(4).setPreferredWidth(80);
-
-        scrollRecibos = new JScrollPane(tablaRecibos);
-        panel.add(scrollRecibos, BorderLayout.CENTER);
-
-        JPanel panelInferior = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-        panelInferiorLista = panelInferior;
-        panelInferior.setBackground(currentTheme.bgBase);
-        btnRefrescar = new JButton("REFRESCAR");
-        btnRefrescar.setFont(FUENTE_BOTON);
-        btnRefrescar.setForeground(currentTheme.textPrimary);
-        btnRefrescar.setBackground(currentTheme.btnBg);
-        btnRefrescar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnRefrescar.setFocusPainted(false);
-        btnRefrescar.addActionListener(e -> cargarRecibos());
-        panelInferior.add(btnRefrescar);
-        btnVerRecibo = new JButton("VER RECIBO");
-        btnVerRecibo.setFont(FUENTE_BOTON);
-        btnVerRecibo.setForeground(currentTheme.textPrimary);
-        btnVerRecibo.setBackground(currentTheme.btnBg);
-        btnVerRecibo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnVerRecibo.setFocusPainted(false);
-        btnVerRecibo.addActionListener(e -> verReciboSeleccionado());
-        panelInferior.add(btnVerRecibo);
-        panel.add(panelInferior, BorderLayout.SOUTH);
-
-        return panel;
+    public void refrescar() {
+        cargarHistorialCompleto();
     }
 
-    private JPanel crearPanelDetalle() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panelDetalle = panel;
-        panel.setBackground(currentTheme.bgSurface);
-        panel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createEmptyBorder(10, 5, 10, 10),
-            BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(currentTheme.brand),
-                "DETALLE DEL RECIBO",
-                javax.swing.border.TitledBorder.LEFT,
-                javax.swing.border.TitledBorder.TOP,
-                new Font("Segoe UI", Font.BOLD, 13), currentTheme.textPrimary
-            )
-        ));
+    private void cargarHistorialCompleto() {
+        allPagos = controlador.getTodosLosPagos();
+        if (allPagos == null) allPagos = new ArrayList<>();
 
-        panel.add(crearPanelHeader(), BorderLayout.NORTH);
-        panel.add(crearPanelCentral(), BorderLayout.CENTER);
+        allClientes = new ArrayList<>();
+        for (FacturaPagoDTO p : allPagos) {
+            String cli = p.getClienteRazonSocial();
+            if (cli != null && !cli.isEmpty() && !allClientes.contains(cli)) {
+                allClientes.add(cli);
+            }
+        }
 
-        return panel;
+        aplicarFiltro();
+        actualizarSugerenciasCombo();
     }
 
-    private JPanel crearPanelHeader() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panelHeader = panel;
-        panel.setBackground(currentTheme.bgSurface);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 10, 5, 10);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
+    private void aplicarFiltro() {
+        modeloTablaPagos.setRowCount(0);
+        pagosIds = new ArrayList<>();
+        reciboOriginalNums = new ArrayList<>();
+        if (allPagos == null) return;
 
-        lblInfoRecibo = new JLabel("Seleccione un recibo de la lista");
-        lblInfoRecibo.setFont(FUENTE_LABEL);
-        lblInfoRecibo.setForeground(currentTheme.textPrimary);
-        gbc.gridx = 0; gbc.gridy = 0;
-        panel.add(lblInfoRecibo, gbc);
+        String filtro = obtenerTextoFiltro();
+        String filtroLower = filtro.toLowerCase();
 
-        return panel;
-    }
-
-    private JPanel crearPanelCentral() {
-        splitVertical = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        splitVertical.setResizeWeight(0.5);
-        splitVertical.setBorder(null);
-        splitVertical.setBackground(currentTheme.bgSurface);
-
-        splitVertical.setTopComponent(crearPanelFormasPago());
-        splitVertical.setBottomComponent(crearPanelFacturas());
-
-        panelCentralWrapper = new JPanel(new BorderLayout());
-        panelCentralWrapper.setBackground(currentTheme.bgSurface);
-        panelCentralWrapper.add(splitVertical);
-        return panelCentralWrapper;
-    }
-
-    private JPanel crearPanelFormasPago() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panelFormasPago = panel;
-        panel.setBackground(currentTheme.bgSurface);
-        panel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(currentTheme.brand),
-            "FORMAS DE PAGO",
-            javax.swing.border.TitledBorder.LEFT,
-            javax.swing.border.TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 12), currentTheme.textPrimary
-        ));
-
-        String[] colPagos = {"Forma de Pago", "Monto", "Referencia"};
-        modeloTablaPagos = new DefaultTableModel(colPagos, 0) {
-            @Override
-            public boolean isCellEditable(int row, int col) { return false; }
-        };
-        tablaPagos = new JTable(modeloTablaPagos);
-        tablaPagos.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        tablaPagos.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
-        tablaPagos.getTableHeader().setBackground(currentTheme.btnBg);
-        tablaPagos.setRowHeight(22);
-        tablaPagos.setShowGrid(true);
-
-        tablaPagos.getColumnModel().getColumn(0).setPreferredWidth(150);
-        tablaPagos.getColumnModel().getColumn(1).setPreferredWidth(120);
-        tablaPagos.getColumnModel().getColumn(2).setPreferredWidth(200);
-
-        scrollPagos = new JScrollPane(tablaPagos);
-        panel.add(scrollPagos, BorderLayout.CENTER);
-
-        return panel;
-    }
-
-    private JPanel crearPanelFacturas() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panelFacturas = panel;
-        panel.setBackground(currentTheme.bgSurface);
-        panel.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(currentTheme.brand),
-            "FACTURAS ASOCIADAS",
-            javax.swing.border.TitledBorder.LEFT,
-            javax.swing.border.TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 12), currentTheme.textPrimary
-        ));
-
-        String[] colFacturas = {"Factura ID", "Nro Factura", "Monto Aplicado"};
-        modeloTablaFacturas = new DefaultTableModel(colFacturas, 0) {
-            @Override
-            public boolean isCellEditable(int row, int col) { return false; }
-        };
-        tablaFacturas = new JTable(modeloTablaFacturas);
-        tablaFacturas.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        tablaFacturas.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
-        tablaFacturas.getTableHeader().setBackground(currentTheme.btnBg);
-        tablaFacturas.setRowHeight(22);
-        tablaFacturas.setShowGrid(true);
-
-        tablaFacturas.getColumnModel().getColumn(0).setPreferredWidth(80);
-        tablaFacturas.getColumnModel().getColumn(1).setPreferredWidth(130);
-        tablaFacturas.getColumnModel().getColumn(2).setPreferredWidth(120);
-
-
-        scrollFacturas = new JScrollPane(tablaFacturas);
-        panel.add(scrollFacturas, BorderLayout.CENTER);
-
-        return panel;
-    }
-
-    private void cargarRecibos() {
-        modeloTablaRecibos.setRowCount(0);
-        List<ReciboDTO> lista = controlador.listarTodos();
-        for (ReciboDTO r : lista) {
-            modeloTablaRecibos.addRow(new Object[]{
-                r.getId(),
-                r.getNumeroRecibo(),
-                r.getFechaCobro() != null ? r.getFechaCobro().format(FMT) : "",
-                r.getRazonSocialCliente(),
-                r.getMontoTotal() != null ? "$ " + DF.format(r.getMontoTotal()) : ""
+        for (FacturaPagoDTO p : allPagos) {
+            String cli = p.getClienteRazonSocial() != null ? p.getClienteRazonSocial() : "";
+            if (!filtro.isEmpty() && !cli.toLowerCase().contains(filtroLower)) {
+                continue;
+            }
+            pagosIds.add(p.getId());
+            reciboOriginalNums.add(p.getReciboNumero());
+            String compStr = p.getComprobanteStr();
+            if (compStr != null && compStr.contains(" ")) {
+                compStr = compStr.substring(compStr.indexOf(' ') + 1).trim();
+            }
+            String reciboStr = p.getReciboNumero();
+            if (reciboStr != null && reciboStr.startsWith("RE ")) {
+                reciboStr = reciboStr.substring(3);
+            }
+            modeloTablaPagos.addRow(new Object[]{
+                p.getFechaPago() != null ? p.getFechaPago().format(FMT) : "",
+                cli,
+                compStr != null ? compStr : "",
+                p.getReciboId() != null ? reciboStr : "",
+                p.getMonto() != null ? "$ " + DF.format(p.getMonto()) : "",
+                p.getFormaPago() != null ? p.getFormaPago() : "",
+                p.getReciboId() == null ? Boolean.FALSE : Boolean.TRUE
             });
         }
-        lblInfoRecibo.setText("Seleccione un recibo de la lista");
-        modeloTablaPagos.setRowCount(0);
-        modeloTablaFacturas.setRowCount(0);
+        ajustarAnchoColumnas(tablaPagos);
     }
 
-    private void verReciboSeleccionado() {
-        int viewRow = tablaRecibos.getSelectedRow();
-        if (viewRow < 0) {
-            JOptionPane.showMessageDialog(this, "Seleccione un recibo de la lista", "Error", JOptionPane.ERROR_MESSAGE);
+    private void onFiltroCambiado() {
+        if (actualizandoCombo) return;
+        aplicarFiltro();
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            if (!actualizandoCombo) {
+                actualizarSugerenciasCombo();
+            }
+        });
+    }
+
+    private String obtenerTextoFiltro() {
+        Component c = cmbFiltroCliente.getEditor().getEditorComponent();
+        if (c instanceof JTextField) {
+            return ((JTextField) c).getText().trim();
+        }
+        Object sel = cmbFiltroCliente.getSelectedItem();
+        return sel != null ? sel.toString().trim() : "";
+    }
+
+    private void actualizarSugerenciasCombo() {
+        if (allClientes == null) return;
+        JTextField editor = (JTextField) cmbFiltroCliente.getEditor().getEditorComponent();
+        String texto = editor.getText();
+        String textoLower = texto.toLowerCase();
+
+        actualizandoCombo = true;
+        try {
+            cmbFiltroCliente.hidePopup();
+            cmbFiltroCliente.removeAllItems();
+            cmbFiltroCliente.addItem("");
+            int agregados = 0;
+            for (String cli : allClientes) {
+                if (texto.isEmpty() || cli.toLowerCase().contains(textoLower)) {
+                    cmbFiltroCliente.addItem(cli);
+                    agregados++;
+                    if (agregados >= 15) break;
+                }
+            }
+            String textoActualEditor = editor.getText();
+            if (!textoActualEditor.equals(texto)) {
+                editor.setText(texto);
+            }
+            boolean tieneFoco = editor.hasFocus();
+            if (tieneFoco && !texto.isEmpty()) {
+                cmbFiltroCliente.setPopupVisible(true);
+            }
+        } finally {
+            actualizandoCombo = false;
+        }
+    }
+
+    private void generarReciboDesdePago() {
+        if (pagosIds == null || pagosIds.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No hay pagos en el historial", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        int row = tablaRecibos.convertRowIndexToModel(viewRow);
-        if (modeloTablaRecibos.getValueAt(row, 0) == null) return;
-        String reciboNro = (String) modeloTablaRecibos.getValueAt(row, 1);
+
+        List<Integer> idsSeleccionados = new ArrayList<>();
+        for (int i = 0; i < modeloTablaPagos.getRowCount(); i++) {
+            Boolean checked = (Boolean) modeloTablaPagos.getValueAt(i, 6);
+            if (Boolean.TRUE.equals(checked)) {
+                idsSeleccionados.add(pagosIds.get(i));
+            }
+        }
+
+        if (idsSeleccionados.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Seleccione al menos un pago con el checkbox", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String reciboNro = controlador.generarReciboDesdePagos(idsSeleccionados);
+
+        if (reciboNro == null) {
+            JOptionPane.showMessageDialog(this, "Error al generar el recibo", "Error", JOptionPane.ERROR_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this, "Recibo " + reciboNro + " generado correctamente", "\u00c9xito", JOptionPane.INFORMATION_MESSAGE);
+            cargarHistorialCompleto();
+        }
+    }
+
+    private void verReciboPagoSeleccionado() {
+        int row = tablaPagos.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "Seleccione un pago del historial", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        String reciboNro = reciboOriginalNums != null && row < reciboOriginalNums.size() ? reciboOriginalNums.get(row) : null;
         if (reciboNro == null || reciboNro.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "El recibo no tiene un n\u00famero asociado", "Informaci\u00f3n", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "El pago seleccionado no tiene un recibo asociado", "Informaci\u00f3n", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
         String ruta = com.els.facturacion.pdf.GestorReciboPDF.getRutaPDF(reciboNro);
@@ -339,145 +361,91 @@ public class VentanaRecibos extends javax.swing.JFrame {
         }
     }
 
-    private void cargarReciboSeleccionado() {
-        int viewRow = tablaRecibos.getSelectedRow();
-        if (viewRow < 0) return;
-        int row = tablaRecibos.convertRowIndexToModel(viewRow);
-        if (modeloTablaRecibos.getValueAt(row, 0) == null) return;
-        int id = (Integer) modeloTablaRecibos.getValueAt(row, 0);
+    private void estilizarBoton(JButton btn) {
+        btn.setFont(FUENTE_BOTON);
+        btn.setForeground(currentTheme.textPrimary);
+        btn.setBackground(currentTheme.btnBg);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setFocusPainted(false);
+    }
 
-        ReciboDTO r = controlador.buscarPorId(id);
-        if (r == null) return;
-
-        String info = "Recibo: " + r.getNumeroRecibo()
-            + "  |  Fecha: " + (r.getFechaCobro() != null ? r.getFechaCobro().format(FMT) : "")
-            + "  |  Cliente: " + r.getRazonSocialCliente()
-            + "  |  Total: $ " + DF.format(r.getMontoTotal());
-        lblInfoRecibo.setText(info);
-
-        modeloTablaPagos.setRowCount(0);
-        if (r.getFormasPago() != null) {
-            for (ReciboPagoDTO p : r.getFormasPago()) {
-                modeloTablaPagos.addRow(new Object[]{
-                    p.getFormaPago(),
-                    p.getMonto() != null ? "$ " + DF.format(p.getMonto()) : "",
-                    p.getReferencia() != null ? p.getReferencia() : ""
-                });
+    private void ajustarAnchoColumnas(JTable table, int... priorizar) {
+        java.util.Set<Integer> prio = new java.util.HashSet<>();
+        for (int p : priorizar) prio.add(p);
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            javax.swing.table.TableColumn col = table.getColumnModel().getColumn(i);
+            int width = 60;
+            javax.swing.table.TableCellRenderer hr = table.getTableHeader().getDefaultRenderer();
+            java.awt.Component hc = hr.getTableCellRendererComponent(table, col.getHeaderValue(), false, false, 0, i);
+            width = Math.max(width, hc.getPreferredSize().width + 6);
+            for (int r = 0; r < Math.min(table.getRowCount(), 30); r++) {
+                javax.swing.table.TableCellRenderer rnd = table.getCellRenderer(r, i);
+                java.awt.Component cmp = table.prepareRenderer(rnd, r, i);
+                width = Math.max(width, cmp.getPreferredSize().width + 6);
             }
+            if (prio.contains(i)) width = (int)(width * 1.35);
+            col.setPreferredWidth(width);
         }
+    }
 
-        modeloTablaFacturas.setRowCount(0);
-        if (r.getFacturas() != null) {
-            for (ReciboFacturaDTO f : r.getFacturas()) {
-                BigDecimal totalPagado = f.getTotalPagado() != null ? f.getTotalPagado() : f.getMontoAplicado();
-                modeloTablaFacturas.addRow(new Object[]{
-                    f.getComprobanteId(),
-                    f.getNumeroFactura() != null ? f.getNumeroFactura() : "",
-                    totalPagado != null ? "$ " + DF.format(totalPagado) : ""
-                });
-            }
+    private static Color bgAzulado(Theme t) {
+        int r = t.bgBase.getRed();
+        int g = t.bgBase.getGreen();
+        int b = t.bgBase.getBlue();
+        if (r < 50) {
+            return new Color(
+                Math.max(0, r - 3),
+                Math.max(0, g - 3),
+                Math.min(255, b + 5)
+            );
         }
+        return new Color(
+            Math.max(0, r - 18),
+            Math.max(0, g - 16),
+            Math.max(0, b - 6)
+        );
     }
 
     private void applyTheme(Theme t) {
         currentTheme = t;
-        Color titledFg = t.textPrimary;
-        Color titledLine = t.brand;
-        Font titledFont = new Font("Segoe UI", Font.BOLD, 12);
 
-        if (panelLista != null) {
-            panelLista.setBackground(t.bgSurface);
-            panelLista.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createEmptyBorder(10, 10, 10, 5),
+        if (lblTitulo != null) lblTitulo.setForeground(t.brand);
+        if (panelTitulo != null) panelTitulo.setBackground(t.bgSurface);
+        if (panelFiltro != null) panelFiltro.setBackground(t.bgSurface);
+        if (lblFiltroCliente != null) lblFiltroCliente.setForeground(t.textPrimary);
+        if (cmbFiltroCliente != null) {
+            cmbFiltroCliente.setBackground(t.bgInput);
+            cmbFiltroCliente.setForeground(t.textPrimary);
+        }
+
+        if (panelPagos != null) {
+            panelPagos.setBackground(t.bgSurface);
+            panelPagos.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(6, 10, 10, 10),
                 BorderFactory.createTitledBorder(
-                    BorderFactory.createLineBorder(titledLine),
-                    "RECIBOS",
+                    BorderFactory.createLineBorder(t.brand),
+                    "PAGOS Y RECIBOS",
                     javax.swing.border.TitledBorder.LEFT,
                     javax.swing.border.TitledBorder.TOP,
-                    titledFont, titledFg
-                )
-            ));
+                    new Font("Segoe UI", Font.BOLD, 13), t.textPrimary)));
         }
-        if (panelInferiorLista != null) panelInferiorLista.setBackground(t.bgBase);
-        if (panelDetalle != null) {
-            panelDetalle.setBackground(t.bgSurface);
-            panelDetalle.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createEmptyBorder(10, 5, 10, 10),
-                BorderFactory.createTitledBorder(
-                    BorderFactory.createLineBorder(titledLine),
-                    "DETALLE DEL RECIBO",
-                    javax.swing.border.TitledBorder.LEFT,
-                    javax.swing.border.TitledBorder.TOP,
-                    titledFont, titledFg
-                )
-            ));
-        }
-        if (panelHeader != null) panelHeader.setBackground(t.bgSurface);
-        if (panelCentralWrapper != null) panelCentralWrapper.setBackground(t.bgSurface);
-        if (panelFormasPago != null) {
-            panelFormasPago.setBackground(t.bgSurface);
-            panelFormasPago.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(titledLine),
-                "FORMAS DE PAGO",
-                javax.swing.border.TitledBorder.LEFT,
-                javax.swing.border.TitledBorder.TOP,
-                new Font("Segoe UI", Font.BOLD, 12), titledFg
-            ));
-        }
-        if (panelFacturas != null) {
-            panelFacturas.setBackground(t.bgSurface);
-            panelFacturas.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(titledLine),
-                "FACTURAS ASOCIADAS",
-                javax.swing.border.TitledBorder.LEFT,
-                javax.swing.border.TitledBorder.TOP,
-                new Font("Segoe UI", Font.BOLD, 12), titledFg
-            ));
-        }
+        if (panelAcciones != null) panelAcciones.setBackground(bgAzulado(t));
+        if (btnGenerarRecibo != null) { btnGenerarRecibo.setBackground(t.btnBg); btnGenerarRecibo.setForeground(t.textPrimary); }
+        if (btnVerRecibo != null) { btnVerRecibo.setBackground(t.btnBg); btnVerRecibo.setForeground(t.textPrimary); }
+        if (scrollPagos != null && scrollPagos.getViewport() != null)
+            scrollPagos.getViewport().setBackground(t.bgSurface);
 
-        if (splitHorizontal != null) splitHorizontal.setBackground(t.bgSurface);
-        if (splitVertical != null) splitVertical.setBackground(t.bgSurface);
-
-        if (lblInfoRecibo != null) lblInfoRecibo.setForeground(t.textPrimary);
-
-        if (btnRefrescar != null) {
-            btnRefrescar.setForeground(t.textPrimary);
-            btnRefrescar.setBackground(t.btnBg);
-        }
-        if (btnVerRecibo != null) {
-            btnVerRecibo.setForeground(t.textPrimary);
-            btnVerRecibo.setBackground(t.btnBg);
-        }
-
-        if (tablaRecibos != null) {
-            TablaRenderer.applyTo(tablaRecibos, t);
-            if (tablaRecibos.getTableHeader() != null) {
-                Theme.styleTableHeader(tablaRecibos.getTableHeader(), t);
-            }
-        }
         if (tablaPagos != null) {
             TablaRenderer.applyTo(tablaPagos, t,
-                new HashSet<>(Arrays.asList(1)),
-                Collections.emptySet());
+                new HashSet<>(Arrays.asList(4)),
+                Collections.emptySet(),
+                new HashSet<>(Arrays.asList(0, 3)),
+                t.bgSurface, t.bgElevated);
             if (tablaPagos.getTableHeader() != null) {
                 Theme.styleTableHeader(tablaPagos.getTableHeader(), t);
             }
         }
-        if (tablaFacturas != null) {
-            TablaRenderer.applyTo(tablaFacturas, t,
-                new HashSet<>(Arrays.asList(2)),
-                Collections.emptySet());
-            if (tablaFacturas.getTableHeader() != null) {
-                Theme.styleTableHeader(tablaFacturas.getTableHeader(), t);
-            }
-        }
 
-        if (scrollRecibos != null && scrollRecibos.getViewport() != null)
-            scrollRecibos.getViewport().setBackground(t.bgSurface);
-        if (scrollPagos != null && scrollPagos.getViewport() != null)
-            scrollPagos.getViewport().setBackground(t.bgSurface);
-        if (scrollFacturas != null && scrollFacturas.getViewport() != null)
-            scrollFacturas.getViewport().setBackground(t.bgSurface);
         if (statusBar != null) {
             boolean isLight = t.bgBase.getRed() > 128;
             statusBar.setBackground(isLight ? new Color(200, 208, 225) : new Color(50, 58, 80));

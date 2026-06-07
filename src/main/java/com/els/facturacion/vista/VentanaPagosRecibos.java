@@ -10,6 +10,7 @@ public class VentanaPagosRecibos extends JFrame {
 
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
     private JTabbedPane tabbedPane;
+    private VentanaRecibos recibosView;
 
     public VentanaPagosRecibos() {
         initComponents();
@@ -19,8 +20,10 @@ public class VentanaPagosRecibos extends JFrame {
 
     private void initComponents() {
         setTitle("Gesti\u00f3n de Pagos y Recibos");
-        setSize(1024, 768);
-        setMinimumSize(new Dimension(900, 600));
+        setSize(1024, 600);
+        setMinimumSize(new Dimension(1024, 600));
+        setMaximumSize(new Dimension(1024, 600));
+        setResizable(false);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(currentTheme.bgBase);
@@ -35,10 +38,16 @@ public class VentanaPagosRecibos extends JFrame {
         tabbedPane.addTab("Pagos", pagosContent);
 
         // Tab Recibos
-        VentanaRecibos recibosView = new VentanaRecibos();
+        recibosView = new VentanaRecibos();
         Container recibosContent = recibosView.getContentPane();
         recibosView.remove(recibosContent);
         tabbedPane.addTab("Recibos", recibosContent);
+
+        tabbedPane.addChangeListener(e -> {
+            if (tabbedPane.getSelectedIndex() == 1) {
+                recibosView.refrescar();
+            }
+        });
 
         add(tabbedPane, BorderLayout.CENTER);
     }

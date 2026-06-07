@@ -3,9 +3,11 @@ package com.els.facturacion.controlador;
 import com.els.facturacion.conexion.ConexionFacturacion;
 import com.els.facturacion.conexion.ConexionReparsoft;
 import com.els.facturacion.dao.ReparacionLecturaDAO;
+import com.els.facturacion.modelo.ClienteDTO;
 import com.els.facturacion.modelo.ComprobanteDTO;
 import com.els.facturacion.modelo.RemitoReparsoftDTO;
 import com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem;
+import com.els.facturacion.util.UbicacionSistema;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -183,6 +185,101 @@ public class ControladorReparsoft {
             }
         }
         return remitos;
+    }
+
+    // ─── Sincronización bidireccional de clientes ────────────────────────
+
+    public Integer insertarClienteEnReparsoft(ClienteDTO cliente) {
+        String base = UbicacionSistema.getNombreDbReparsoft();
+        Connection conn = ConexionReparsoft.getInstancia().getConexion(base);
+        if (conn == null) return null;
+
+        int nextId;
+        try (PreparedStatement ps = conn.prepareStatement("SELECT COALESCE(MAX(idCliente), 0) + 1 FROM cliente");
+             ResultSet rs = ps.executeQuery()) {
+            rs.next();
+            nextId = rs.getInt(1);
+        } catch (SQLException e) {
+            System.err.println("Error obteniendo próximo idCliente: " + e.getMessage());
+            return null;
+        }
+
+        String sql = "INSERT INTO cliente (idCliente, nombre, CUIT, Domicilio, TelefonoEmpresa, "
+                + "CorreoElectronico, tipo_documento, condicion_iva, tipo_persona) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, nextId);
+            ps.setString(2, cliente.getRazonSocial());
+            ps.setString(3, cliente.getNroDocumento());
+            ps.setString(4, cliente.getDomicilio());
+            ps.setString(5, cliente.getTelefono());
+            ps.setString(6, cliente.getEmail());
+            ps.setString(7, cliente.getTipoDocumento());
+            ps.setString(8, cliente.getCondicionIva());
+            ps.setString(9, cliente.getTipoPersona() != null ? cliente.getTipoPersona() : "empresa");
+
+            int affected = ps.executeUpdate();
+            if (affected > 0) {
+                System.out.println("\u2713 Cliente insertado en ReparSoft con idCliente=" + nextId);
+                return nextId;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error insertando cliente en ReparSoft: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public boolean actualizarClienteEnReparsoft(ClienteDTO cliente) {
+        if (cliente.getElsReferencia() == null) return false;
+        String base = UbicacionSistema.getNombreDbReparsoft();
+        Connection conn = ConexionReparsoft.getInstancia().getConexion(base);
+        if (conn == null) return false;
+
+        String sql = "UPDATE cliente SET nombre = ?, CUIT = ?, Domicilio = ?, TelefonoEmpresa = ?, "
+                + "CorreoElectronico = ?, tipo_documento = ?, condicion_iva = ?, tipo_persona = ? "
+                + "WHERE idCliente = ?";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, cliente.getRazonSocial());
+            ps.setString(2, cliente.getNroDocumento());
+            ps.setString(3, cliente.getDomicilio());
+            ps.setString(4, cliente.getTelefono());
+            ps.setString(5, cliente.getEmail());
+            ps.setString(6, cliente.getTipoDocumento());
+            ps.setString(7, cliente.getCondicionIva());
+            ps.setString(8, cliente.getTipoPersona() != null ? cliente.getTipoPersona() : "empresa");
+            ps.setInt(9, cliente.getElsReferencia());
+
+            boolean ok = ps.executeUpdate() > 0;
+            if (ok) {
+                System.out.println("\u2713 Cliente actualizado en ReparSoft (idCliente=" + cliente.getElsReferencia() + ")");
+            }
+            return ok;
+        } catch (SQLException e) {
+            System.err.println("Error actualizando cliente en ReparSoft: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public boolean eliminarClienteEnReparsoft(int elsReferencia) {
+        String base = UbicacionSistema.getNombreDbReparsoft();
+        Connection conn = ConexionReparsoft.getInstancia().getConexion(base);
+        if (conn == null) return false;
+
+        String sql = "DELETE FROM cliente WHERE idCliente = ?";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, elsReferencia);
+            boolean ok = ps.executeUpdate() > 0;
+            if (ok) {
+                System.out.println("\u2713 Cliente eliminado de ReparSoft (idCliente=" + elsReferencia + ")");
+            }
+            return ok;
+        } catch (SQLException e) {
+            System.err.println("Error eliminando cliente de ReparSoft: " + e.getMessage());
+        }
+        return false;
     }
 
     private Set<Integer> obtenerELSFacturados() {

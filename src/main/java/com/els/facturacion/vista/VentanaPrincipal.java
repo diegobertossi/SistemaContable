@@ -32,10 +32,12 @@ import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 import javax.swing.border.Border;
 
 import com.els.facturacion.util.UbicacionSistema;
+import com.els.facturacion.util.UtilVaciadoBase;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.MatteBorder;
 import javax.swing.border.SoftBevelBorder;
@@ -83,6 +85,7 @@ public class VentanaPrincipal extends JFrame {
     private JButton btnCajaGastos;
     private JButton btnSalir;
     private JButton btnCerrarSesion;
+    private JButton btnVaciarBases;
     private JButton btnThemeToggle;
     private JTextField textUsuario;
     private JTextField textUbicacion;
@@ -287,7 +290,7 @@ public class VentanaPrincipal extends JFrame {
         cmbUbicacion.addItem(UbicacionSistema.BSAS);
         cmbUbicacion.addItem(UbicacionSistema.BRC);
         cmbUbicacion.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        cmbUbicacion.setBounds(198, 182, 145, 20);
+        cmbUbicacion.setBounds(198, 182, 108, 20);
         cmbUbicacion.addActionListener(e -> {
             String selected = (String) cmbUbicacion.getSelectedItem();
             if (selected != null && !selected.isEmpty()) {
@@ -299,6 +302,56 @@ public class VentanaPrincipal extends JFrame {
             }
         });
         panelDeControl.add(cmbUbicacion);
+
+        btnVaciarBases = new JButton("VACIAR BASES");
+        btnVaciarBases.setBounds(313, 178, 157, 26);
+        btnVaciarBases.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        btnVaciarBases.setForeground(currentTheme.textPrimary);
+        btnVaciarBases.setBackground(currentTheme.btnBg);
+        btnVaciarBases.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnVaciarBases.setFocusPainted(false);
+        btnVaciarBases.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Esta acci\u00f3n eliminar\u00e1 TODOS los datos en ambas bases:\n"
+                    + "  - facturacion_db_bsas\n"
+                    + "  - facturacion_db_brc\n\n"
+                    + "Las tablas se recrear\u00e1n con datos de prueba por defecto.\n\n"
+                    + "Esta operaci\u00f3n NO SE PUEDE DESHACER.\n\n"
+                    + "\u00bfEst\u00e1 seguro de continuar?",
+                    "VACIAR BASES - Confirmaci\u00f3n",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+            if (confirm == JOptionPane.YES_OPTION) {
+                btnVaciarBases.setEnabled(false);
+                btnVaciarBases.setText("VACIANDO...");
+                new SwingWorker<Void, Void>() {
+                    @Override
+                    protected Void doInBackground() throws Exception {
+                        UtilVaciadoBase.vaciarAmbasBases();
+                        return null;
+                    }
+                    @Override
+                    protected void done() {
+                        try {
+                            get();
+                            JOptionPane.showMessageDialog(VentanaPrincipal.this,
+                                    "Ambas bases fueron vaciadas y recreadas correctamente.",
+                                    "VACIAR BASES - \u00c9xito",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(VentanaPrincipal.this,
+                                    "Error al vaciar las bases:\n" + ex.getMessage(),
+                                    "VACIAR BASES - Error",
+                                    JOptionPane.ERROR_MESSAGE);
+                        } finally {
+                            btnVaciarBases.setEnabled(true);
+                            btnVaciarBases.setText("VACIAR BASES");
+                        }
+                    }
+                }.execute();
+            }
+        });
+        panelDeControl.add(btnVaciarBases);
 
         // ── Bottom separators ───────────────────────────────────────
         separatorBottom1 = new JSeparator();
@@ -431,6 +484,10 @@ public class VentanaPrincipal extends JFrame {
         if (btnCerrarSesion != null) {
             btnCerrarSesion.setForeground(t.textPrimary);
             btnCerrarSesion.setBackground(t.btnBg);
+        }
+        if (btnVaciarBases != null) {
+            btnVaciarBases.setForeground(t.textPrimary);
+            btnVaciarBases.setBackground(t.btnBg);
         }
         if (btnSalir != null) {
             btnSalir.setForeground(t.textPrimary);
