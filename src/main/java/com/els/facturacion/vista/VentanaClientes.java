@@ -2,34 +2,56 @@ package com.els.facturacion.vista;
 
 import com.els.facturacion.controlador.ControladorClientes;
 import com.els.facturacion.modelo.ClienteDTO;
+
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.border.Border;
+import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
 import javax.swing.table.DefaultTableModel;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.RenderingHints;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class VentanaClientes extends javax.swing.JFrame {
 
     private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
+    private static final int MAX_EMAILS = 4;
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    private static final int MAX_PHONES = 3;
 
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
@@ -40,8 +62,7 @@ public class VentanaClientes extends javax.swing.JFrame {
     private JTextField txtNroDoc;
     private JTextField txtRazonSocial;
     private JTextField txtDomicilio;
-    private JTextField txtTelefono;
-    private JTextField txtEmail;
+    private JLabel lblRazonSocial;
     private JComboBox<String> cmbTipoDoc;
     private JComboBox<String> cmbCondicionIva;
     private JPanel panelSuperior;
@@ -51,15 +72,25 @@ public class VentanaClientes extends javax.swing.JFrame {
     private ButtonGroup groupTipoPersona;
     private JPanel panelForm;
     private JPanel panelBotonesForm;
+    private JPanel separador;
     private JPanel statusBar;
     private JLabel lblStatus;
     private JButton btnGuardar;
     private JButton btnNuevo;
     private JButton btnEditar;
     private JScrollPane scrollTabla;
-    private JPanel southWrapper;
     private boolean modoEdicion;
     private boolean guardando;
+    private List<JTextField> emailFields = new ArrayList<>();
+    private JPanel emailPanel;
+    private JButton btnAddEmail;
+    private JButton btnRemoveEmail;
+    private List<JTextField> phoneFields = new ArrayList<>();
+    private JPanel phonePanel;
+    private JButton btnAddPhone;
+    private JButton btnRemovePhone;
+    private Border defaultBorder;
+    private Border normalBorder;
 
     public VentanaClientes() {
         controlador = new ControladorClientes();
@@ -72,63 +103,95 @@ public class VentanaClientes extends javax.swing.JFrame {
 
     private void initComponents() {
         setTitle("Gestion de Clientes");
-        setSize(900, 600);
+        setSize(1024, 600);
+        setResizable(false);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(currentTheme.bgBase);
 
-        panelSuperior = new JPanel(new GridBagLayout());
+        // ── Panel superior (solo título) ──
+        panelSuperior = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         panelSuperior.setBackground(currentTheme.bgSurface);
-        GridBagConstraints gbc_titulo = new GridBagConstraints();
-        gbc_titulo.insets = new Insets(5, 5, 5, 5);
-        gbc_titulo.fill = GridBagConstraints.HORIZONTAL;
-        gbc_titulo.gridx = 0; gbc_titulo.gridy = 0; gbc_titulo.gridwidth = 5;
 
         lblTitulo = new JLabel("MODULO DE CLIENTES");
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblTitulo.setForeground(currentTheme.brand);
-        panelSuperior.add(lblTitulo, gbc_titulo);
+        panelSuperior.add(lblTitulo);
 
-        txtBuscar = new JTextField(20);
-        txtBuscar.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { buscarCliente(); }
-            public void removeUpdate(DocumentEvent e) { buscarCliente(); }
-            public void changedUpdate(DocumentEvent e) { buscarCliente(); }
-        });
-
-        GridBagConstraints gbc_buscar_label = new GridBagConstraints();
-        gbc_buscar_label.insets = new Insets(5, 5, 5, 5);
-        gbc_buscar_label.fill = GridBagConstraints.HORIZONTAL;
-        gbc_buscar_label.gridwidth = 1; gbc_buscar_label.gridx = 0; gbc_buscar_label.gridy = 1;
-
-        GridBagConstraints gbc_txtBuscar = new GridBagConstraints();
-        gbc_txtBuscar.insets = new Insets(5, 5, 5, 5);
-        gbc_txtBuscar.fill = GridBagConstraints.HORIZONTAL;
-        gbc_txtBuscar.gridwidth = 1; gbc_txtBuscar.gridx = 1; gbc_txtBuscar.gridy = 1;
-
-        panelSuperior.add(new JLabel("Buscar:"), gbc_buscar_label);
-        panelSuperior.add(txtBuscar, gbc_txtBuscar);
-
+        // ── Formulario (lado derecho) ──
         panelForm = new JPanel(new GridBagLayout());
         panelForm.setBackground(currentTheme.bgSurface);
+        panelForm.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(currentTheme.brand),
+            "DATOS DEL CLIENTE",
+            TitledBorder.LEFT, TitledBorder.TOP,
+            new Font("Segoe UI", Font.BOLD, 14), currentTheme.textPrimary));
 
         cmbTipoDoc = new JComboBox<>(new String[]{"CUIT", "DNI"});
+        cmbTipoDoc.setForeground(Color.BLACK);
+        cmbTipoDoc.setRenderer(new DefaultListCellRenderer() {
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                  int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setForeground(Color.BLACK);
+                return this;
+            }
+            protected void paintComponent(java.awt.Graphics g) {
+                setForeground(Color.BLACK);
+                super.paintComponent(g);
+            }
+        });
         cmbCondicionIva = new JComboBox<>(new String[]{
             "", "IVA Responsable Inscripto", "IVA Sujeto Exento", "Consumidor Final",
             "Responsable Monotributo", "Proveedor del Exterior", "Cliente del Exterior",
             "IVA Liberado - Ley 19.640", "Monotributista Social", "IVA No Alcanzado"
         });
+        cmbCondicionIva.setForeground(Color.BLACK);
+        cmbCondicionIva.setRenderer(new DefaultListCellRenderer() {
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                  int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setForeground(Color.BLACK);
+                return this;
+            }
+            protected void paintComponent(java.awt.Graphics g) {
+                setForeground(Color.BLACK);
+                super.paintComponent(g);
+            }
+        });
 
-        txtNroDoc = new JTextField(15);
-        txtRazonSocial = new JTextField(25);
-        txtDomicilio = new JTextField(25);
-        txtTelefono = new JTextField(15);
-        txtEmail = new JTextField(20);
+        txtNroDoc = new TextPrompt("");
+        txtNroDoc.setDisabledTextColor(Color.BLACK);
+        txtNroDoc.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent e) {
+                char c = e.getKeyChar();
+                if (!Character.isDigit(c) && c != java.awt.event.KeyEvent.VK_BACK_SPACE
+                    && c != java.awt.event.KeyEvent.VK_DELETE) {
+                    e.consume();
+                }
+            }
+        });
+        txtRazonSocial = new JTextField(20);
+        txtRazonSocial.setDisabledTextColor(Color.BLACK);
+        txtDomicilio = new TextPrompt("");
+        txtDomicilio.setDisabledTextColor(Color.BLACK);
+        buildPhonePanel();
+        buildEmailPanel();
 
         int row = 0;
 
-        rdParticular = new JRadioButton("Particular");
-        rdEmpresa = new JRadioButton("Empresa");
+        rdParticular = new JRadioButton("Particular") {
+            protected void paintComponent(java.awt.Graphics g) {
+                setForeground(Color.BLACK);
+                super.paintComponent(g);
+            }
+        };
+        rdEmpresa = new JRadioButton("Empresa") {
+            protected void paintComponent(java.awt.Graphics g) {
+                setForeground(Color.BLACK);
+                super.paintComponent(g);
+            }
+        };
         rdEmpresa.setSelected(true);
         groupTipoPersona = new ButtonGroup();
         groupTipoPersona.add(rdParticular);
@@ -137,125 +200,53 @@ public class VentanaClientes extends javax.swing.JFrame {
         rdParticular.addActionListener(e -> {
             cmbTipoDoc.setSelectedItem("DNI");
             cmbCondicionIva.setSelectedItem("Consumidor Final");
+            updatePlaceholders();
         });
         rdEmpresa.addActionListener(e -> {
             cmbTipoDoc.setSelectedItem("CUIT");
             cmbCondicionIva.setSelectedIndex(0);
+            updatePlaceholders();
         });
 
-        GridBagConstraints fgc_tipoLabel = new GridBagConstraints();
-        fgc_tipoLabel.insets = new Insets(3, 5, 3, 5);
-        fgc_tipoLabel.fill = GridBagConstraints.HORIZONTAL;
-        fgc_tipoLabel.gridx = 0; fgc_tipoLabel.gridy = row;
-        panelForm.add(new JLabel("Tipo:"), fgc_tipoLabel);
-
-        GridBagConstraints fgc_rdParticular = new GridBagConstraints();
-        fgc_rdParticular.insets = new Insets(3, 5, 3, 5);
-        fgc_rdParticular.fill = GridBagConstraints.HORIZONTAL;
-        fgc_rdParticular.gridx = 1; fgc_rdParticular.gridy = row;
-        panelForm.add(rdParticular, fgc_rdParticular);
-
-        GridBagConstraints fgc_rdEmpresa = new GridBagConstraints();
-        fgc_rdEmpresa.insets = new Insets(3, 5, 3, 5);
-        fgc_rdEmpresa.fill = GridBagConstraints.HORIZONTAL;
-        fgc_rdEmpresa.gridx = 2; fgc_rdEmpresa.gridy = row;
-        panelForm.add(rdEmpresa, fgc_rdEmpresa);
+        panelForm.add(new JLabel("Tipo:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 5, 3, 2), 0, 0));
+        JPanel pnlTipoRadios = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        pnlTipoRadios.setBackground(currentTheme.bgSurface);
+        pnlTipoRadios.add(rdParticular);
+        pnlTipoRadios.add(rdEmpresa);
+        panelForm.add(pnlTipoRadios, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
 
         row++;
-
-        GridBagConstraints fgc_tipoDoc_label = new GridBagConstraints();
-        fgc_tipoDoc_label.insets = new Insets(3, 5, 3, 5);
-        fgc_tipoDoc_label.fill = GridBagConstraints.HORIZONTAL;
-        fgc_tipoDoc_label.gridx = 0; fgc_tipoDoc_label.gridy = row;
-        panelForm.add(new JLabel("Tipo Doc:"), fgc_tipoDoc_label);
-
-        GridBagConstraints fgc_cmbTipoDoc = new GridBagConstraints();
-        fgc_cmbTipoDoc.insets = new Insets(3, 5, 3, 5);
-        fgc_cmbTipoDoc.fill = GridBagConstraints.HORIZONTAL;
-        fgc_cmbTipoDoc.gridx = 1; fgc_cmbTipoDoc.gridy = row;
-        panelForm.add(cmbTipoDoc, fgc_cmbTipoDoc);
-
-        GridBagConstraints fgc_nroDoc_label = new GridBagConstraints();
-        fgc_nroDoc_label.insets = new Insets(3, 5, 3, 5);
-        fgc_nroDoc_label.fill = GridBagConstraints.HORIZONTAL;
-        fgc_nroDoc_label.gridx = 2; fgc_nroDoc_label.gridy = row;
-        panelForm.add(new JLabel("Nro Documento:"), fgc_nroDoc_label);
-
-        GridBagConstraints fgc_txtNroDoc = new GridBagConstraints();
-        fgc_txtNroDoc.insets = new Insets(3, 5, 3, 5);
-        fgc_txtNroDoc.fill = GridBagConstraints.HORIZONTAL;
-        fgc_txtNroDoc.gridx = 3; fgc_txtNroDoc.gridy = row;
-        panelForm.add(txtNroDoc, fgc_txtNroDoc);
+        panelForm.add(new JLabel("Tipo Doc:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 5, 3, 2), 0, 0));
+        panelForm.add(cmbTipoDoc, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
 
         row++;
-
-        GridBagConstraints fgc_razonSocial_label = new GridBagConstraints();
-        fgc_razonSocial_label.insets = new Insets(3, 5, 3, 5);
-        fgc_razonSocial_label.fill = GridBagConstraints.HORIZONTAL;
-        fgc_razonSocial_label.gridx = 0; fgc_razonSocial_label.gridy = row;
-        panelForm.add(new JLabel("Razon Social:"), fgc_razonSocial_label);
-
-        GridBagConstraints fgc_txtRazonSocial = new GridBagConstraints();
-        fgc_txtRazonSocial.insets = new Insets(3, 5, 3, 5);
-        fgc_txtRazonSocial.fill = GridBagConstraints.HORIZONTAL;
-        fgc_txtRazonSocial.gridx = 1; fgc_txtRazonSocial.gridwidth = 3; fgc_txtRazonSocial.gridy = row;
-        panelForm.add(txtRazonSocial, fgc_txtRazonSocial);
+        panelForm.add(new JLabel("N\u00b0 Doc:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 5, 3, 2), 0, 0));
+        panelForm.add(txtNroDoc, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
 
         row++;
-
-        GridBagConstraints fgc_condIva_label = new GridBagConstraints();
-        fgc_condIva_label.insets = new Insets(3, 5, 3, 5);
-        fgc_condIva_label.fill = GridBagConstraints.HORIZONTAL;
-        fgc_condIva_label.gridx = 0; fgc_condIva_label.gridwidth = 1; fgc_condIva_label.gridy = row;
-        panelForm.add(new JLabel("Condicion IVA:"), fgc_condIva_label);
-
-        GridBagConstraints fgc_cmbCondIva = new GridBagConstraints();
-        fgc_cmbCondIva.insets = new Insets(3, 5, 3, 5);
-        fgc_cmbCondIva.fill = GridBagConstraints.HORIZONTAL;
-        fgc_cmbCondIva.gridx = 1; fgc_cmbCondIva.gridwidth = 3; fgc_cmbCondIva.gridy = row;
-        panelForm.add(cmbCondicionIva, fgc_cmbCondIva);
+        lblRazonSocial = new JLabel("Razon Social:");
+        panelForm.add(lblRazonSocial, new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 5, 3, 2), 0, 0));
+        panelForm.add(txtRazonSocial, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
 
         row++;
-
-        GridBagConstraints fgc_domicilio_label = new GridBagConstraints();
-        fgc_domicilio_label.insets = new Insets(3, 5, 3, 5);
-        fgc_domicilio_label.fill = GridBagConstraints.HORIZONTAL;
-        fgc_domicilio_label.gridx = 0; fgc_domicilio_label.gridwidth = 1; fgc_domicilio_label.gridy = row;
-        panelForm.add(new JLabel("Domicilio:"), fgc_domicilio_label);
-
-        GridBagConstraints fgc_txtDomicilio = new GridBagConstraints();
-        fgc_txtDomicilio.insets = new Insets(3, 5, 3, 5);
-        fgc_txtDomicilio.fill = GridBagConstraints.HORIZONTAL;
-        fgc_txtDomicilio.gridx = 1; fgc_txtDomicilio.gridy = row;
-        panelForm.add(txtDomicilio, fgc_txtDomicilio);
-
-        GridBagConstraints fgc_telefono_label = new GridBagConstraints();
-        fgc_telefono_label.insets = new Insets(3, 5, 3, 5);
-        fgc_telefono_label.fill = GridBagConstraints.HORIZONTAL;
-        fgc_telefono_label.gridx = 2; fgc_telefono_label.gridy = row;
-        panelForm.add(new JLabel("Telefono:"), fgc_telefono_label);
-
-        GridBagConstraints fgc_txtTelefono = new GridBagConstraints();
-        fgc_txtTelefono.insets = new Insets(3, 5, 3, 5);
-        fgc_txtTelefono.fill = GridBagConstraints.HORIZONTAL;
-        fgc_txtTelefono.gridx = 3; fgc_txtTelefono.gridy = row;
-        panelForm.add(txtTelefono, fgc_txtTelefono);
+        panelForm.add(new JLabel("Condicion IVA:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 5, 3, 2), 0, 0));
+        panelForm.add(cmbCondicionIva, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
 
         row++;
+        panelForm.add(new JLabel("Domicilio:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 5, 3, 2), 0, 0));
+        panelForm.add(txtDomicilio, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
 
-        GridBagConstraints fgc_email_label = new GridBagConstraints();
-        fgc_email_label.insets = new Insets(3, 5, 3, 5);
-        fgc_email_label.fill = GridBagConstraints.HORIZONTAL;
-        fgc_email_label.gridx = 0; fgc_email_label.gridy = row;
-        panelForm.add(new JLabel("Email:"), fgc_email_label);
+        row++;
+        panelForm.add(new JLabel("Telefono:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.NONE, new Insets(5, 5, 3, 2), 0, 0));
+        panelForm.add(phonePanel, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
 
-        GridBagConstraints fgc_txtEmail = new GridBagConstraints();
-        fgc_txtEmail.insets = new Insets(3, 5, 3, 5);
-        fgc_txtEmail.fill = GridBagConstraints.HORIZONTAL;
-        fgc_txtEmail.gridx = 1; fgc_txtEmail.gridy = row;
-        panelForm.add(txtEmail, fgc_txtEmail);
+        row++;
+        panelForm.add(new JLabel("Email:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.NONE, new Insets(5, 5, 3, 2), 0, 0));
+        panelForm.add(emailPanel, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
 
-        panelBotonesForm = new JPanel();
+        // ── Botones ──
+        row++;
+        panelBotonesForm = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
         panelBotonesForm.setBackground(currentTheme.bgSurface);
         btnGuardar = new JButton("GUARDAR CLIENTE");
         btnGuardar.setFont(FUENTE_BOTON);
@@ -279,26 +270,19 @@ public class VentanaClientes extends javax.swing.JFrame {
         btnNuevo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnNuevo.setFocusPainted(false);
         btnNuevo.addActionListener(e -> limpiarFormulario());
-        panelBotonesForm.add(btnNuevo);
-        panelBotonesForm.add(btnGuardar);
         btnEditar = new JButton("EDITAR");
         btnEditar.setFont(FUENTE_BOTON);
-        btnEditar.setForeground(currentTheme.brand);
-        btnEditar.setBackground(currentTheme.bgSurface);
-        btnEditar.setBorder(BorderFactory.createLineBorder(currentTheme.brand));
+        btnEditar.setForeground(currentTheme.textPrimary);
+        btnEditar.setBackground(currentTheme.btnBg);
         btnEditar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnEditar.setFocusPainted(false);
         btnEditar.addActionListener(e -> habilitarEdicion(true));
+        panelBotonesForm.add(btnNuevo);
+        panelBotonesForm.add(btnGuardar);
         panelBotonesForm.add(btnEditar);
+        panelForm.add(panelBotonesForm, new GridBagConstraints(0, row, 2, 1, 1, 1.0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(6, 5, 5, 5), 0, 0));
 
-        row++;
-
-        GridBagConstraints fgc_panelBotones = new GridBagConstraints();
-        fgc_panelBotones.insets = new Insets(3, 5, 3, 5);
-        fgc_panelBotones.fill = GridBagConstraints.HORIZONTAL;
-        fgc_panelBotones.gridx = 0; fgc_panelBotones.gridy = row; fgc_panelBotones.gridwidth = 4;
-        panelForm.add(panelBotonesForm, fgc_panelBotones);
-
+        // ── Tabla (lado izquierdo) ──
         String[] columnas = {"ID", "Tipo", "Razon Social", "Tipo Doc", "Nro Doc", "Condicion IVA", "Domicilio", "Telefono", "Email"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             public boolean isCellEditable(int row, int column) { return false; }
@@ -307,16 +291,73 @@ public class VentanaClientes extends javax.swing.JFrame {
         tabla.getColumnModel().getColumn(0).setMinWidth(0);
         tabla.getColumnModel().getColumn(0).setMaxWidth(0);
         tabla.getColumnModel().getColumn(0).setPreferredWidth(0);
+        int[] hiddenCols = {1, 3, 5, 6, 8};
+        for (int c : hiddenCols) {
+            tabla.getColumnModel().getColumn(c).setMinWidth(0);
+            tabla.getColumnModel().getColumn(c).setMaxWidth(0);
+            tabla.getColumnModel().getColumn(c).setPreferredWidth(0);
+        }
+        tabla.getColumnModel().getColumn(4).setPreferredWidth(80);
+        tabla.getColumnModel().getColumn(4).setMaxWidth(120);
+        tabla.getColumnModel().getColumn(7).setPreferredWidth(80);
+        tabla.getColumnModel().getColumn(7).setMaxWidth(120);
         tabla.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) cargarClienteSeleccionado();
         });
 
-        add(panelSuperior, BorderLayout.NORTH);
         scrollTabla = new JScrollPane(tabla);
-        add(scrollTabla, BorderLayout.CENTER);
-        southWrapper = new JPanel(new BorderLayout());
-        southWrapper.setBackground(currentTheme.bgBase);
-        southWrapper.add(panelForm, BorderLayout.CENTER);
+
+        // ── Buscador (lado izquierdo, arriba de la tabla) ──
+        txtBuscar = new JTextField(20);
+        txtBuscar.setHorizontalAlignment(JTextField.LEFT);
+        txtBuscar.setFont(txtBuscar.getFont().deriveFont(Font.BOLD));
+        txtBuscar.getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) { buscarCliente(); }
+            public void removeUpdate(DocumentEvent e) { buscarCliente(); }
+            public void changedUpdate(DocumentEvent e) { buscarCliente(); }
+        });
+
+        JPanel panelBusqueda = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
+        panelBusqueda.setBackground(currentTheme.bgSurface);
+        panelBusqueda.add(new JLabel("Buscar:"));
+        panelBusqueda.add(txtBuscar);
+
+        JPanel panelIzquierdo = new JPanel(new BorderLayout());
+        panelIzquierdo.setBackground(currentTheme.bgBase);
+        panelIzquierdo.add(panelBusqueda, BorderLayout.NORTH);
+        panelIzquierdo.add(scrollTabla, BorderLayout.CENTER);
+
+        // ── Separador visible entre tabla y formulario ──
+        separador = new JPanel();
+        separador.setBackground(currentTheme.bgBase);
+        separador.setPreferredSize(new java.awt.Dimension(2, 0));
+
+        // ── Layout principal: tabla 55%, separador, formulario 45% ──
+        JPanel panelCentro = new JPanel(new GridBagLayout());
+        panelCentro.setBackground(currentTheme.bgBase);
+        GridBagConstraints gbcTabla = new GridBagConstraints();
+        gbcTabla.gridx = 0; gbcTabla.gridy = 0;
+        gbcTabla.weightx = 0.55; gbcTabla.weighty = 1.0;
+        gbcTabla.fill = GridBagConstraints.BOTH;
+        gbcTabla.insets = new Insets(5, 5, 5, 0);
+        panelCentro.add(panelIzquierdo, gbcTabla);
+
+        GridBagConstraints gbcSep = new GridBagConstraints();
+        gbcSep.gridx = 1; gbcSep.gridy = 0;
+        gbcSep.weightx = 0; gbcSep.weighty = 1.0;
+        gbcSep.fill = GridBagConstraints.VERTICAL;
+        gbcSep.insets = new Insets(5, 0, 5, 0);
+        panelCentro.add(separador, gbcSep);
+
+        GridBagConstraints gbcForm = new GridBagConstraints();
+        gbcForm.gridx = 2; gbcForm.gridy = 0;
+        gbcForm.weightx = 0.45; gbcForm.weighty = 1.0;
+        gbcForm.fill = GridBagConstraints.BOTH;
+        gbcForm.insets = new Insets(5, 0, 5, 5);
+        panelCentro.add(panelForm, gbcForm);
+
+        add(panelSuperior, BorderLayout.NORTH);
+        add(panelCentro, BorderLayout.CENTER);
         boolean barIsLight = currentTheme.bgBase.getRed() > 128;
         statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
         statusBar.setBackground(barIsLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
@@ -324,9 +365,406 @@ public class VentanaClientes extends javax.swing.JFrame {
         lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         lblStatus.setForeground(barIsLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
         statusBar.add(lblStatus);
-        southWrapper.add(statusBar, BorderLayout.SOUTH);
-        add(southWrapper, BorderLayout.SOUTH);
+        add(statusBar, BorderLayout.SOUTH);
+        updatePlaceholders();
         setFormEditable(false);
+    }
+
+    // ── Email multi-field system ──
+
+    private void buildEmailPanel() {
+        emailPanel = new JPanel();
+        emailPanel.setLayout(new BoxLayout(emailPanel, BoxLayout.Y_AXIS));
+        emailPanel.setOpaque(false);
+
+        JTextField first = new TextPrompt("Obligatorio");
+        initEmailField(first, "");
+        emailFields.add(first);
+        JPanel w0 = new JPanel(new BorderLayout());
+        w0.setOpaque(false);
+        w0.add(first, BorderLayout.CENTER);
+        w0.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+        emailPanel.add(w0);
+
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
+        btnRow.setOpaque(false);
+        btnAddEmail = new JButton("+");
+        btnAddEmail.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnAddEmail.setFocusPainted(false);
+        btnAddEmail.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnAddEmail.addActionListener(e -> addEmailField());
+        btnRemoveEmail = new JButton("\u2212");
+        btnRemoveEmail.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnRemoveEmail.setFocusPainted(false);
+        btnRemoveEmail.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnRemoveEmail.addActionListener(e -> removeEmailField());
+        btnRow.add(btnAddEmail);
+        btnRow.add(btnRemoveEmail);
+        emailPanel.add(btnRow);
+
+        updateEmailButtons();
+    }
+
+    private void initEmailField(JTextField field, String text) {
+        field.setText(text);
+        field.setForeground(currentTheme.textPrimary);
+        field.setBackground(currentTheme.bgInput);
+        field.setDisabledTextColor(Color.BLACK);
+        if (defaultBorder == null) {
+            defaultBorder = field.getBorder();
+            normalBorder = defaultBorder;
+        }
+        field.addFocusListener(new FocusAdapter() {
+            public void focusLost(FocusEvent e) {
+                validateEmailBorder(field);
+            }
+        });
+        field.addActionListener(e -> validateEmailBorder(field));
+        field.getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) { clearErrorBorder(field); }
+            public void removeUpdate(DocumentEvent e) { clearErrorBorder(field); }
+            public void changedUpdate(DocumentEvent e) { clearErrorBorder(field); }
+        });
+    }
+
+    private void addEmailField() {
+        if (emailFields.size() >= MAX_EMAILS) return;
+        JTextField newField = new TextPrompt("Obligatorio");
+        initEmailField(newField, "");
+        emailFields.add(newField);
+        JPanel w = new JPanel(new BorderLayout());
+        w.setOpaque(false);
+        w.add(newField, BorderLayout.CENTER);
+        w.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+        emailPanel.add(w, emailPanel.getComponentCount() - 1);
+        emailPanel.revalidate();
+        emailPanel.repaint();
+        newField.requestFocusInWindow();
+        updateEmailButtons();
+    }
+
+    private void removeEmailField() {
+        if (emailFields.size() <= 1) return;
+        int resp = JOptionPane.showConfirmDialog(this,
+            "¿Está seguro de eliminar este email?",
+            "Confirmar eliminación", JOptionPane.YES_NO_OPTION);
+        if (resp != JOptionPane.YES_OPTION) return;
+        JTextField last = emailFields.remove(emailFields.size() - 1);
+        emailPanel.remove(last.getParent());
+        emailPanel.revalidate();
+        emailPanel.repaint();
+        updateEmailButtons();
+    }
+
+    private String getEmailTexts() {
+        StringBuilder sb = new StringBuilder();
+        for (JTextField f : emailFields) {
+            String t = f.getText().trim();
+            if (!t.isEmpty()) {
+                if (sb.length() > 0) sb.append("; ");
+                sb.append(t);
+            }
+        }
+        return sb.toString();
+    }
+
+    private void setEmailTexts(String concatenated) {
+        resetEmailFields();
+        if (concatenated == null || concatenated.trim().isEmpty()) return;
+        String[] parts = concatenated.split("\\s*;\\s*");
+        for (int i = 0; i < parts.length; i++) {
+            if (i == 0) {
+                emailFields.get(0).setText(parts[i].trim());
+            } else if (i < MAX_EMAILS) {
+                JTextField f = new TextPrompt("Obligatorio");
+                initEmailField(f, parts[i].trim());
+                emailFields.add(f);
+                JPanel w = new JPanel(new BorderLayout());
+                w.setOpaque(false);
+                w.add(f, BorderLayout.CENTER);
+                w.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+                emailPanel.add(w, emailPanel.getComponentCount() - 1);
+            }
+        }
+        emailPanel.revalidate();
+        emailPanel.repaint();
+        updateEmailButtons();
+    }
+
+    private void resetEmailFields() {
+        while (emailFields.size() > 1) {
+            JTextField f = emailFields.remove(emailFields.size() - 1);
+            emailPanel.remove(f.getParent());
+        }
+        if (!emailFields.isEmpty()) emailFields.get(0).setText("");
+        else {
+            JTextField first = new TextPrompt("Obligatorio");
+            initEmailField(first, "");
+            emailFields.add(first);
+            JPanel w = new JPanel(new BorderLayout());
+            w.setOpaque(false);
+            w.add(first, BorderLayout.CENTER);
+            w.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+            emailPanel.add(w, 0);
+        }
+        emailPanel.revalidate();
+        emailPanel.repaint();
+        updateEmailButtons();
+    }
+
+    private void updateEmailButtons() {
+        boolean canAdd = emailFields.size() < MAX_EMAILS;
+        boolean canRemove = emailFields.size() > 1;
+        if (btnAddEmail != null) btnAddEmail.setEnabled(canAdd);
+        if (btnRemoveEmail != null) btnRemoveEmail.setEnabled(canRemove);
+    }
+
+    static boolean isValidEmail(String email) {
+        if (email == null || email.trim().isEmpty()) return false;
+        return EMAIL_PATTERN.matcher(email.trim()).matches();
+    }
+
+    private void validateEmailBorder(JTextField field) {
+        String t = field.getText().trim();
+        if (!t.isEmpty() && !isValidEmail(t)) {
+            field.setBorder(BorderFactory.createLineBorder(Color.RED, 1));
+            if (field.hasFocus()) {
+                JOptionPane.showMessageDialog(this,
+                    "El email \"" + t + "\" no tiene un formato v\u00e1lido.",
+                    "Email inv\u00e1lido", JOptionPane.WARNING_MESSAGE);
+            }
+        }
+    }
+
+    private void clearErrorBorder(JTextField field) {
+        Border b = field.getBorder();
+        if (b instanceof javax.swing.border.LineBorder) {
+            Color c = ((javax.swing.border.LineBorder) b).getLineColor();
+            if (Color.RED.equals(c)) {
+                String t = field.getText().trim();
+                if (t.isEmpty() || isValidEmail(t)) {
+                    field.setBorder(normalBorder != null ? normalBorder : defaultBorder);
+                }
+            }
+        }
+    }
+
+    private void applyEmailFieldTheme(JTextField field) {
+        field.setForeground(currentTheme.textPrimary);
+        field.setBackground(currentTheme.bgInput);
+    }
+
+    // ── Phone multi-field system ──
+
+    private void buildPhonePanel() {
+        phonePanel = new JPanel();
+        phonePanel.setLayout(new BoxLayout(phonePanel, BoxLayout.Y_AXIS));
+        phonePanel.setOpaque(false);
+
+        JTextField first = new TextPrompt("Obligatorio");
+        initPhoneField(first, "");
+        phoneFields.add(first);
+        JPanel w0 = new JPanel(new BorderLayout());
+        w0.setOpaque(false);
+        w0.add(first, BorderLayout.CENTER);
+        w0.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+        phonePanel.add(w0);
+
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
+        btnRow.setOpaque(false);
+        btnAddPhone = new JButton("+");
+        btnAddPhone.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnAddPhone.setFocusPainted(false);
+        btnAddPhone.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnAddPhone.addActionListener(e -> addPhoneField());
+        btnRemovePhone = new JButton("\u2212");
+        btnRemovePhone.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnRemovePhone.setFocusPainted(false);
+        btnRemovePhone.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnRemovePhone.addActionListener(e -> removePhoneField());
+        btnRow.add(btnAddPhone);
+        btnRow.add(btnRemovePhone);
+        phonePanel.add(btnRow);
+
+        updatePhoneButtons();
+    }
+
+    private void initPhoneField(JTextField field, String text) {
+        field.setText(text);
+        field.setForeground(currentTheme.textPrimary);
+        field.setBackground(currentTheme.bgInput);
+        field.setDisabledTextColor(Color.BLACK);
+        if (defaultBorder == null) {
+            defaultBorder = field.getBorder();
+            normalBorder = defaultBorder;
+        }
+        field.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent e) {
+                char c = e.getKeyChar();
+                if (!Character.isDigit(c) && c != java.awt.event.KeyEvent.VK_BACK_SPACE
+                    && c != java.awt.event.KeyEvent.VK_DELETE) {
+                    e.consume();
+                }
+            }
+        });
+    }
+
+    private void addPhoneField() {
+        if (phoneFields.size() >= MAX_PHONES) return;
+        JTextField newField = new TextPrompt("Obligatorio");
+        initPhoneField(newField, "");
+        phoneFields.add(newField);
+        JPanel w = new JPanel(new BorderLayout());
+        w.setOpaque(false);
+        w.add(newField, BorderLayout.CENTER);
+        w.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+        phonePanel.add(w, phonePanel.getComponentCount() - 1);
+        phonePanel.revalidate();
+        phonePanel.repaint();
+        newField.requestFocusInWindow();
+        updatePhoneButtons();
+    }
+
+    private void removePhoneField() {
+        if (phoneFields.size() <= 1) return;
+        int resp = JOptionPane.showConfirmDialog(this,
+            "\u00bfEst\u00e1 seguro de eliminar este tel\u00e9fono?",
+            "Confirmar eliminaci\u00f3n", JOptionPane.YES_NO_OPTION);
+        if (resp != JOptionPane.YES_OPTION) return;
+        JTextField last = phoneFields.remove(phoneFields.size() - 1);
+        phonePanel.remove(last.getParent());
+        phonePanel.revalidate();
+        phonePanel.repaint();
+        updatePhoneButtons();
+    }
+
+    private String getPhoneTexts() {
+        StringBuilder sb = new StringBuilder();
+        for (JTextField f : phoneFields) {
+            String t = f.getText().trim();
+            if (!t.isEmpty()) {
+                if (sb.length() > 0) sb.append("; ");
+                sb.append(t);
+            }
+        }
+        return sb.toString();
+    }
+
+    private void setPhoneTexts(String concatenated) {
+        resetPhoneFields();
+        if (concatenated == null || concatenated.trim().isEmpty()) return;
+        String[] parts = concatenated.split("\\s*;\\s*");
+        for (int i = 0; i < parts.length; i++) {
+            if (i == 0) {
+                phoneFields.get(0).setText(parts[i].trim());
+            } else if (i < MAX_PHONES) {
+                JTextField f = new TextPrompt("Obligatorio");
+                initPhoneField(f, parts[i].trim());
+                phoneFields.add(f);
+                JPanel w = new JPanel(new BorderLayout());
+                w.setOpaque(false);
+                w.add(f, BorderLayout.CENTER);
+                w.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+                phonePanel.add(w, phonePanel.getComponentCount() - 1);
+            }
+        }
+        phonePanel.revalidate();
+        phonePanel.repaint();
+        updatePhoneButtons();
+    }
+
+    private void resetPhoneFields() {
+        while (phoneFields.size() > 1) {
+            JTextField f = phoneFields.remove(phoneFields.size() - 1);
+            phonePanel.remove(f.getParent());
+        }
+        if (!phoneFields.isEmpty()) phoneFields.get(0).setText("");
+        else {
+            JTextField first = new TextPrompt("Obligatorio");
+            initPhoneField(first, "");
+            phoneFields.add(first);
+            JPanel w = new JPanel(new BorderLayout());
+            w.setOpaque(false);
+            w.add(first, BorderLayout.CENTER);
+            w.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+            phonePanel.add(w, 0);
+        }
+        phonePanel.revalidate();
+        phonePanel.repaint();
+        updatePhoneButtons();
+    }
+
+    private void updatePhoneButtons() {
+        boolean canAdd = phoneFields.size() < MAX_PHONES;
+        boolean canRemove = phoneFields.size() > 1;
+        if (btnAddPhone != null) btnAddPhone.setEnabled(canAdd);
+        if (btnRemovePhone != null) btnRemovePhone.setEnabled(canRemove);
+    }
+
+    private void applyPhoneFieldTheme(JTextField field) {
+        field.setForeground(currentTheme.textPrimary);
+        field.setBackground(currentTheme.bgInput);
+    }
+
+    private void updatePlaceholders() {
+        boolean isParticular = rdParticular != null && rdParticular.isSelected();
+        if (lblRazonSocial != null) {
+            lblRazonSocial.setText(isParticular ? "Nombre:" : "Razon Social:");
+        }
+        String nroDocPlaceholder = isParticular ? "Opcional" : "Obligatorio";
+        String domicilioPlaceholder = "Opcional";
+        String emailPlaceholder = isParticular ? "Opcional" : "Obligatorio";
+        String phonePlaceholder = "Obligatorio";
+        if (txtNroDoc instanceof TextPrompt)
+            ((TextPrompt) txtNroDoc).setPlaceholder(nroDocPlaceholder);
+        if (txtDomicilio instanceof TextPrompt)
+            ((TextPrompt) txtDomicilio).setPlaceholder(domicilioPlaceholder);
+        for (JTextField f : emailFields) {
+            if (f instanceof TextPrompt)
+                ((TextPrompt) f).setPlaceholder(emailPlaceholder);
+        }
+        for (JTextField f : phoneFields) {
+            if (f instanceof TextPrompt)
+                ((TextPrompt) f).setPlaceholder(phonePlaceholder);
+        }
+    }
+
+    // ── Inner class for placeholder text ──
+
+    private static class TextPrompt extends JTextField {
+        private String placeholderText;
+
+        TextPrompt(String placeholder) {
+            this.placeholderText = placeholder;
+        }
+
+        @Override
+        public void setText(String t) {
+            super.setText(t);
+            setCaretPosition(0);
+        }
+
+        void setPlaceholder(String placeholder) {
+            this.placeholderText = placeholder;
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            if (!getText().isEmpty() || isFocusOwner()) return;
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g2.setColor(Color.GRAY);
+            g2.setFont(getFont().deriveFont(Font.ITALIC));
+            FontMetrics fm = g2.getFontMetrics();
+            Insets ins = getInsets();
+            int x = ins.left + 3;
+            int y = (getHeight() - fm.getHeight()) / 2 + fm.getAscent() - 1;
+            g2.drawString(placeholderText, x, y);
+            g2.dispose();
+        }
     }
 
     private void cargarClientes() {
@@ -370,13 +808,15 @@ public class VentanaClientes extends javax.swing.JFrame {
         } else {
             rdEmpresa.setSelected(true);
         }
+        updatePlaceholders();
         txtRazonSocial.setText(modeloTabla.getValueAt(row, 2) != null ? modeloTabla.getValueAt(row, 2).toString() : "");
+        txtRazonSocial.setCaretPosition(0);
         cmbTipoDoc.setSelectedItem(modeloTabla.getValueAt(row, 3));
         txtNroDoc.setText(modeloTabla.getValueAt(row, 4) != null ? modeloTabla.getValueAt(row, 4).toString() : "");
         cmbCondicionIva.setSelectedItem(modeloTabla.getValueAt(row, 5) != null ? modeloTabla.getValueAt(row, 5).toString() : "Consumidor Final");
         txtDomicilio.setText(modeloTabla.getValueAt(row, 6) != null ? modeloTabla.getValueAt(row, 6).toString() : "");
-        txtTelefono.setText(modeloTabla.getValueAt(row, 7) != null ? modeloTabla.getValueAt(row, 7).toString() : "");
-        txtEmail.setText(modeloTabla.getValueAt(row, 8) != null ? modeloTabla.getValueAt(row, 8).toString() : "");
+        setPhoneTexts(modeloTabla.getValueAt(row, 7) != null ? modeloTabla.getValueAt(row, 7).toString() : "");
+        setEmailTexts(modeloTabla.getValueAt(row, 8) != null ? modeloTabla.getValueAt(row, 8).toString() : "");
         modoEdicion = false;
         setFormEditable(false);
     }
@@ -384,7 +824,6 @@ public class VentanaClientes extends javax.swing.JFrame {
     private void guardarCliente() {
         boolean esParticular = rdParticular.isSelected();
         String razonSocial = txtRazonSocial.getText().trim();
-        String telefono = txtTelefono.getText().trim();
         String nroDoc = txtNroDoc.getText().trim();
         String condicionIva = (String) cmbCondicionIva.getSelectedItem();
         String domicilio = txtDomicilio.getText().trim();
@@ -395,7 +834,7 @@ public class VentanaClientes extends javax.swing.JFrame {
                     "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            if (telefono.isEmpty()) {
+            if (getPhoneTexts().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Tel\u00e9fono es obligatorio para clientes Particular",
                     "Error", JOptionPane.ERROR_MESSAGE);
                 return;
@@ -410,16 +849,26 @@ public class VentanaClientes extends javax.swing.JFrame {
                     "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            if (domicilio.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Domicilio es obligatorio para Empresa",
-                    "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            if (telefono.isEmpty()) {
+            if (getPhoneTexts().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Tel\u00e9fono es obligatorio para Empresa",
                     "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
+        }
+
+        boolean hayEmailInvalido = false;
+        for (JTextField f : emailFields) {
+            String t = f.getText().trim();
+            if (!t.isEmpty() && !isValidEmail(t)) {
+                hayEmailInvalido = true;
+                f.setBorder(BorderFactory.createLineBorder(Color.RED, 1));
+            }
+        }
+        if (hayEmailInvalido) {
+            JOptionPane.showMessageDialog(this,
+                "Uno o más emails tienen formato inválido.\nCorríjalos o elimínelos antes de guardar.",
+                "Error de validación", JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
         ClienteDTO cli = new ClienteDTO();
@@ -440,8 +889,8 @@ public class VentanaClientes extends javax.swing.JFrame {
         cli.setRazonSocial(razonSocial);
         cli.setCondicionIva(condicionIva);
         cli.setDomicilio(domicilio);
-        cli.setTelefono(telefono);
-        cli.setEmail(txtEmail.getText().trim());
+        cli.setTelefono(getPhoneTexts());
+        cli.setEmail(getEmailTexts());
 
         int id = controlador.guardarCliente(cli);
         if (id > 0 || cli.getId() != null) {
@@ -465,12 +914,20 @@ public class VentanaClientes extends javax.swing.JFrame {
         txtNroDoc.setEnabled(editable);
         txtRazonSocial.setEnabled(editable);
         txtDomicilio.setEnabled(editable);
-        txtTelefono.setEnabled(editable);
-        txtEmail.setEnabled(editable);
+        for (JTextField f : phoneFields) f.setEnabled(editable);
+        btnAddPhone.setEnabled(editable && phoneFields.size() < MAX_PHONES);
+        btnRemovePhone.setEnabled(editable && phoneFields.size() > 1);
+        for (JTextField f : emailFields) f.setEnabled(editable);
+        btnAddEmail.setEnabled(editable && emailFields.size() < MAX_EMAILS);
+        btnRemoveEmail.setEnabled(editable && emailFields.size() > 1);
         cmbTipoDoc.setEnabled(editable);
+        cmbTipoDoc.setForeground(Color.BLACK);
         cmbCondicionIva.setEnabled(editable);
+        cmbCondicionIva.setForeground(Color.BLACK);
         rdParticular.setEnabled(editable);
+        rdParticular.setForeground(Color.BLACK);
         rdEmpresa.setEnabled(editable);
+        rdEmpresa.setForeground(Color.BLACK);
         btnGuardar.setEnabled(editable);
         btnEditar.setEnabled(!editable && tabla.getSelectedRow() >= 0);
     }
@@ -483,13 +940,15 @@ public class VentanaClientes extends javax.swing.JFrame {
     private void limpiarFormulario() {
         tabla.clearSelection();
         rdEmpresa.setSelected(true);
+        updatePlaceholders();
         cmbTipoDoc.setSelectedIndex(0);
         txtNroDoc.setText("");
         txtRazonSocial.setText("");
+        txtRazonSocial.setCaretPosition(0);
         cmbCondicionIva.setSelectedIndex(0);
         txtDomicilio.setText("");
-        txtTelefono.setText("");
-        txtEmail.setText("");
+        resetPhoneFields();
+        resetEmailFields();
         modoEdicion = false;
         setFormEditable(true);
     }
@@ -504,24 +963,30 @@ public class VentanaClientes extends javax.swing.JFrame {
             txtBuscar.setBackground(t.bgInput);
         }
         if (rdParticular != null) {
-            rdParticular.setForeground(t.textPrimary);
+            rdParticular.setForeground(Color.BLACK);
             rdParticular.setBackground(t.bgSurface);
         }
         if (rdEmpresa != null) {
-            rdEmpresa.setForeground(t.textPrimary);
+            rdEmpresa.setForeground(Color.BLACK);
             rdEmpresa.setBackground(t.bgSurface);
         }
         if (panelForm != null) {
             panelForm.setBackground(t.bgSurface);
+            panelForm.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(t.brand),
+                "DATOS DEL CLIENTE",
+                TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 14), t.textPrimary));
             themeLabels(panelForm, t);
         }
         if (panelBotonesForm != null) panelBotonesForm.setBackground(t.bgSurface);
+
         if (cmbTipoDoc != null) {
-            cmbTipoDoc.setForeground(t.textPrimary);
+            cmbTipoDoc.setForeground(Color.BLACK);
             cmbTipoDoc.setBackground(t.bgElevated);
         }
         if (cmbCondicionIva != null) {
-            cmbCondicionIva.setForeground(t.textPrimary);
+            cmbCondicionIva.setForeground(Color.BLACK);
             cmbCondicionIva.setBackground(t.bgElevated);
         }
         if (txtNroDoc != null) {
@@ -536,21 +1001,31 @@ public class VentanaClientes extends javax.swing.JFrame {
             txtDomicilio.setForeground(t.textPrimary);
             txtDomicilio.setBackground(t.bgInput);
         }
-        if (txtTelefono != null) {
-            txtTelefono.setForeground(t.textPrimary);
-            txtTelefono.setBackground(t.bgInput);
+        for (JTextField f : phoneFields) applyPhoneFieldTheme(f);
+        if (btnAddPhone != null) {
+            btnAddPhone.setBackground(t.btnBg);
+            btnAddPhone.setForeground(t.textPrimary);
         }
-        if (txtEmail != null) {
-            txtEmail.setForeground(t.textPrimary);
-            txtEmail.setBackground(t.bgInput);
+        if (btnRemovePhone != null) {
+            btnRemovePhone.setBackground(t.btnBg);
+            btnRemovePhone.setForeground(t.textPrimary);
+        }
+        for (JTextField f : emailFields) applyEmailFieldTheme(f);
+        if (btnAddEmail != null) {
+            btnAddEmail.setBackground(t.btnBg);
+            btnAddEmail.setForeground(t.textPrimary);
+        }
+        if (btnRemoveEmail != null) {
+            btnRemoveEmail.setBackground(t.btnBg);
+            btnRemoveEmail.setForeground(t.textPrimary);
         }
         if (btnGuardar != null) { btnGuardar.setBackground(t.btnBg); btnGuardar.setForeground(t.textPrimary); }
         if (btnNuevo != null) { btnNuevo.setBackground(t.btnBg); btnNuevo.setForeground(t.textPrimary); }
-        if (btnEditar != null) { btnEditar.setForeground(t.brand); btnEditar.setBackground(t.bgSurface); btnEditar.setBorder(BorderFactory.createLineBorder(t.brand)); }
-        if (southWrapper != null) southWrapper.setBackground(t.bgBase);
+        if (btnEditar != null) { btnEditar.setBackground(t.btnBg); btnEditar.setForeground(t.textPrimary); }
+        if (separador != null) separador.setBackground(t.bgBase);
         if (scrollTabla != null) scrollTabla.getViewport().setBackground(t.bgBase);
         if (tabla != null) {
-            TablaRenderer.applyTo(tabla, t);
+            TablaRenderer.applyTo(tabla, t, Collections.emptySet(), Collections.singleton(2));
             if (tabla.getTableHeader() != null) {
                 Theme.styleTableHeader(tabla.getTableHeader(), t);
             }
