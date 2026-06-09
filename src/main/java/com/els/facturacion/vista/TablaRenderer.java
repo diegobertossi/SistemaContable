@@ -3,6 +3,9 @@ package com.els.facturacion.vista;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.util.Collections;
@@ -51,6 +54,14 @@ public class TablaRenderer extends DefaultTableCellRenderer {
     private static final DecimalFormat CURRENCY_FMT = new DecimalFormat(
         "$ #,##0.00",
         java.text.DecimalFormatSymbols.getInstance(new java.util.Locale("es", "AR")));
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        super.paintComponent(g2);
+        g2.dispose();
+    }
 
     @Override
     public Component getTableCellRendererComponent(JTable table, Object value,
@@ -119,7 +130,7 @@ public class TablaRenderer extends DefaultTableCellRenderer {
             table.setGridColor(theme.borderLight);
         }
         table.setShowGrid(true);
-        table.setRowHeight(22);
+        if (table.getRowHeight() == 16 || table.getRowHeight() == 22) table.setRowHeight(24);
         table.getTableHeader().setReorderingAllowed(false);
         table.setDefaultRenderer(Object.class,
             new TablaRenderer(theme, currencyColumns, boldColumns, centerColumns, evenBg, oddBg));

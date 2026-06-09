@@ -7,6 +7,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
+import javax.swing.ButtonModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -29,6 +30,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -36,10 +38,13 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import javax.swing.event.ChangeListener;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,6 +54,14 @@ import java.util.regex.Pattern;
 public class VentanaClientes extends javax.swing.JFrame {
 
     private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
+    private static final Font FUENTE_INPUT = new Font("Segoe UI", Font.PLAIN, 12);
+    private static final Font FUENTE_LABEL = new Font("Segoe UI", Font.PLAIN, 11);
+    private static final Color DISABLED_FG_LIGHT = new Color(95, 97, 106);
+    private static final Color DISABLED_FG_DARK = new Color(210, 207, 190);
+    private static final Color LIGHT_READONLY_BG = new Color(236, 237, 241);
+    private static final Color LIGHT_EDITABLE_BG = new Color(255, 253, 230);
+    private static final Color DARK_READONLY_BG = new Color(28, 33, 55);
+    private static final Color DARK_EDITABLE_BG = new Color(22, 27, 45);
     private static final int MAX_EMAILS = 4;
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     private static final int MAX_PHONES = 3;
@@ -71,8 +84,8 @@ public class VentanaClientes extends javax.swing.JFrame {
     private JRadioButton rdEmpresa;
     private ButtonGroup groupTipoPersona;
     private JPanel panelForm;
+    private JPanel panelDerecho;
     private JPanel panelBotonesForm;
-    private JPanel separador;
     private JPanel statusBar;
     private JLabel lblStatus;
     private JButton btnGuardar;
@@ -92,6 +105,16 @@ public class VentanaClientes extends javax.swing.JFrame {
     private Border defaultBorder;
     private Border normalBorder;
 
+    private Color getDisabledFg() {
+        return currentTheme.bgBase.getRed() > 128 ? DISABLED_FG_LIGHT : DISABLED_FG_DARK;
+    }
+
+    private Color getFieldBg(boolean editing) {
+        return currentTheme.bgBase.getRed() > 128
+            ? (editing ? LIGHT_EDITABLE_BG : LIGHT_READONLY_BG)
+            : (editing ? DARK_EDITABLE_BG : DARK_READONLY_BG);
+    }
+
     public VentanaClientes() {
         controlador = new ControladorClientes();
         initComponents();
@@ -110,8 +133,9 @@ public class VentanaClientes extends javax.swing.JFrame {
         getContentPane().setBackground(currentTheme.bgBase);
 
         // ── Panel superior (solo título) ──
-        panelSuperior = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        panelSuperior = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 6));
         panelSuperior.setBackground(currentTheme.bgSurface);
+        panelSuperior.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
 
         lblTitulo = new JLabel("MODULO DE CLIENTES");
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
@@ -121,47 +145,50 @@ public class VentanaClientes extends javax.swing.JFrame {
         // ── Formulario (lado derecho) ──
         panelForm = new JPanel(new GridBagLayout());
         panelForm.setBackground(currentTheme.bgSurface);
-        panelForm.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(currentTheme.brand),
-            "DATOS DEL CLIENTE",
-            TitledBorder.LEFT, TitledBorder.TOP,
-            new Font("Segoe UI", Font.BOLD, 14), currentTheme.textPrimary));
+        panelForm.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(currentTheme.brand),
+                "DATOS DEL CLIENTE",
+                TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 14), currentTheme.textPrimary),
+            BorderFactory.createEmptyBorder(4, 6, 6, 6)));
 
-        cmbTipoDoc = new JComboBox<>(new String[]{"CUIT", "DNI"});
-        cmbTipoDoc.setForeground(Color.BLACK);
+        cmbTipoDoc = new JComboBox<String>(new String[]{"CUIT", "DNI"});
+        installComboUI(cmbTipoDoc);
+        cmbTipoDoc.setForeground(currentTheme.textPrimary);
+        cmbTipoDoc.setBackground(getFieldBg(false));
         cmbTipoDoc.setRenderer(new DefaultListCellRenderer() {
             public Component getListCellRendererComponent(JList<?> list, Object value,
                   int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                setForeground(Color.BLACK);
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbTipoDoc.isEnabled()));
+                setForeground(isSelected ? list.getSelectionForeground() :
+                    (cmbTipoDoc.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
                 return this;
             }
-            protected void paintComponent(java.awt.Graphics g) {
-                setForeground(Color.BLACK);
-                super.paintComponent(g);
-            }
         });
-        cmbCondicionIva = new JComboBox<>(new String[]{
+        cmbCondicionIva = new JComboBox<String>(new String[]{
             "", "IVA Responsable Inscripto", "IVA Sujeto Exento", "Consumidor Final",
             "Responsable Monotributo", "Proveedor del Exterior", "Cliente del Exterior",
             "IVA Liberado - Ley 19.640", "Monotributista Social", "IVA No Alcanzado"
         });
-        cmbCondicionIva.setForeground(Color.BLACK);
+        installComboUI(cmbCondicionIva);
+        cmbCondicionIva.setForeground(currentTheme.textPrimary);
+        cmbCondicionIva.setBackground(getFieldBg(false));
         cmbCondicionIva.setRenderer(new DefaultListCellRenderer() {
             public Component getListCellRendererComponent(JList<?> list, Object value,
                   int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                setForeground(Color.BLACK);
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbCondicionIva.isEnabled()));
+                setForeground(isSelected ? list.getSelectionForeground() :
+                    (cmbCondicionIva.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
                 return this;
-            }
-            protected void paintComponent(java.awt.Graphics g) {
-                setForeground(Color.BLACK);
-                super.paintComponent(g);
             }
         });
 
         txtNroDoc = new TextPrompt("");
-        txtNroDoc.setDisabledTextColor(Color.BLACK);
+        txtNroDoc.setFont(FUENTE_INPUT);
+        txtNroDoc.setDisabledTextColor(getDisabledFg());
         txtNroDoc.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyTyped(java.awt.event.KeyEvent e) {
                 char c = e.getKeyChar();
@@ -172,9 +199,11 @@ public class VentanaClientes extends javax.swing.JFrame {
             }
         });
         txtRazonSocial = new JTextField(20);
-        txtRazonSocial.setDisabledTextColor(Color.BLACK);
+        txtRazonSocial.setFont(FUENTE_INPUT);
+        txtRazonSocial.setDisabledTextColor(getDisabledFg());
         txtDomicilio = new TextPrompt("");
-        txtDomicilio.setDisabledTextColor(Color.BLACK);
+        txtDomicilio.setFont(FUENTE_INPUT);
+        txtDomicilio.setDisabledTextColor(getDisabledFg());
         buildPhonePanel();
         buildEmailPanel();
 
@@ -182,13 +211,13 @@ public class VentanaClientes extends javax.swing.JFrame {
 
         rdParticular = new JRadioButton("Particular") {
             protected void paintComponent(java.awt.Graphics g) {
-                setForeground(Color.BLACK);
+                setForeground(isEnabled() ? currentTheme.textPrimary : getDisabledFg());
                 super.paintComponent(g);
             }
         };
         rdEmpresa = new JRadioButton("Empresa") {
             protected void paintComponent(java.awt.Graphics g) {
-                setForeground(Color.BLACK);
+                setForeground(isEnabled() ? currentTheme.textPrimary : getDisabledFg());
                 super.paintComponent(g);
             }
         };
@@ -210,6 +239,7 @@ public class VentanaClientes extends javax.swing.JFrame {
 
         panelForm.add(new JLabel("Tipo:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 5, 3, 2), 0, 0));
         JPanel pnlTipoRadios = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        pnlTipoRadios.setOpaque(false);
         pnlTipoRadios.setBackground(currentTheme.bgSurface);
         pnlTipoRadios.add(rdParticular);
         pnlTipoRadios.add(rdEmpresa);
@@ -244,43 +274,11 @@ public class VentanaClientes extends javax.swing.JFrame {
         panelForm.add(new JLabel("Email:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.NONE, new Insets(5, 5, 3, 2), 0, 0));
         panelForm.add(emailPanel, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
 
-        // ── Botones ──
+        // ── Espaciador vertical para que el form ocupe el espacio ──
         row++;
-        panelBotonesForm = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-        panelBotonesForm.setBackground(currentTheme.bgSurface);
-        btnGuardar = new JButton("GUARDAR CLIENTE");
-        btnGuardar.setFont(FUENTE_BOTON);
-        btnGuardar.setForeground(currentTheme.textPrimary);
-        btnGuardar.setBackground(currentTheme.btnBg);
-        btnGuardar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnGuardar.setFocusPainted(false);
-        btnGuardar.addActionListener(e -> {
-            if (guardando) return;
-            guardando = true;
-            try {
-                guardarCliente();
-            } finally {
-                guardando = false;
-            }
-        });
-        btnNuevo = new JButton("NUEVO");
-        btnNuevo.setFont(FUENTE_BOTON);
-        btnNuevo.setForeground(currentTheme.textPrimary);
-        btnNuevo.setBackground(currentTheme.btnBg);
-        btnNuevo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnNuevo.setFocusPainted(false);
-        btnNuevo.addActionListener(e -> limpiarFormulario());
-        btnEditar = new JButton("EDITAR");
-        btnEditar.setFont(FUENTE_BOTON);
-        btnEditar.setForeground(currentTheme.textPrimary);
-        btnEditar.setBackground(currentTheme.btnBg);
-        btnEditar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnEditar.setFocusPainted(false);
-        btnEditar.addActionListener(e -> habilitarEdicion(true));
-        panelBotonesForm.add(btnNuevo);
-        panelBotonesForm.add(btnGuardar);
-        panelBotonesForm.add(btnEditar);
-        panelForm.add(panelBotonesForm, new GridBagConstraints(0, row, 2, 1, 1, 1.0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(6, 5, 5, 5), 0, 0));
+        JPanel panel = new JPanel();
+        panel.setOpaque(false);
+        panelForm.add(panel, new GridBagConstraints(0, row, 2, 1, 1, 1.0, GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0));
 
         // ── Tabla (lado izquierdo) ──
         String[] columnas = {"ID", "Tipo", "Razon Social", "Tipo Doc", "Nro Doc", "Condicion IVA", "Domicilio", "Telefono", "Email"};
@@ -288,6 +286,8 @@ public class VentanaClientes extends javax.swing.JFrame {
             public boolean isCellEditable(int row, int column) { return false; }
         };
         tabla = new JTable(modeloTabla);
+        tabla.setRowHeight(24);
+        tabla.setIntercellSpacing(new Dimension(4, 2));
         tabla.getColumnModel().getColumn(0).setMinWidth(0);
         tabla.getColumnModel().getColumn(0).setMaxWidth(0);
         tabla.getColumnModel().getColumn(0).setPreferredWidth(0);
@@ -310,7 +310,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         // ── Buscador (lado izquierdo, arriba de la tabla) ──
         txtBuscar = new JTextField(20);
         txtBuscar.setHorizontalAlignment(JTextField.LEFT);
-        txtBuscar.setFont(txtBuscar.getFont().deriveFont(Font.BOLD));
+        txtBuscar.setFont(new Font("Segoe UI", Font.BOLD, 12));
         txtBuscar.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) { buscarCliente(); }
             public void removeUpdate(DocumentEvent e) { buscarCliente(); }
@@ -319,7 +319,9 @@ public class VentanaClientes extends javax.swing.JFrame {
 
         JPanel panelBusqueda = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
         panelBusqueda.setBackground(currentTheme.bgSurface);
-        panelBusqueda.add(new JLabel("Buscar:"));
+        JLabel lblBuscar = new JLabel("Buscar:");
+        lblBuscar.setFont(FUENTE_LABEL);
+        panelBusqueda.add(lblBuscar);
         panelBusqueda.add(txtBuscar);
 
         JPanel panelIzquierdo = new JPanel(new BorderLayout());
@@ -327,37 +329,83 @@ public class VentanaClientes extends javax.swing.JFrame {
         panelIzquierdo.add(panelBusqueda, BorderLayout.NORTH);
         panelIzquierdo.add(scrollTabla, BorderLayout.CENTER);
 
-        // ── Separador visible entre tabla y formulario ──
-        separador = new JPanel();
-        separador.setBackground(currentTheme.bgBase);
-        separador.setPreferredSize(new java.awt.Dimension(2, 0));
+        // ── Panel contenedor derecho: form arriba, botones abajo fijos ──
+        panelIzquierdo.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 0));
 
-        // ── Layout principal: tabla 55%, separador, formulario 45% ──
-        JPanel panelCentro = new JPanel(new GridBagLayout());
+        panelDerecho = new JPanel(new BorderLayout(0, 6));
+        panelDerecho.setBackground(currentTheme.bgBase);
+        panelDerecho.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 5));
+
+        panelBotonesForm = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 6));
+        panelBotonesForm.setBackground(currentTheme.bgSurface);
+        panelBotonesForm.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(currentTheme.brand),
+                "ACCIONES",
+                TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 14), currentTheme.textPrimary),
+            BorderFactory.createEmptyBorder(4, 8, 6, 8)));
+
+        btnGuardar = new JButton("GUARDAR CLIENTE");
+        btnGuardar.setFont(FUENTE_BOTON);
+        btnGuardar.setForeground(currentTheme.textPrimary);
+        btnGuardar.setBackground(currentTheme.btnBg);
+        btnGuardar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnGuardar.setFocusPainted(false);
+        addButtonFeedback(btnGuardar);
+        btnGuardar.addActionListener(e -> {
+            if (guardando) return;
+            guardando = true;
+            try {
+                guardarCliente();
+            } finally {
+                guardando = false;
+            }
+        });
+        btnNuevo = new JButton("NUEVO");
+        btnNuevo.setFont(FUENTE_BOTON);
+        btnNuevo.setForeground(currentTheme.textPrimary);
+        btnNuevo.setBackground(currentTheme.btnBg);
+        btnNuevo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnNuevo.setFocusPainted(false);
+        addButtonFeedback(btnNuevo);
+        btnNuevo.addActionListener(e -> limpiarFormulario());
+        btnEditar = new JButton("EDITAR");
+        btnEditar.setFont(FUENTE_BOTON);
+        btnEditar.setForeground(currentTheme.textPrimary);
+        btnEditar.setBackground(currentTheme.btnBg);
+        btnEditar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnEditar.setFocusPainted(false);
+        addButtonFeedback(btnEditar);
+        btnEditar.addActionListener(e -> habilitarEdicion(true));
+        panelBotonesForm.add(btnNuevo);
+        panelBotonesForm.add(btnGuardar);
+        panelBotonesForm.add(btnEditar);
+
+        panelDerecho.add(panelForm, BorderLayout.CENTER);
+        panelDerecho.add(panelBotonesForm, BorderLayout.SOUTH);
+
+        // ── Layout principal: 50/50 fijo con GridLayout (ignora preferred sizes) ──
+        JPanel panelCentro = new JPanel(new GridLayout(1, 2, 2, 0)) {
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                int borderColor = currentTheme.bgBase.getRed() > 128 ? 120 : 60;
+                Color c1 = new Color(borderColor, borderColor + 8, borderColor + 20, 100);
+                Color c2 = new Color(borderColor, borderColor + 8, borderColor + 20, 0);
+                int gapX = getWidth() / 2 - 1;
+                g2.setPaint(new java.awt.GradientPaint(gapX, 0, c1, gapX + 2, 0, c2));
+                g2.fillRect(gapX, 0, 2, getHeight());
+                g2.dispose();
+            }
+        };
         panelCentro.setBackground(currentTheme.bgBase);
-        GridBagConstraints gbcTabla = new GridBagConstraints();
-        gbcTabla.gridx = 0; gbcTabla.gridy = 0;
-        gbcTabla.weightx = 0.55; gbcTabla.weighty = 1.0;
-        gbcTabla.fill = GridBagConstraints.BOTH;
-        gbcTabla.insets = new Insets(5, 5, 5, 0);
-        panelCentro.add(panelIzquierdo, gbcTabla);
+        panelCentro.add(panelIzquierdo);
+        panelCentro.add(panelDerecho);
 
-        GridBagConstraints gbcSep = new GridBagConstraints();
-        gbcSep.gridx = 1; gbcSep.gridy = 0;
-        gbcSep.weightx = 0; gbcSep.weighty = 1.0;
-        gbcSep.fill = GridBagConstraints.VERTICAL;
-        gbcSep.insets = new Insets(5, 0, 5, 0);
-        panelCentro.add(separador, gbcSep);
-
-        GridBagConstraints gbcForm = new GridBagConstraints();
-        gbcForm.gridx = 2; gbcForm.gridy = 0;
-        gbcForm.weightx = 0.45; gbcForm.weighty = 1.0;
-        gbcForm.fill = GridBagConstraints.BOTH;
-        gbcForm.insets = new Insets(5, 0, 5, 5);
-        panelCentro.add(panelForm, gbcForm);
-
-        add(panelSuperior, BorderLayout.NORTH);
-        add(panelCentro, BorderLayout.CENTER);
+        getContentPane().add(panelSuperior, BorderLayout.NORTH);
+        getContentPane().add(panelCentro, BorderLayout.CENTER);
         boolean barIsLight = currentTheme.bgBase.getRed() > 128;
         statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
         statusBar.setBackground(barIsLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
@@ -365,7 +413,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         lblStatus.setForeground(barIsLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
         statusBar.add(lblStatus);
-        add(statusBar, BorderLayout.SOUTH);
+        getContentPane().add(statusBar, BorderLayout.SOUTH);
         updatePlaceholders();
         setFormEditable(false);
     }
@@ -389,14 +437,20 @@ public class VentanaClientes extends javax.swing.JFrame {
         JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
         btnRow.setOpaque(false);
         btnAddEmail = new JButton("+");
-        btnAddEmail.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnAddEmail.setFont(FUENTE_BOTON);
         btnAddEmail.setFocusPainted(false);
         btnAddEmail.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnAddEmail.setPreferredSize(new Dimension(40, 20));
+        btnAddEmail.setForeground(currentTheme.textPrimary);
+        addButtonFeedback(btnAddEmail);
         btnAddEmail.addActionListener(e -> addEmailField());
         btnRemoveEmail = new JButton("\u2212");
-        btnRemoveEmail.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnRemoveEmail.setFont(FUENTE_BOTON);
         btnRemoveEmail.setFocusPainted(false);
         btnRemoveEmail.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnRemoveEmail.setPreferredSize(new Dimension(40, 20));
+        btnRemoveEmail.setForeground(currentTheme.textPrimary);
+        addButtonFeedback(btnRemoveEmail);
         btnRemoveEmail.addActionListener(e -> removeEmailField());
         btnRow.add(btnAddEmail);
         btnRow.add(btnRemoveEmail);
@@ -407,9 +461,10 @@ public class VentanaClientes extends javax.swing.JFrame {
 
     private void initEmailField(JTextField field, String text) {
         field.setText(text);
+        field.setFont(FUENTE_INPUT);
         field.setForeground(currentTheme.textPrimary);
-        field.setBackground(currentTheme.bgInput);
-        field.setDisabledTextColor(Color.BLACK);
+        field.setBackground(getFieldBg(modoEdicion));
+        field.setDisabledTextColor(getDisabledFg());
         if (defaultBorder == null) {
             defaultBorder = field.getBorder();
             normalBorder = defaultBorder;
@@ -496,8 +551,11 @@ public class VentanaClientes extends javax.swing.JFrame {
             JTextField f = emailFields.remove(emailFields.size() - 1);
             emailPanel.remove(f.getParent());
         }
-        if (!emailFields.isEmpty()) emailFields.get(0).setText("");
-        else {
+        if (!emailFields.isEmpty()) {
+            JTextField first = emailFields.get(0);
+            first.setText("");
+            first.setBorder(normalBorder != null ? normalBorder : defaultBorder);
+        } else {
             JTextField first = new TextPrompt("Obligatorio");
             initEmailField(first, "");
             emailFields.add(first);
@@ -527,7 +585,9 @@ public class VentanaClientes extends javax.swing.JFrame {
     private void validateEmailBorder(JTextField field) {
         String t = field.getText().trim();
         if (!t.isEmpty() && !isValidEmail(t)) {
-            field.setBorder(BorderFactory.createLineBorder(Color.RED, 1));
+            field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Color.RED, 1),
+                BorderFactory.createEmptyBorder(2, 4, 2, 4)));
             if (field.hasFocus()) {
                 JOptionPane.showMessageDialog(this,
                     "El email \"" + t + "\" no tiene un formato v\u00e1lido.",
@@ -538,20 +598,27 @@ public class VentanaClientes extends javax.swing.JFrame {
 
     private void clearErrorBorder(JTextField field) {
         Border b = field.getBorder();
-        if (b instanceof javax.swing.border.LineBorder) {
-            Color c = ((javax.swing.border.LineBorder) b).getLineColor();
-            if (Color.RED.equals(c)) {
-                String t = field.getText().trim();
-                if (t.isEmpty() || isValidEmail(t)) {
-                    field.setBorder(normalBorder != null ? normalBorder : defaultBorder);
-                }
+        Color lineColor = null;
+        if (b instanceof javax.swing.border.CompoundBorder) {
+            Border outside = ((javax.swing.border.CompoundBorder) b).getOutsideBorder();
+            if (outside instanceof javax.swing.border.LineBorder) {
+                lineColor = ((javax.swing.border.LineBorder) outside).getLineColor();
+            }
+        } else if (b instanceof javax.swing.border.LineBorder) {
+            lineColor = ((javax.swing.border.LineBorder) b).getLineColor();
+        }
+        if (Color.RED.equals(lineColor)) {
+            String t = field.getText().trim();
+            if (t.isEmpty() || isValidEmail(t)) {
+                field.setBorder(normalBorder != null ? normalBorder : defaultBorder);
             }
         }
     }
 
     private void applyEmailFieldTheme(JTextField field) {
         field.setForeground(currentTheme.textPrimary);
-        field.setBackground(currentTheme.bgInput);
+        field.setBackground(getFieldBg(field.isEnabled()));
+        field.setDisabledTextColor(getDisabledFg());
     }
 
     // ── Phone multi-field system ──
@@ -573,14 +640,20 @@ public class VentanaClientes extends javax.swing.JFrame {
         JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
         btnRow.setOpaque(false);
         btnAddPhone = new JButton("+");
-        btnAddPhone.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnAddPhone.setFont(new Font("Segoe UI", Font.BOLD, 11));
         btnAddPhone.setFocusPainted(false);
         btnAddPhone.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnAddPhone.setPreferredSize(new Dimension(40, 20));
+        btnAddPhone.setForeground(currentTheme.textPrimary);
+        addButtonFeedback(btnAddPhone);
         btnAddPhone.addActionListener(e -> addPhoneField());
         btnRemovePhone = new JButton("\u2212");
-        btnRemovePhone.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnRemovePhone.setFont(new Font("Segoe UI", Font.BOLD, 11));
         btnRemovePhone.setFocusPainted(false);
         btnRemovePhone.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnRemovePhone.setPreferredSize(new Dimension(40, 20));
+        btnRemovePhone.setForeground(currentTheme.textPrimary);
+        addButtonFeedback(btnRemovePhone);
         btnRemovePhone.addActionListener(e -> removePhoneField());
         btnRow.add(btnAddPhone);
         btnRow.add(btnRemovePhone);
@@ -591,9 +664,10 @@ public class VentanaClientes extends javax.swing.JFrame {
 
     private void initPhoneField(JTextField field, String text) {
         field.setText(text);
+        field.setFont(FUENTE_INPUT);
         field.setForeground(currentTheme.textPrimary);
-        field.setBackground(currentTheme.bgInput);
-        field.setDisabledTextColor(Color.BLACK);
+        field.setBackground(getFieldBg(modoEdicion));
+        field.setDisabledTextColor(getDisabledFg());
         if (defaultBorder == null) {
             defaultBorder = field.getBorder();
             normalBorder = defaultBorder;
@@ -678,8 +752,11 @@ public class VentanaClientes extends javax.swing.JFrame {
             JTextField f = phoneFields.remove(phoneFields.size() - 1);
             phonePanel.remove(f.getParent());
         }
-        if (!phoneFields.isEmpty()) phoneFields.get(0).setText("");
-        else {
+        if (!phoneFields.isEmpty()) {
+            JTextField first = phoneFields.get(0);
+            first.setText("");
+            first.setBorder(normalBorder != null ? normalBorder : defaultBorder);
+        } else {
             JTextField first = new TextPrompt("Obligatorio");
             initPhoneField(first, "");
             phoneFields.add(first);
@@ -703,7 +780,8 @@ public class VentanaClientes extends javax.swing.JFrame {
 
     private void applyPhoneFieldTheme(JTextField field) {
         field.setForeground(currentTheme.textPrimary);
-        field.setBackground(currentTheme.bgInput);
+        field.setBackground(getFieldBg(field.isEnabled()));
+        field.setDisabledTextColor(getDisabledFg());
     }
 
     private void updatePlaceholders() {
@@ -729,7 +807,35 @@ public class VentanaClientes extends javax.swing.JFrame {
         }
     }
 
-    // ── Inner class for placeholder text ──
+    // ── Inner classes ──
+
+    private static class CustomComboUI extends javax.swing.plaf.basic.BasicComboBoxUI {
+        @Override
+        public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {
+            g.setColor(comboBox.getBackground());
+            g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+
+        @Override
+        public void paintCurrentValue(Graphics g, Rectangle bounds, boolean hasFocus) {
+            javax.swing.ListCellRenderer<Object> renderer = comboBox.getRenderer();
+            java.awt.Component c;
+            if (hasFocus && !isPopupVisible(comboBox)) {
+                c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, true, false);
+            } else {
+                c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, false, false);
+            }
+            c.setFont(comboBox.getFont());
+            if (hasFocus && !isPopupVisible(comboBox)) {
+                c.setForeground(listBox.getSelectionForeground());
+                c.setBackground(listBox.getSelectionBackground());
+            } else {
+                c.setForeground(comboBox.getForeground());
+                c.setBackground(comboBox.getBackground());
+            }
+            currentValuePane.paintComponent(g, c, comboBox, bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+    }
 
     private static class TextPrompt extends JTextField {
         private String placeholderText;
@@ -861,7 +967,9 @@ public class VentanaClientes extends javax.swing.JFrame {
             String t = f.getText().trim();
             if (!t.isEmpty() && !isValidEmail(t)) {
                 hayEmailInvalido = true;
-                f.setBorder(BorderFactory.createLineBorder(Color.RED, 1));
+                f.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Color.RED, 1),
+                    BorderFactory.createEmptyBorder(2, 4, 2, 4)));
             }
         }
         if (hayEmailInvalido) {
@@ -911,23 +1019,35 @@ public class VentanaClientes extends javax.swing.JFrame {
     }
 
     private void setFormEditable(boolean editable) {
+        Color bg = getFieldBg(editable);
         txtNroDoc.setEnabled(editable);
+        txtNroDoc.setBackground(bg);
         txtRazonSocial.setEnabled(editable);
+        txtRazonSocial.setBackground(bg);
         txtDomicilio.setEnabled(editable);
-        for (JTextField f : phoneFields) f.setEnabled(editable);
+        txtDomicilio.setBackground(bg);
+        for (JTextField f : phoneFields) {
+            f.setEnabled(editable);
+            f.setBackground(bg);
+        }
         btnAddPhone.setEnabled(editable && phoneFields.size() < MAX_PHONES);
         btnRemovePhone.setEnabled(editable && phoneFields.size() > 1);
-        for (JTextField f : emailFields) f.setEnabled(editable);
+        for (JTextField f : emailFields) {
+            f.setEnabled(editable);
+            f.setBackground(bg);
+        }
         btnAddEmail.setEnabled(editable && emailFields.size() < MAX_EMAILS);
         btnRemoveEmail.setEnabled(editable && emailFields.size() > 1);
         cmbTipoDoc.setEnabled(editable);
-        cmbTipoDoc.setForeground(Color.BLACK);
+        cmbTipoDoc.setBackground(bg);
+        cmbTipoDoc.setForeground(editable ? currentTheme.textPrimary : getDisabledFg());
         cmbCondicionIva.setEnabled(editable);
-        cmbCondicionIva.setForeground(Color.BLACK);
+        cmbCondicionIva.setBackground(bg);
+        cmbCondicionIva.setForeground(editable ? currentTheme.textPrimary : getDisabledFg());
         rdParticular.setEnabled(editable);
-        rdParticular.setForeground(Color.BLACK);
+        rdParticular.setForeground(editable ? currentTheme.textPrimary : getDisabledFg());
         rdEmpresa.setEnabled(editable);
-        rdEmpresa.setForeground(Color.BLACK);
+        rdEmpresa.setForeground(editable ? currentTheme.textPrimary : getDisabledFg());
         btnGuardar.setEnabled(editable);
         btnEditar.setEnabled(!editable && tabla.getSelectedRow() >= 0);
     }
@@ -963,43 +1083,62 @@ public class VentanaClientes extends javax.swing.JFrame {
             txtBuscar.setBackground(t.bgInput);
         }
         if (rdParticular != null) {
-            rdParticular.setForeground(Color.BLACK);
+            rdParticular.setForeground(rdParticular.isEnabled() ? t.textPrimary : getDisabledFg());
             rdParticular.setBackground(t.bgSurface);
         }
         if (rdEmpresa != null) {
-            rdEmpresa.setForeground(Color.BLACK);
+            rdEmpresa.setForeground(rdEmpresa.isEnabled() ? t.textPrimary : getDisabledFg());
             rdEmpresa.setBackground(t.bgSurface);
         }
         if (panelForm != null) {
             panelForm.setBackground(t.bgSurface);
-            panelForm.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(t.brand),
-                "DATOS DEL CLIENTE",
-                TitledBorder.LEFT, TitledBorder.TOP,
-                new Font("Segoe UI", Font.BOLD, 14), t.textPrimary));
+            panelForm.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder(
+                    BorderFactory.createLineBorder(t.brand),
+                    "DATOS DEL CLIENTE",
+                    TitledBorder.LEFT, TitledBorder.TOP,
+                    new Font("Segoe UI", Font.BOLD, 14), t.textPrimary),
+                BorderFactory.createEmptyBorder(4, 6, 6, 6)));
             themeLabels(panelForm, t);
         }
-        if (panelBotonesForm != null) panelBotonesForm.setBackground(t.bgSurface);
+        if (panelDerecho != null) {
+            panelDerecho.setBackground(t.bgBase);
+        }
+        if (panelBotonesForm != null) {
+            panelBotonesForm.setBackground(t.bgSurface);
+            panelBotonesForm.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder(
+                    BorderFactory.createLineBorder(t.brand),
+                    "ACCIONES",
+                    TitledBorder.LEFT, TitledBorder.TOP,
+                    new Font("Segoe UI", Font.BOLD, 14), t.textPrimary),
+                BorderFactory.createEmptyBorder(4, 8, 6, 8)));
+        }
 
         if (cmbTipoDoc != null) {
-            cmbTipoDoc.setForeground(Color.BLACK);
-            cmbTipoDoc.setBackground(t.bgElevated);
+            installComboUI(cmbTipoDoc);
+            cmbTipoDoc.setForeground(cmbTipoDoc.isEnabled() ? t.textPrimary : getDisabledFg());
+            cmbTipoDoc.setBackground(getFieldBg(cmbTipoDoc.isEnabled()));
         }
         if (cmbCondicionIva != null) {
-            cmbCondicionIva.setForeground(Color.BLACK);
-            cmbCondicionIva.setBackground(t.bgElevated);
+            installComboUI(cmbCondicionIva);
+            cmbCondicionIva.setForeground(cmbCondicionIva.isEnabled() ? t.textPrimary : getDisabledFg());
+            cmbCondicionIva.setBackground(getFieldBg(cmbCondicionIva.isEnabled()));
         }
         if (txtNroDoc != null) {
             txtNroDoc.setForeground(t.textPrimary);
-            txtNroDoc.setBackground(t.bgInput);
+            txtNroDoc.setBackground(getFieldBg(txtNroDoc.isEnabled()));
+            txtNroDoc.setDisabledTextColor(getDisabledFg());
         }
         if (txtRazonSocial != null) {
             txtRazonSocial.setForeground(t.textPrimary);
-            txtRazonSocial.setBackground(t.bgInput);
+            txtRazonSocial.setBackground(getFieldBg(txtRazonSocial.isEnabled()));
+            txtRazonSocial.setDisabledTextColor(getDisabledFg());
         }
         if (txtDomicilio != null) {
             txtDomicilio.setForeground(t.textPrimary);
-            txtDomicilio.setBackground(t.bgInput);
+            txtDomicilio.setBackground(getFieldBg(txtDomicilio.isEnabled()));
+            txtDomicilio.setDisabledTextColor(getDisabledFg());
         }
         for (JTextField f : phoneFields) applyPhoneFieldTheme(f);
         if (btnAddPhone != null) {
@@ -1022,7 +1161,6 @@ public class VentanaClientes extends javax.swing.JFrame {
         if (btnGuardar != null) { btnGuardar.setBackground(t.btnBg); btnGuardar.setForeground(t.textPrimary); }
         if (btnNuevo != null) { btnNuevo.setBackground(t.btnBg); btnNuevo.setForeground(t.textPrimary); }
         if (btnEditar != null) { btnEditar.setBackground(t.btnBg); btnEditar.setForeground(t.textPrimary); }
-        if (separador != null) separador.setBackground(t.bgBase);
         if (scrollTabla != null) scrollTabla.getViewport().setBackground(t.bgBase);
         if (tabla != null) {
             TablaRenderer.applyTo(tabla, t, Collections.emptySet(), Collections.singleton(2));
@@ -1045,11 +1183,29 @@ public class VentanaClientes extends javax.swing.JFrame {
             if (comp instanceof JLabel) {
                 JLabel lbl = (JLabel) comp;
                 lbl.setForeground(t.textPrimary);
+                lbl.setFont(FUENTE_LABEL);
             }
             if (comp instanceof java.awt.Container) {
                 themeLabels((java.awt.Container) comp, t);
             }
         }
+    }
+
+    private void addButtonFeedback(JButton btn) {
+        btn.addChangeListener(e -> {
+            ButtonModel model = btn.getModel();
+            if (model.isPressed()) {
+                btn.setBackground(currentTheme.pressedBg);
+            } else if (model.isRollover()) {
+                btn.setBackground(currentTheme.hoverBg);
+            } else {
+                btn.setBackground(currentTheme.btnBg);
+            }
+        });
+    }
+
+    private void installComboUI(JComboBox<?> combo) {
+        combo.setUI(new CustomComboUI());
     }
 
 }
