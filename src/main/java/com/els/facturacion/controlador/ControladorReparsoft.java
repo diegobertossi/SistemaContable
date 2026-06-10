@@ -170,6 +170,37 @@ public class ControladorReparsoft {
         return items;
     }
 
+    public List<RemitoReparsoftItem> listarTodosEquiposConPrecio() {
+        return listarTodosEquiposConPrecio(null);
+    }
+
+    public List<RemitoReparsoftItem> listarTodosEquiposConPrecio(String baseDatos) {
+        List<RemitoReparsoftItem> items = new ArrayList<>();
+        Set<Integer> visto = new HashSet<>();
+
+        String[] bases = baseDatos != null && !baseDatos.isEmpty()
+            ? new String[]{baseDatos}
+            : new String[]{"ordenesbrc", "ordenesbsas"};
+        for (String base : bases) {
+            List<RemitoReparsoftItem> resultado = reparacionDAO.listarTodosEquiposConPrecio(base);
+            for (RemitoReparsoftItem item : resultado) {
+                if (visto.add(item.getEls())) {
+                    items.add(item);
+                }
+            }
+        }
+
+        Set<Integer> elsFacturados = obtenerELSFacturados();
+        if (!elsFacturados.isEmpty()) {
+            for (RemitoReparsoftItem item : items) {
+                if (elsFacturados.contains(item.getEls())) {
+                    item.setFacturado(true);
+                }
+            }
+        }
+        return items;
+    }
+
     public List<RemitoReparsoftDTO> listarRemitos(String baseDatos) {
         List<RemitoReparsoftDTO> remitos = reparacionDAO.listarRemitos(baseDatos);
         Set<Integer> elsFacturados = obtenerELSFacturados();

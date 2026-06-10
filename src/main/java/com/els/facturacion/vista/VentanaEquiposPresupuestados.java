@@ -6,13 +6,17 @@ import com.els.facturacion.util.UbicacionSistema;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
+import javax.swing.plaf.basic.BasicComboBoxUI;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public class VentanaEquiposPresupuestados extends JDialog {
 
@@ -48,6 +52,12 @@ public class VentanaEquiposPresupuestados extends JDialog {
 
     private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
     private static final Font FUENTE_LABEL = new Font("Segoe UI", Font.BOLD, 11);
+    private static final Color DISABLED_FG_LIGHT = new Color(95, 97, 106);
+    private static final Color DISABLED_FG_DARK = new Color(210, 207, 190);
+    private static final Color LIGHT_READONLY_BG = new Color(236, 237, 241);
+    private static final Color LIGHT_EDITABLE_BG = new Color(255, 253, 230);
+    private static final Color DARK_READONLY_BG = new Color(28, 33, 55);
+    private static final Color DARK_EDITABLE_BG = new Color(22, 27, 45);
 
     private ControladorReparsoft controlador;
     private JTable tablaEquipos;
@@ -63,12 +73,18 @@ public class VentanaEquiposPresupuestados extends JDialog {
     private JPanel statusBar;
     private JLabel lblStatus;
 
-    private List<RemitoReparsoftItem> equiposCache;
+    private JPanel panelFiltro;
+    private JLabel lblFiltroCliente;
+    private JComboBox<String> cmbFiltroCliente;
+    private JLabel lblFiltroSucursal;
+    private JComboBox<String> cmbFiltroSucursal;
+
+    private List<RemitoReparsoftItem> allEquiposCache;
     private List<RemitoReparsoftItem> seleccionados;
     private final String clienteNombre;
 
     public VentanaEquiposPresupuestados(JFrame parent, String clienteNombre) {
-        super(parent, "Equipos Presupuestados - " + clienteNombre, true);
+        super(parent, "Equipos Presupuestados" + (clienteNombre != null && !clienteNombre.isEmpty() ? " - " + clienteNombre : ""), true);
         this.controlador = new ControladorReparsoft();
         this.clienteNombre = clienteNombre;
         this.seleccionados = new ArrayList<>();
@@ -77,6 +93,16 @@ public class VentanaEquiposPresupuestados extends JDialog {
         cargarEquipos();
         setLocationRelativeTo(parent);
         VentanaPrincipal.addThemeListener(this);
+    }
+
+    private Color getDisabledFg() {
+        return currentTheme.bgBase.getRed() > 128 ? DISABLED_FG_LIGHT : DISABLED_FG_DARK;
+    }
+
+    private Color getFieldBg(boolean editing) {
+        return currentTheme.bgBase.getRed() > 128
+            ? (editing ? LIGHT_EDITABLE_BG : LIGHT_READONLY_BG)
+            : (editing ? DARK_EDITABLE_BG : DARK_READONLY_BG);
     }
 
     private void initComponents() {
@@ -110,22 +136,78 @@ public class VentanaEquiposPresupuestados extends JDialog {
         btnRefrescar.addActionListener(e -> cargarEquipos());
         panelSuperior.add(btnRefrescar);
 
-        lblCliente = new JLabel("Cliente: " + clienteNombre);
+        lblCliente = new JLabel("Cargando...");
         lblCliente.setFont(FUENTE_LABEL);
         lblCliente.setForeground(currentTheme.textPrimary);
         panelSuperior.add(lblCliente);
 
-        panel.add(panelSuperior, BorderLayout.NORTH);
+        JPanel northWrapper = new JPanel(new BorderLayout());
+        northWrapper.setOpaque(false);
+        northWrapper.add(panelSuperior, BorderLayout.NORTH);
 
-        String[] colEquipos = {"ELS", "Equipo", "Nro Serie", "Modelo", "Marca", "Precio", "REMITO", "SEL"};
+        // ── Filter panel ──
+        lblFiltroCliente = new JLabel("CLIENTE:");
+        lblFiltroCliente.setFont(FUENTE_LABEL);
+        lblFiltroCliente.setForeground(currentTheme.textPrimary);
+
+        cmbFiltroCliente = new JComboBox<>();
+        cmbFiltroCliente.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        cmbFiltroCliente.setMaximumRowCount(12);
+        cmbFiltroCliente.addActionListener(e -> aplicarFiltro());
+        installComboUI(cmbFiltroCliente);
+        cmbFiltroCliente.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                  int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbFiltroCliente.isEnabled()));
+                setForeground(isSelected ? list.getSelectionForeground() :
+                    (cmbFiltroCliente.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
+                return this;
+            }
+        });
+
+        lblFiltroSucursal = new JLabel("SUCURSAL:");
+        lblFiltroSucursal.setFont(FUENTE_LABEL);
+        lblFiltroSucursal.setForeground(currentTheme.textPrimary);
+
+        cmbFiltroSucursal = new JComboBox<>();
+        cmbFiltroSucursal.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        cmbFiltroSucursal.setMaximumRowCount(12);
+        cmbFiltroSucursal.addActionListener(e -> aplicarFiltro());
+        installComboUI(cmbFiltroSucursal);
+        cmbFiltroSucursal.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                  int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbFiltroSucursal.isEnabled()));
+                setForeground(isSelected ? list.getSelectionForeground() :
+                    (cmbFiltroSucursal.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
+                return this;
+            }
+        });
+
+        panelFiltro = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
+        panelFiltro.setBackground(currentTheme.bgSurface);
+        panelFiltro.add(lblFiltroCliente);
+        panelFiltro.add(cmbFiltroCliente);
+        panelFiltro.add(Box.createRigidArea(new Dimension(15, 0)));
+        panelFiltro.add(lblFiltroSucursal);
+        panelFiltro.add(cmbFiltroSucursal);
+        northWrapper.add(panelFiltro, BorderLayout.CENTER);
+
+        panel.add(northWrapper, BorderLayout.NORTH);
+
+        String[] colEquipos = {"ELS", "Equipo", "Nro Serie", "Modelo", "Marca", "Precio", "REMITO", "SUCURSAL", "SEL"};
         modeloTablaEquipos = new DefaultTableModel(colEquipos, 0) {
             @Override
             public Class<?> getColumnClass(int column) {
-                return column == 7 ? Boolean.class : String.class;
+                return column == 8 ? Boolean.class : String.class;
             }
             @Override
             public boolean isCellEditable(int row, int column) {
-                if (column == 7) {
+                if (column == 8) {
                     RemitoReparsoftItem item = getItemAtRow(row);
                     return item != null && !item.isFacturado();
                 }
@@ -146,13 +228,14 @@ public class VentanaEquiposPresupuestados extends JDialog {
             }
         });
         tablaEquipos.getColumnModel().getColumn(0).setPreferredWidth(50);
-        tablaEquipos.getColumnModel().getColumn(1).setPreferredWidth(140);
+        tablaEquipos.getColumnModel().getColumn(1).setPreferredWidth(130);
         tablaEquipos.getColumnModel().getColumn(2).setPreferredWidth(80);
-        tablaEquipos.getColumnModel().getColumn(3).setPreferredWidth(80);
-        tablaEquipos.getColumnModel().getColumn(4).setPreferredWidth(80);
+        tablaEquipos.getColumnModel().getColumn(3).setPreferredWidth(70);
+        tablaEquipos.getColumnModel().getColumn(4).setPreferredWidth(70);
         tablaEquipos.getColumnModel().getColumn(5).setPreferredWidth(80);
-        tablaEquipos.getColumnModel().getColumn(6).setPreferredWidth(100);
-        tablaEquipos.getColumnModel().getColumn(7).setPreferredWidth(30);
+        tablaEquipos.getColumnModel().getColumn(6).setPreferredWidth(90);
+        tablaEquipos.getColumnModel().getColumn(7).setPreferredWidth(80);
+        tablaEquipos.getColumnModel().getColumn(8).setPreferredWidth(30);
         scrollEquipos = new JScrollPane(tablaEquipos);
         scrollEquipos.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(currentTheme.brand),
@@ -202,9 +285,6 @@ public class VentanaEquiposPresupuestados extends JDialog {
     }
 
     private void cargarEquipos() {
-        String base = UbicacionSistema.getNombreDbReparsoft();
-        if (base == null) return;
-
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         modeloTablaEquipos.setRowCount(0);
         lblCliente.setText("Cargando...");
@@ -212,46 +292,117 @@ public class VentanaEquiposPresupuestados extends JDialog {
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() {
-                equiposCache = controlador.listarEquiposPorCliente(base, clienteNombre);
+                String baseSel = UbicacionSistema.getNombreDbReparsoft();
+                allEquiposCache = controlador.listarTodosEquiposConPrecio(baseSel);
                 return null;
             }
 
             @Override
             protected void done() {
-                if (equiposCache != null) {
-                    java.text.DecimalFormat precioFmt = new java.text.DecimalFormat("#,##0.00",
-                        java.text.DecimalFormatSymbols.getInstance(new java.util.Locale("es", "AR")));
-                    for (RemitoReparsoftItem item : equiposCache) {
-                        modeloTablaEquipos.addRow(new Object[]{
-                            String.valueOf(item.getEls()),
-                            item.getEquipoNombre() != null ? item.getEquipoNombre() : "",
-                            item.getNumeroSerie() != null ? item.getNumeroSerie() : "",
-                            item.getModelo() != null ? item.getModelo() : "",
-                            item.getMarca() != null ? item.getMarca() : "",
-                            item.getPrecioPeso() != null ? precioFmt.format(item.getPrecioPeso()) : "0,00",
-                            item.getNumeroRemito() != null ? item.getNumeroRemito() : "",
-                            item.isFacturado()
-                        });
+                if (allEquiposCache != null) {
+                    // Populate client combo
+                    String selCli = cmbFiltroCliente.getSelectedItem() != null
+                        ? cmbFiltroCliente.getSelectedItem().toString() : "";
+                    cmbFiltroCliente.removeAllItems();
+                    cmbFiltroCliente.addItem("Todos");
+                    Set<String> clientes = new LinkedHashSet<>();
+                    for (RemitoReparsoftItem item : allEquiposCache) {
+                        String cli = item.getNombreCliente();
+                        if (cli != null && !cli.isEmpty()) clientes.add(cli);
                     }
-                    tablaEquipos.getTableHeader().repaint();
-                    tablaEquipos.repaint();
+                    List<String> listaClientes = new ArrayList<>(clientes);
+                    java.util.Collections.sort(listaClientes);
+                    for (String c : listaClientes) cmbFiltroCliente.addItem(c);
+                    cmbFiltroCliente.setSelectedItem(selCli.isEmpty() || !clientes.contains(selCli) ? "Todos" : selCli);
+                    // Populate sucursal combo based on current client selection
+                    actualizarSucursales();
                 }
-                lblCliente.setText(equiposCache != null ? equiposCache.size() + " equipos cargados para: " + clienteNombre : "Sin datos");
+                aplicarFiltro();
                 setCursor(Cursor.getDefaultCursor());
             }
         };
         worker.execute();
     }
 
+    private void actualizarSucursales() {
+        String selCli = cmbFiltroCliente.getSelectedItem() != null
+            ? cmbFiltroCliente.getSelectedItem().toString() : "Todos";
+        Set<String> sucursales = new LinkedHashSet<>();
+        for (RemitoReparsoftItem item : allEquiposCache) {
+            String cli = item.getNombreCliente();
+            if (!"Todos".equals(selCli) && !selCli.equals(cli)) continue;
+            String suc = item.getSucursalDisplay();
+            if (suc != null && !suc.isEmpty()) sucursales.add(suc);
+        }
+        String selSuc = cmbFiltroSucursal.getSelectedItem() != null
+            ? cmbFiltroSucursal.getSelectedItem().toString() : "";
+        cmbFiltroSucursal.removeAllItems();
+        cmbFiltroSucursal.addItem("Todos");
+        List<String> listaSuc = new ArrayList<>(sucursales);
+        java.util.Collections.sort(listaSuc);
+        for (String s : listaSuc) cmbFiltroSucursal.addItem(s);
+        cmbFiltroSucursal.setSelectedItem(!selSuc.isEmpty() && sucursales.contains(selSuc) ? selSuc : "Todos");
+    }
+
+    private void aplicarFiltro() {
+        modeloTablaEquipos.setRowCount(0);
+        if (allEquiposCache == null) return;
+
+        // Re-populate sucursales based on current client selection
+        actualizarSucursales();
+
+        String filtroCli = cmbFiltroCliente.getSelectedItem() != null
+            ? cmbFiltroCliente.getSelectedItem().toString() : "Todos";
+        String filtroSuc = cmbFiltroSucursal.getSelectedItem() != null
+            ? cmbFiltroSucursal.getSelectedItem().toString() : "Todos";
+
+        java.text.DecimalFormat precioFmt = new java.text.DecimalFormat("#,##0.00",
+            java.text.DecimalFormatSymbols.getInstance(new java.util.Locale("es", "AR")));
+
+        for (RemitoReparsoftItem item : allEquiposCache) {
+            String cli = item.getNombreCliente();
+            String suc = item.getSucursalDisplay();
+            if (!"Todos".equals(filtroCli) && !filtroCli.equals(cli)) continue;
+            if (!"Todos".equals(filtroSuc) && !filtroSuc.equals(suc)) continue;
+            modeloTablaEquipos.addRow(new Object[]{
+                String.valueOf(item.getEls()),
+                item.getEquipoNombre() != null ? item.getEquipoNombre() : "",
+                item.getNumeroSerie() != null ? item.getNumeroSerie() : "",
+                item.getModelo() != null ? item.getModelo() : "",
+                item.getMarca() != null ? item.getMarca() : "",
+                item.getPrecioPeso() != null ? precioFmt.format(item.getPrecioPeso()) : "0,00",
+                item.getNumeroRemito() != null ? item.getNumeroRemito() : "",
+                item.getSucursalDisplay() != null ? item.getSucursalDisplay() : "",
+                item.isFacturado()
+            });
+        }
+        tablaEquipos.getTableHeader().repaint();
+        tablaEquipos.repaint();
+        lblCliente.setText(modeloTablaEquipos.getRowCount() + " equipos cargados");
+    }
+
     private RemitoReparsoftItem getItemAtRow(int row) {
-        if (equiposCache == null || row < 0 || row >= equiposCache.size()) return null;
-        return equiposCache.get(row);
+        if (allEquiposCache == null) return null;
+        String filtroCli = cmbFiltroCliente.getSelectedItem() != null
+            ? cmbFiltroCliente.getSelectedItem().toString() : "Todos";
+        String filtroSuc = cmbFiltroSucursal.getSelectedItem() != null
+            ? cmbFiltroSucursal.getSelectedItem().toString() : "Todos";
+        int idx = 0;
+        for (RemitoReparsoftItem item : allEquiposCache) {
+            String cli = item.getNombreCliente();
+            String suc = item.getSucursalDisplay();
+            if (!"Todos".equals(filtroCli) && !filtroCli.equals(cli)) continue;
+            if (!"Todos".equals(filtroSuc) && !filtroSuc.equals(suc)) continue;
+            if (idx == row) return item;
+            idx++;
+        }
+        return null;
     }
 
     private void seleccionarEquipos() {
         List<RemitoReparsoftItem> seleccionadosTemp = new ArrayList<>();
         for (int i = 0; i < modeloTablaEquipos.getRowCount(); i++) {
-            boolean checked = Boolean.TRUE.equals(modeloTablaEquipos.getValueAt(i, 7));
+            boolean checked = Boolean.TRUE.equals(modeloTablaEquipos.getValueAt(i, 8));
             RemitoReparsoftItem item = getItemAtRow(i);
             if (item != null && checked && !item.isFacturado()) {
                 seleccionadosTemp.add(item);
@@ -279,6 +430,50 @@ public class VentanaEquiposPresupuestados extends JDialog {
         return dialog.getEquiposSeleccionados();
     }
 
+    // ── Combo UI helpers ──
+
+    private void installComboUI(JComboBox<?> combo) {
+        combo.setUI(new CustomComboUI());
+    }
+
+    private void themeComboEditor(JComboBox<?> combo, Theme t) {
+        Component editorComp = combo.getEditor().getEditorComponent();
+        if (editorComp instanceof JTextField) {
+            JTextField ed = (JTextField) editorComp;
+            ed.setBackground(getFieldBg(combo.isEnabled()));
+            ed.setForeground(combo.isEnabled() ? t.textPrimary : getDisabledFg());
+            ed.setDisabledTextColor(getDisabledFg());
+            ed.setCaretColor(t.textPrimary);
+        }
+    }
+
+    private static class CustomComboUI extends BasicComboBoxUI {
+        @Override
+        public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {
+            g.setColor(comboBox.getBackground());
+            g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+        @Override
+        public void paintCurrentValue(Graphics g, Rectangle bounds, boolean hasFocus) {
+            javax.swing.ListCellRenderer<Object> renderer = comboBox.getRenderer();
+            java.awt.Component c;
+            if (hasFocus && !isPopupVisible(comboBox)) {
+                c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, true, false);
+            } else {
+                c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, false, false);
+            }
+            c.setFont(comboBox.getFont());
+            if (hasFocus && !isPopupVisible(comboBox)) {
+                c.setForeground(listBox.getSelectionForeground());
+                c.setBackground(listBox.getSelectionBackground());
+            } else {
+                c.setForeground(comboBox.getForeground());
+                c.setBackground(comboBox.getBackground());
+            }
+            currentValuePane.paintComponent(g, c, comboBox, bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+    }
+
     private void applyTheme(Theme t) {
         currentTheme = t;
         getContentPane().setBackground(t.bgBase);
@@ -298,15 +493,29 @@ public class VentanaEquiposPresupuestados extends JDialog {
             btnSeleccionar.setBackground(t.btnBg);
             btnSeleccionar.setForeground(t.textPrimary);
         }
+        if (panelFiltro != null) panelFiltro.setBackground(t.bgSurface);
+        if (lblFiltroCliente != null) lblFiltroCliente.setForeground(t.textPrimary);
+        if (cmbFiltroCliente != null) {
+            installComboUI(cmbFiltroCliente);
+            cmbFiltroCliente.setBackground(getFieldBg(cmbFiltroCliente.isEnabled()));
+            cmbFiltroCliente.setForeground(cmbFiltroCliente.isEnabled() ? t.textPrimary : getDisabledFg());
+        }
+        if (lblFiltroSucursal != null) lblFiltroSucursal.setForeground(t.textPrimary);
+        if (cmbFiltroSucursal != null) {
+            installComboUI(cmbFiltroSucursal);
+            cmbFiltroSucursal.setBackground(getFieldBg(cmbFiltroSucursal.isEnabled()));
+            cmbFiltroSucursal.setForeground(cmbFiltroSucursal.isEnabled() ? t.textPrimary : getDisabledFg());
+        }
         if (tablaEquipos != null) {
-            java.util.Set<Integer> currency = new java.util.HashSet<>();
+            Set<Integer> currency = new HashSet<>();
             currency.add(5);
-            java.util.Set<Integer> bold = new java.util.HashSet<>();
+            Set<Integer> bold = new HashSet<>();
             bold.add(0);
-            java.util.Set<Integer> center = new java.util.HashSet<>();
+            Set<Integer> center = new HashSet<>();
             center.add(0);
             center.add(5);
             center.add(6);
+            center.add(7);
             TablaRenderer.applyTo(tablaEquipos, t, currency, bold, center, t.bgSurface, t.bgElevated);
             if (tablaEquipos.getTableHeader() != null) {
                 styleHeaderBold(tablaEquipos.getTableHeader(), t);

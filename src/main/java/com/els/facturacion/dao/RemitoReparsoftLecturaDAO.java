@@ -157,4 +157,54 @@ public class RemitoReparsoftLecturaDAO {
         }
         return -1;
     }
+
+    public List<Map<String, Object>> listarRemitosConFechas(String baseDatos) {
+        List<Map<String, Object>> lista = new ArrayList<>();
+        String sql = "SELECT r.idRemito, r.NumeroRemitoSalida, r.IdUbicacion, "
+                   + "c.nombre AS cliente_nombre, "
+                   + "COUNT(rep.ELS) AS cantidad_items, "
+                   + "MIN(rep.FechaEntrada) AS fecha_emision, "
+                   + "MAX(rep.FechaSalida) AS fecha_entrega "
+                   + "FROM " + baseDatos + ".remitos r "
+                   + "JOIN " + baseDatos + ".reparaciones rep ON r.idRemito = rep.idRemito "
+                   + "LEFT JOIN " + baseDatos + ".equipos e ON rep.idEquipo = e.IdEquipo "
+                   + "LEFT JOIN " + baseDatos + ".cliente c ON e.idCliente = c.idCliente "
+                   + "WHERE r.NumeroRemitoSalida IS NOT NULL "
+                   + "GROUP BY r.idRemito, r.NumeroRemitoSalida, r.IdUbicacion, c.nombre "
+                   + "ORDER BY fecha_emision DESC";
+        Connection conn = ConexionReparsoft.getInstancia().getConexion(baseDatos);
+        if (conn == null) return lista;
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Map<String, Object> item = new LinkedHashMap<>();
+                int idUbicacion = rs.getInt("IdUbicacion");
+                int numeroSalida = rs.getInt("NumeroRemitoSalida");
+                item.put("numeroRemito", formatNumeroRemito(numeroSalida, idUbicacion));
+                item.put("cliente", rs.getString("cliente_nombre") != null ? rs.getString("cliente_nombre").trim() : "");
+                item.put("items", rs.getInt("cantidad_items"));
+                item.put("fechaEmision", rs.getDate("fecha_emision"));
+                item.put("fechaEntrega", rs.getDate("fecha_entrega"));
+                lista.add(item);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error listando remitos con fechas desde " + baseDatos + ": " + e.getMessage());
+        }
+        return lista;
+    }
+
+    private static String formatNumeroRemito(int numeroSalida, int idUbicacion) {
+        int display;
+        switch (idUbicacion) {
+            case 1:  display = 5;    break;
+            case 2:  display = 2;    break;
+            case 3:  display = 1000; break;
+            case 4:  display = 2000; break;
+            case 5:  display = 3000; break;
+            case 7:  display = 6;    break;
+            case 8:  display = 7;    break;
+            default: display = idUbicacion; break;
+        }
+        return String.format("%04d-%08d", display, numeroSalida);
+    }
 }

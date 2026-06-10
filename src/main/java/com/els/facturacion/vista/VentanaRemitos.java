@@ -15,6 +15,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
+import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListCellRenderer;
@@ -23,11 +24,13 @@ import javax.swing.SwingWorker;
 import javax.swing.plaf.basic.BasicComboBoxUI;
 import javax.swing.table.DefaultTableModel;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Image;
@@ -65,6 +68,8 @@ public class VentanaRemitos extends JFrame {
 
     private JPanel panel;
     private JPanel panelFiltro;
+    private JPanel panelSuperior;
+    private JLabel lblTitulo;
     private JLabel lblCliente;
     private AutoCompleteComboBox cmbCliente;
     private JLabel lblSucursal;
@@ -89,6 +94,9 @@ public class VentanaRemitos extends JFrame {
     private JButton btnVisualizarRemito;
     private JButton btnGuardarRemito;
 
+    private JTabbedPane tabbedPane;
+    private VentanaVisualizacionRemitos visView;
+
     private boolean cargandoDatos = false;
     private int idClienteActual = -1;
     private int idSucursalActual = -1;
@@ -108,23 +116,40 @@ public class VentanaRemitos extends JFrame {
     }
 
     private void initComponents() {
-        setTitle("GENERAR REMITO");
+        setTitle("M\u00d3DULO REMITOS");
         setSize(1024, 600);
         setResizable(false);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        getContentPane().setLayout(null);
+        getContentPane().setLayout(new BorderLayout());
 
         try {
             Image icon = Toolkit.getDefaultToolkit().getImage(getClass().getResource("/img/Iconosoft.png"));
             setIconImage(icon);
         } catch (Exception e) { }
 
+        // ── Tabbed Pane ─────────────────────────────────────────────
+        tabbedPane = new JTabbedPane();
+        tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 12));
+
+        // ── Tab 0: Generar Remito ───────────────────────────────────
+        JPanel tabGenerar = new JPanel(new BorderLayout());
+        tabGenerar.setOpaque(false);
+
+        // ── Title panel ────────────────────────────────────────────
+        panelSuperior = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 6));
+        panelSuperior.setBackground(currentTheme.bgSurface);
+        panelSuperior.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
+        lblTitulo = new JLabel("M\u00d3DULO REMITOS");
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblTitulo.setForeground(currentTheme.brand);
+        panelSuperior.add(lblTitulo);
+        tabGenerar.add(panelSuperior, BorderLayout.NORTH);
+
         panel = new JPanel();
         panel.setOpaque(false);
         panel.setBorder(null);
-        panel.setBounds(0, 0, 1008, 562);
-        getContentPane().add(panel);
         panel.setLayout(null);
+        tabGenerar.add(panel, BorderLayout.CENTER);
 
         // ── Filter panel ────────────────────────────────────────────
         panelFiltro = new JPanel();
@@ -192,9 +217,9 @@ public class VentanaRemitos extends JFrame {
 
         // ── Seleccion de remito label ───────────────────────────────
         lblSeleccionRemito = new JLabel("SELECCI\u00d3N DE REMITO:", SwingConstants.LEFT);
-        lblSeleccionRemito.setFont(FUENTE_LABEL);
+        lblSeleccionRemito.setFont(new Font("Segoe UI", Font.BOLD, 12));
         lblSeleccionRemito.setForeground(currentTheme.textPrimary);
-        lblSeleccionRemito.setBounds(79, 356, 200, 20);
+        lblSeleccionRemito.setBounds(79, 355, 140, 22);
         panel.add(lblSeleccionRemito);
 
         // ── tipo remito text ────────────────────────────────────────
@@ -204,24 +229,24 @@ public class VentanaRemitos extends JFrame {
         txtTipoRemito.setEditable(false);
         txtTipoRemito.setBorder(null);
         txtTipoRemito.setOpaque(false);
-        txtTipoRemito.setBounds(645, 359, 140, 22);
+        txtTipoRemito.setBounds(550, 355, 140, 22);
         panel.add(txtTipoRemito);
 
         // ── Datos remito panel (ubicacion, nro, bultos) ─────────────
         panelDatosRemito = new JPanel();
-        panelDatosRemito.setBounds(79, 386, 330, 120);
+        panelDatosRemito.setBounds(79, 380, 350, 99);
         panelDatosRemito.setLayout(null);
         panel.add(panelDatosRemito);
 
         lblUbicacion = new JLabel("UBICACI\u00d3N:");
         lblUbicacion.setFont(FUENTE_LABEL);
         lblUbicacion.setForeground(currentTheme.textPrimary);
-        lblUbicacion.setBounds(10, 12, 80, 20);
+        lblUbicacion.setBounds(10, 6, 80, 20);
         panelDatosRemito.add(lblUbicacion);
 
         cmbUbicacion = new JComboBox<>();
         cmbUbicacion.setFont(FUENTE_INPUT_BOLD);
-        cmbUbicacion.setBounds(115, 12, 200, 20);
+        cmbUbicacion.setBounds(115, 6, 200, 20);
         panelDatosRemito.add(cmbUbicacion);
         installComboUI(cmbUbicacion);
         cmbUbicacion.setRenderer(new DefaultListCellRenderer() {
@@ -244,25 +269,25 @@ public class VentanaRemitos extends JFrame {
         lblNroRemito = new JLabel("N\u00b0 DE REMITO:");
         lblNroRemito.setFont(FUENTE_LABEL);
         lblNroRemito.setForeground(currentTheme.textPrimary);
-        lblNroRemito.setBounds(10, 42, 85, 20);
+        lblNroRemito.setBounds(10, 36, 85, 20);
         panelDatosRemito.add(lblNroRemito);
 
         txtNumeroRemito = new JTextField();
         txtNumeroRemito.setFont(FUENTE_INPUT_BOLD);
         txtNumeroRemito.setEditable(false);
-        txtNumeroRemito.setBounds(115, 42, 200, 20);
+        txtNumeroRemito.setBounds(115, 36, 200, 20);
         txtNumeroRemito.setDisabledTextColor(getDisabledFg());
         panelDatosRemito.add(txtNumeroRemito);
 
         lblCantBultos = new JLabel("CANT. DE BULTOS:");
         lblCantBultos.setFont(FUENTE_INPUT);
         lblCantBultos.setForeground(currentTheme.textPrimary);
-        lblCantBultos.setBounds(10, 72, 100, 20);
+        lblCantBultos.setBounds(10, 66, 100, 20);
         panelDatosRemito.add(lblCantBultos);
 
         txtCantBultos = new JTextField();
         txtCantBultos.setFont(FUENTE_INPUT_BOLD);
-        txtCantBultos.setBounds(115, 72, 200, 20);
+        txtCantBultos.setBounds(115, 66, 200, 20);
         txtCantBultos.setDisabledTextColor(getDisabledFg());
         panelDatosRemito.add(txtCantBultos);
 
@@ -270,7 +295,7 @@ public class VentanaRemitos extends JFrame {
 
         // ── Acciones panel (conformado + botones) ──────────────────
         panelAcciones = new JPanel();
-        panelAcciones.setBounds(550, 386, 370, 120);
+        panelAcciones.setBounds(550, 380, 370, 99);
         panelAcciones.setLayout(null);
         panelAcciones.setVisible(false);
         panel.add(panelAcciones);
@@ -306,11 +331,11 @@ public class VentanaRemitos extends JFrame {
         panelAcciones.add(btnGuardarRemito);
 
         // ── Cambiar nro button ─────────────────────────────────────
-        btnCambiarN = new JButton("CAMBIAR N\u00b0");
+        btnCambiarN = new JButton("CAMBIAR N°");
         btnCambiarN.setFont(FUENTE_BOTON);
         btnCambiarN.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnCambiarN.setFocusPainted(false);
-        btnCambiarN.setBounds(419, 428, 100, 26);
+        btnCambiarN.setBounds(439, 424, 99, 20);
         btnCambiarN.addActionListener(e -> {
             txtNumeroRemito.setEditable(true);
             txtNumeroRemito.requestFocus();
@@ -318,6 +343,22 @@ public class VentanaRemitos extends JFrame {
         panel.add(btnCambiarN);
 
         cargarUbicaciones();
+
+        tabbedPane.addTab("Generar Remito", tabGenerar);
+
+        // ── Tab 1: Visualizar Remitos ──────────────────────────────
+        visView = new VentanaVisualizacionRemitos();
+        Container visContent = visView.getContentPane();
+        visView.remove(visContent);
+        tabbedPane.addTab("Visualizar Remitos", visContent);
+
+        tabbedPane.addChangeListener(e -> {
+            if (tabbedPane.getSelectedIndex() == 1 && visView != null) {
+                visView.cargarRemitos();
+            }
+        });
+
+        getContentPane().add(tabbedPane, BorderLayout.CENTER);
     }
 
     // ─── Data loading ──────────────────────────────────────────────────
@@ -544,6 +585,10 @@ public class VentanaRemitos extends JFrame {
     public void applyTheme(Theme t) {
         currentTheme = t;
         getContentPane().setBackground(t.bgBase);
+        if (tabbedPane != null) {
+            tabbedPane.setBackground(t.bgSurface);
+            tabbedPane.setForeground(t.textPrimary);
+        }
         if (panel != null) panel.setBackground(t.bgBase);
         if (panelFiltro != null) {
             panelFiltro.setBackground(t.bgSurface);
@@ -551,10 +596,15 @@ public class VentanaRemitos extends JFrame {
                 BorderFactory.createLineBorder(t.borderLight, 1),
                 BorderFactory.createEmptyBorder(2, 4, 2, 4)));
         }
+        if (panelSuperior != null) panelSuperior.setBackground(t.bgSurface);
 
         themeLabels(getContentPane(), t);
 
         // Restore special labels
+        if (lblTitulo != null) {
+            lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
+            lblTitulo.setForeground(t.brand);
+        }
         if (lblSeleccionRemito != null) {
             lblSeleccionRemito.setFont(FUENTE_LABEL);
             lblSeleccionRemito.setForeground(t.brand);

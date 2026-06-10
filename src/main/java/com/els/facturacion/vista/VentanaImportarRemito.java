@@ -7,11 +7,13 @@ import com.els.facturacion.util.UbicacionSistema;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
+import javax.swing.plaf.basic.BasicComboBoxUI;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class VentanaImportarRemito extends JDialog {
@@ -20,6 +22,22 @@ public class VentanaImportarRemito extends JDialog {
 
     private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
     private static final Font FUENTE_LABEL = new Font("Segoe UI", Font.BOLD, 11);
+    private static final Color DISABLED_FG_LIGHT = new Color(95, 97, 106);
+    private static final Color DISABLED_FG_DARK = new Color(210, 207, 190);
+    private static final Color LIGHT_READONLY_BG = new Color(236, 237, 241);
+    private static final Color LIGHT_EDITABLE_BG = new Color(255, 253, 230);
+    private static final Color DARK_READONLY_BG = new Color(28, 33, 55);
+    private static final Color DARK_EDITABLE_BG = new Color(22, 27, 45);
+
+    private Color getDisabledFg() {
+        return currentTheme.bgBase.getRed() > 128 ? DISABLED_FG_LIGHT : DISABLED_FG_DARK;
+    }
+
+    private Color getFieldBg(boolean editing) {
+        return currentTheme.bgBase.getRed() > 128
+            ? (editing ? LIGHT_EDITABLE_BG : LIGHT_READONLY_BG)
+            : (editing ? DARK_EDITABLE_BG : DARK_READONLY_BG);
+    }
 
     private ControladorReparsoft controlador;
     private JTable tablaRemitos;
@@ -41,6 +59,10 @@ public class VentanaImportarRemito extends JDialog {
 
     private RemitoReparsoftDTO remitoSeleccionado;
     private List<RemitoReparsoftDTO> remitosCache;
+    private JPanel panelFiltro;
+    private JLabel lblFiltroCliente;
+    private JComboBox<String> cmbFiltroCliente;
+    private List<RemitoReparsoftDTO> allRemitosCache;
 
     public VentanaImportarRemito(JFrame parent) {
         super(parent, "Importar Remito desde ReparSoft", true);
@@ -88,13 +110,44 @@ public class VentanaImportarRemito extends JDialog {
         lblCliente.setForeground(currentTheme.textPrimary);
         panelSuperior.add(lblCliente);
 
-        panel.add(panelSuperior, BorderLayout.NORTH);
+        // ── Filter panel ───────────────────────────────────────────
+        lblFiltroCliente = new JLabel("CLIENTE:");
+        lblFiltroCliente.setFont(FUENTE_LABEL);
+        lblFiltroCliente.setForeground(currentTheme.textPrimary);
+
+        cmbFiltroCliente = new JComboBox<>();
+        cmbFiltroCliente.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        cmbFiltroCliente.setMaximumRowCount(12);
+        cmbFiltroCliente.addActionListener(e -> aplicarFiltroImportar());
+        installComboUI(cmbFiltroCliente);
+        cmbFiltroCliente.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                  int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbFiltroCliente.isEnabled()));
+                setForeground(isSelected ? list.getSelectionForeground() :
+                    (cmbFiltroCliente.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
+                return this;
+            }
+        });
+
+        panelFiltro = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
+        panelFiltro.setBackground(currentTheme.bgSurface);
+        panelFiltro.add(lblFiltroCliente);
+        panelFiltro.add(cmbFiltroCliente);
+
+        JPanel northWrapper = new JPanel(new BorderLayout());
+        northWrapper.setOpaque(false);
+        northWrapper.add(panelSuperior, BorderLayout.NORTH);
+        northWrapper.add(panelFiltro, BorderLayout.CENTER);
+        panel.add(northWrapper, BorderLayout.NORTH);
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         splitPane.setResizeWeight(0.6);
         splitPane.setBorder(null);
 
-        String[] colRemitos = {"REMITO", "Cliente", "CUIT", "ITEMS"};
+        String[] colRemitos = {"REMITO", "Cliente", "CUIT", "FECHA DE EMISI\u00d3N", "ITEMS"};
         modeloTablaRemitos = new DefaultTableModel(colRemitos, 0) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
@@ -104,6 +157,7 @@ public class VentanaImportarRemito extends JDialog {
         tablaRemitos.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
         tablaRemitos.setRowHeight(22);
         tablaRemitos.setShowGrid(true);
+        tablaRemitos.setAutoCreateRowSorter(false);
         tablaRemitos.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) mostrarDetalleRemito();
         });
@@ -117,7 +171,8 @@ public class VentanaImportarRemito extends JDialog {
         });
         tablaRemitos.getColumnModel().getColumn(0).setPreferredWidth(130);
         tablaRemitos.getColumnModel().getColumn(2).setPreferredWidth(110);
-        tablaRemitos.getColumnModel().getColumn(3).setPreferredWidth(50);
+        tablaRemitos.getColumnModel().getColumn(3).setPreferredWidth(110);
+        tablaRemitos.getColumnModel().getColumn(4).setPreferredWidth(50);
         scrollRemitos = new JScrollPane(tablaRemitos);
         scrollRemitos.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(currentTheme.brand),
@@ -222,22 +277,66 @@ public class VentanaImportarRemito extends JDialog {
             @Override
             protected void done() {
                 if (remitosCache != null) {
-                    for (RemitoReparsoftDTO r : remitosCache) {
-                        modeloTablaRemitos.addRow(new Object[]{
-                            r.getNumeroRemitoDisplay(),
-                            r.getRazonSocialCliente() != null ? r.getRazonSocialCliente() : "Sin cliente",
-                            r.getCuitCliente() != null ? r.getCuitCliente() : "",
-                            r.getItems() != null ? r.getItems().size() : 0
-                        });
+                    remitosCache.sort((a, b) -> {
+                        java.sql.Date fa = a.getFechaEmision();
+                        java.sql.Date fb = b.getFechaEmision();
+                        if (fa == null && fb == null) return 0;
+                        if (fa == null) return 1;
+                        if (fb == null) return -1;
+                        return fb.compareTo(fa);
+                    });
+                    // Store full list for filtering
+                    allRemitosCache = new ArrayList<>(remitosCache);
+                    // Populate filter combo
+                    String selActual = cmbFiltroCliente.getSelectedItem() != null
+                        ? cmbFiltroCliente.getSelectedItem().toString() : "";
+                    cmbFiltroCliente.removeAllItems();
+                    cmbFiltroCliente.addItem("Todos");
+                    java.util.Set<String> clientes = new java.util.LinkedHashSet<>();
+                    for (RemitoReparsoftDTO r : allRemitosCache) {
+                        String cli = r.getRazonSocialCliente();
+                        if (cli != null && !cli.isEmpty()) clientes.add(cli);
+                    }
+                    java.util.List<String> listaC = new ArrayList<>(clientes);
+                    java.util.Collections.sort(listaC);
+                    for (String c : listaC) cmbFiltroCliente.addItem(c);
+                    cmbFiltroCliente.setSelectedItem(selActual.isEmpty() ? "Todos" : selActual);
+                } else {
+                    allRemitosCache = new ArrayList<>();
+                    cmbFiltroCliente.removeAllItems();
+                    cmbFiltroCliente.addItem("Todos");
                 }
-                tablaRemitos.getTableHeader().repaint();
-                tablaRemitos.repaint();
-            }
-                lblCliente.setText(remitosCache != null ? remitosCache.size() + " remitos cargados" : "Sin datos");
+                aplicarFiltroImportar();
                 setCursor(Cursor.getDefaultCursor());
             }
         };
         worker.execute();
+    }
+
+    private void aplicarFiltroImportar() {
+        modeloTablaRemitos.setRowCount(0);
+        modeloTablaItems.setRowCount(0);
+        remitoSeleccionado = null;
+        lblCliente.setText("");
+        if (allRemitosCache == null || allRemitosCache.isEmpty()) return;
+        String filtro = cmbFiltroCliente.getSelectedItem() != null
+            ? cmbFiltroCliente.getSelectedItem().toString() : "Todos";
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy");
+        for (RemitoReparsoftDTO r : allRemitosCache) {
+            String cli = r.getRazonSocialCliente();
+            if (!"Todos".equals(filtro) && !filtro.equals(cli)) continue;
+            String fecha = r.getFechaEmision() != null ? sdf.format(r.getFechaEmision()) : "";
+            modeloTablaRemitos.addRow(new Object[]{
+                r.getNumeroRemitoDisplay(),
+                cli != null ? cli : "Sin cliente",
+                r.getCuitCliente() != null ? r.getCuitCliente() : "",
+                fecha,
+                r.getItems() != null ? r.getItems().size() : 0
+            });
+        }
+        tablaRemitos.getTableHeader().repaint();
+        tablaRemitos.repaint();
+        lblCliente.setText(modeloTablaRemitos.getRowCount() + " remitos cargados");
     }
 
     private void mostrarDetalleRemito() {
@@ -315,11 +414,60 @@ public class VentanaImportarRemito extends JDialog {
         return dialog.getRemitoSeleccionado();
     }
 
+    private void installComboUI(JComboBox<?> combo) {
+        combo.setUI(new CustomComboUI());
+    }
+
+    private void themeComboEditor(JComboBox<?> combo, Theme t) {
+        Component editorComp = combo.getEditor().getEditorComponent();
+        if (editorComp instanceof JTextField) {
+            JTextField ed = (JTextField) editorComp;
+            ed.setBackground(getFieldBg(combo.isEnabled()));
+            ed.setForeground(combo.isEnabled() ? t.textPrimary : getDisabledFg());
+            ed.setDisabledTextColor(getDisabledFg());
+            ed.setCaretColor(t.textPrimary);
+        }
+    }
+
+    private static class CustomComboUI extends BasicComboBoxUI {
+        @Override
+        public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {
+            g.setColor(comboBox.getBackground());
+            g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+        @Override
+        public void paintCurrentValue(Graphics g, Rectangle bounds, boolean hasFocus) {
+            ListCellRenderer<Object> renderer = comboBox.getRenderer();
+            Component c;
+            if (hasFocus && !isPopupVisible(comboBox)) {
+                c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, true, false);
+            } else {
+                c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, false, false);
+            }
+            c.setFont(comboBox.getFont());
+            if (hasFocus && !isPopupVisible(comboBox)) {
+                c.setForeground(listBox.getSelectionForeground());
+                c.setBackground(listBox.getSelectionBackground());
+            } else {
+                c.setForeground(comboBox.getForeground());
+                c.setBackground(comboBox.getBackground());
+            }
+            currentValuePane.paintComponent(g, c, comboBox, bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+    }
+
     private void applyTheme(Theme t) {
         currentTheme = t;
         getContentPane().setBackground(t.bgBase);
         if (panel != null) panel.setBackground(t.bgBase);
         if (panelSuperior != null) panelSuperior.setBackground(t.bgSurface);
+        if (panelFiltro != null) panelFiltro.setBackground(t.bgSurface);
+        if (lblFiltroCliente != null) lblFiltroCliente.setForeground(t.textPrimary);
+        if (cmbFiltroCliente != null) {
+            installComboUI(cmbFiltroCliente);
+            cmbFiltroCliente.setBackground(getFieldBg(cmbFiltroCliente.isEnabled()));
+            cmbFiltroCliente.setForeground(cmbFiltroCliente.isEnabled() ? t.textPrimary : getDisabledFg());
+        }
         if (panelInferior != null) panelInferior.setBackground(t.bgSurface);
         if (lblBase != null) lblBase.setForeground(t.textPrimary);
         if (lblCliente != null) lblCliente.setForeground(t.textPrimary);
@@ -342,6 +490,7 @@ public class VentanaImportarRemito extends JDialog {
             centerRemitos.add(0);
             centerRemitos.add(2);
             centerRemitos.add(3);
+            centerRemitos.add(4);
             TablaRenderer.applyTo(tablaRemitos, t, java.util.Collections.emptySet(), boldRemitos, centerRemitos, t.bgSurface, t.bgElevated);
             if (tablaRemitos.getTableHeader() != null) {
                 styleHeaderBold(tablaRemitos.getTableHeader(), t);

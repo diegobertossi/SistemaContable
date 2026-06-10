@@ -9,6 +9,7 @@ public class RemitoReparsoftDTO {
     private String razonSocialCliente;
     private String cuitCliente;
     private int idUbicacion;
+    private java.sql.Date fechaEmision;
     private List<RemitoReparsoftItem> items;
 
     public static class RemitoReparsoftItem {
@@ -22,6 +23,9 @@ public class RemitoReparsoftDTO {
         private boolean facturado;
         private boolean seleccionado;
         private String numeroRemito;
+        private String nombreCliente;
+        private String baseDatos;
+        private int idUbicacion;
 
         public RemitoReparsoftItem(int els, String equipoNombre, String numeroSerie, String falla, BigDecimal precioPeso) {
             this(els, equipoNombre, numeroSerie, falla, null, null, precioPeso, false, "");
@@ -34,6 +38,19 @@ public class RemitoReparsoftDTO {
 
         public RemitoReparsoftItem(int els, String equipoNombre, String numeroSerie, String falla,
                                     String modelo, String marca, BigDecimal precioPeso, boolean facturado, String numeroRemito) {
+            this(els, equipoNombre, numeroSerie, falla, modelo, marca, precioPeso, facturado, numeroRemito, null, null);
+        }
+
+        public RemitoReparsoftItem(int els, String equipoNombre, String numeroSerie, String falla,
+                                    String modelo, String marca, BigDecimal precioPeso, boolean facturado,
+                                    String numeroRemito, String nombreCliente, String baseDatos) {
+            this(els, equipoNombre, numeroSerie, falla, modelo, marca, precioPeso, facturado,
+                 numeroRemito, nombreCliente, baseDatos, 0);
+        }
+
+        public RemitoReparsoftItem(int els, String equipoNombre, String numeroSerie, String falla,
+                                    String modelo, String marca, BigDecimal precioPeso, boolean facturado,
+                                    String numeroRemito, String nombreCliente, String baseDatos, int idUbicacion) {
             this.els = els;
             this.equipoNombre = equipoNombre;
             this.numeroSerie = numeroSerie;
@@ -44,6 +61,9 @@ public class RemitoReparsoftDTO {
             this.facturado = facturado;
             this.seleccionado = false;
             this.numeroRemito = numeroRemito;
+            this.nombreCliente = nombreCliente;
+            this.baseDatos = baseDatos;
+            this.idUbicacion = idUbicacion;
         }
 
         public int getEls() { return els; }
@@ -59,6 +79,25 @@ public class RemitoReparsoftDTO {
         public void setSeleccionado(boolean seleccionado) { this.seleccionado = seleccionado; }
         public String getNumeroRemito() { return numeroRemito; }
         public void setNumeroRemito(String numeroRemito) { this.numeroRemito = numeroRemito; }
+        public String getNombreCliente() { return nombreCliente; }
+        public void setNombreCliente(String nombreCliente) { this.nombreCliente = nombreCliente; }
+        public String getBaseDatos() { return baseDatos; }
+        public void setBaseDatos(String baseDatos) { this.baseDatos = baseDatos; }
+        public int getIdUbicacion() { return idUbicacion; }
+        public void setIdUbicacion(int idUbicacion) { this.idUbicacion = idUbicacion; }
+        public String getSucursalDisplay() {
+            if (idUbicacion == 0) return baseDatos != null ? baseDatos : "";
+            switch (idUbicacion) {
+                case 1: return "BRC - Principal";
+                case 2: return "BRC - Suc 2";
+                case 3: return "BRC - Suc 3";
+                case 4: return "BSAS - Suc 4";
+                case 5: return "BSAS - Suc 5";
+                case 7: return "BRC - Suc 6";
+                case 8: return "BRC - Suc 7";
+                default: return baseDatos != null ? baseDatos + " - Ubic " + idUbicacion : "";
+            }
+        }
 
         public String getDescripcion() {
             String desc = equipoNombre != null ? equipoNombre : "Sin equipo";
@@ -90,6 +129,8 @@ public class RemitoReparsoftDTO {
     public String getCuitCliente() { return cuitCliente; }
     public int getIdUbicacion() { return idUbicacion; }
     public void setIdUbicacion(int idUbicacion) { this.idUbicacion = idUbicacion; }
+    public java.sql.Date getFechaEmision() { return fechaEmision; }
+    public void setFechaEmision(java.sql.Date fechaEmision) { this.fechaEmision = fechaEmision; }
     public List<RemitoReparsoftItem> getItems() { return items; }
     public void setItems(List<RemitoReparsoftItem> items) { this.items = items; }
 

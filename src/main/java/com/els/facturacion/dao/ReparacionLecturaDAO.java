@@ -171,7 +171,8 @@ public class ReparacionLecturaDAO {
                 + "rep.ELS, rep.RemitoCliente, rep.idEquipo, "
                 + "e.Nombre as equipo_nombre, e.NumeroDeSerie, e.Modelo, e.Marca, "
                 + "c.nombre as cliente_nombre, c.CUIT, "
-                + "rep.Falla, rep.PrecioPeso "
+                + "rep.Falla, rep.PrecioPeso, "
+                + "rep.FechaEntrada "
                 + "FROM " + baseDatos + ".remitos r "
                 + "JOIN " + baseDatos + ".reparaciones rep ON r.idRemito = rep.idRemito "
                 + "LEFT JOIN " + baseDatos + ".equipos e ON rep.idEquipo = e.IdEquipo "
@@ -198,6 +199,7 @@ public class ReparacionLecturaDAO {
                 if (dto == null) {
                     dto = new com.els.facturacion.modelo.RemitoReparsoftDTO(idRemito, numSalida, clienteNombre, cuit, idUbicacion);
                     dto.setItems(new ArrayList<>());
+                    try { dto.setFechaEmision(rs.getDate("FechaEntrada")); } catch (Exception e) {}
                     map.put(idRemito, dto);
                 }
 
@@ -280,6 +282,65 @@ public class ReparacionLecturaDAO {
             }
         } catch (SQLException e) {
             System.err.println("Error listando equipos por cliente desde " + baseDatos + ": " + e.getMessage());
+        }
+        return lista;
+    }
+
+    public List<com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem> listarTodosEquiposConPrecio(String baseDatos) {
+        List<com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem> lista = new ArrayList<>();
+        Connection conn = ConexionReparsoft.getInstancia().getConexion(baseDatos);
+        if (conn == null) return lista;
+
+        String sql = "SELECT rep.ELS, e.Nombre as equipo_nombre, e.NumeroDeSerie, e.Modelo, e.Marca, "
+                + "rep.Falla, rep.PrecioPeso, c.nombre as cliente_nombre, "
+                + "r.IdUbicacion, r.NumeroRemitoSalida "
+                + "FROM " + baseDatos + ".reparaciones rep "
+                + "JOIN " + baseDatos + ".equipos e ON rep.idEquipo = e.IdEquipo "
+                + "JOIN " + baseDatos + ".cliente c ON e.idCliente = c.idCliente "
+                + "LEFT JOIN " + baseDatos + ".remitos r ON rep.idRemito = r.idRemito "
+                + "WHERE rep.PrecioPeso > 0 "
+                + "ORDER BY rep.ELS DESC";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                int els = 0;
+                String equipoNombre = "";
+                String serie = "";
+                String falla = "";
+                String modelo = "";
+                String marca = "";
+                double precio = 0;
+                String clienteNombre = "";
+                String numeroRemito = "";
+                int idUbic = 0;
+                try { els = rs.getInt("ELS"); } catch (Exception e) {}
+                try { equipoNombre = rs.getString("equipo_nombre"); } catch (Exception e) {}
+                try { serie = rs.getString("NumeroDeSerie"); } catch (Exception e) {}
+                try { falla = rs.getString("Falla"); } catch (Exception e) {}
+                try { modelo = rs.getString("Modelo"); } catch (Exception e) {}
+                try { marca = rs.getString("Marca"); } catch (Exception e) {}
+                try { precio = rs.getDouble("PrecioPeso"); } catch (Exception e) {}
+                try { clienteNombre = rs.getString("cliente_nombre"); } catch (Exception e) {}
+                try { idUbic = rs.getInt("IdUbicacion"); if (rs.wasNull()) idUbic = 0; } catch (Exception e) {}
+                try {
+                    if (idUbic != 0) {
+                        int nroSalida = 0;
+                        try { nroSalida = rs.getInt("NumeroRemitoSalida"); if (rs.wasNull()) nroSalida = 0; } catch (Exception e) {}
+                        if (nroSalida != 0) {
+                            int displayUbicacion = idUbicacionADisplay(idUbic);
+                            numeroRemito = String.format("%04d-%08d", displayUbicacion, nroSalida);
+                        }
+                    }
+                } catch (Exception e) {}
+
+                lista.add(new com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem(
+                    els, equipoNombre, serie, falla, modelo, marca, java.math.BigDecimal.valueOf(precio),
+                    false, numeroRemito, clienteNombre, baseDatos, idUbic));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error listando todos los equipos con precio desde " + baseDatos + ": " + e.getMessage());
         }
         return lista;
     }

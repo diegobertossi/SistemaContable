@@ -86,10 +86,13 @@ public class ControladorFacturacion {
         view.getBtnEmitir().addActionListener(e -> btnEmitirAction());
         view.getBtnLimpiar().addActionListener(e -> limpiarTodo());
         view.getBtnImportarRemito().addActionListener(e -> {
-            if (validarDatosReceptor()) importarRemitoReparsoft();
+            importarRemitoReparsoft();
         });
         view.getBtnVerEquipos().addActionListener(e -> {
-            if (validarDatosReceptor()) verEquiposPresupuestados();
+            verEquiposPresupuestados();
+        });
+        view.getBtnFacturarPorCliente().addActionListener(e -> {
+            view.setReceptorFieldsEnabled(true);
         });
 
         // Items table
@@ -269,7 +272,8 @@ public class ControladorFacturacion {
         RemitoReparsoftDTO remito = VentanaImportarRemito.mostrarDialog(view);
         if (remito == null) return;
 
-       // view.getTxtComprobanteAsoc().setText(remito.getNumeroRemitoDisplay());
+        // Enable and populate receptor fields from remito data
+        view.setReceptorFieldsEnabled(true);
 
         if (remito.getRazonSocialCliente() != null && !remito.getRazonSocialCliente().isEmpty()) {
             boolean encontrado = false;
@@ -300,6 +304,9 @@ public class ControladorFacturacion {
             }
         }
 
+        // Prompt for missing required receptor data
+        if (!completarDatosReceptorPendientes()) return;
+
         String tipo = (String) view.getCmbTipoComprobante().getSelectedItem();
         String cliente = view.getCmbRazonSocial().getEditorText().trim();
         view.setSubtituloOp(tipo + " para " + cliente);
@@ -329,15 +336,15 @@ public class ControladorFacturacion {
 
     private void verEquiposPresupuestados() {
         String razonSocial = view.getCmbRazonSocial().getEditorText().trim();
-        if (razonSocial.isEmpty()) {
-            JOptionPane.showMessageDialog(view,
-                "Seleccione un cliente (raz\u00f3n social) antes de ver equipos presupuestados",
-                "Ver Equipos", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
 
         List<RemitoReparsoftItem> equipos = VentanaEquiposPresupuestados.mostrarDialog(view, razonSocial);
         if (equipos == null || equipos.isEmpty()) return;
+
+        // Enable and populate receptor fields from equipos data
+        view.setReceptorFieldsEnabled(true);
+
+        // Prompt for missing required receptor data
+        if (!completarDatosReceptorPendientes()) return;
 
         DefaultTableModel model = view.getModeloItems();
         for (RemitoReparsoftItem item : equipos) {
@@ -486,6 +493,51 @@ public class ControladorFacturacion {
     }
 
     // ===================== HELPERS =====================
+
+    private boolean completarDatosReceptorPendientes() {
+        String condIva = (String) view.getCmbCondicionIva().getSelectedItem();
+        if (condIva == null || condIva.isEmpty()) {
+            String[] options = {"", "IVA Responsable Inscripto", "IVA Sujeto Exento", "Consumidor Final",
+                "Responsable Monotributo", "Proveedor del Exterior", "Cliente del Exterior",
+                "IVA Liberado - Ley 19.640", "Monotributista Social", "IVA No Alcanzado"};
+            Object input = JOptionPane.showInputDialog(view,
+                "Seleccione la Condici\u00f3n IVA del receptor:", "Datos del Receptor",
+                JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+            if (input == null || input.toString().isEmpty()) return false;
+            view.setCmbCondicionIva(input.toString());
+            condIva = input.toString();
+        }
+
+        String nroDoc = view.getCmbNroDoc().getEditorText().trim();
+        String razonSocial = view.getCmbRazonSocial().getEditorText().trim();
+        String domicilio = view.getTxtDomicilio().getText().trim();
+
+        if (!"Consumidor Final".equals(condIva)) {
+            if (nroDoc.isEmpty()) {
+                String input = JOptionPane.showInputDialog(view,
+                    "Ingrese el CUIT/Nro.Doc del receptor:", "Datos del Receptor",
+                    JOptionPane.QUESTION_MESSAGE);
+                if (input == null || input.trim().isEmpty()) return false;
+                view.setNroDoc(input.trim());
+                if (input.trim().length() > 8) view.setTipoDoc("CUIT");
+            }
+            if (razonSocial.isEmpty()) {
+                String input = JOptionPane.showInputDialog(view,
+                    "Ingrese la Raz\u00f3n Social del receptor:", "Datos del Receptor",
+                    JOptionPane.QUESTION_MESSAGE);
+                if (input == null || input.trim().isEmpty()) return false;
+                view.setRazonSocial(input.trim());
+            }
+            if (domicilio.isEmpty()) {
+                String input = JOptionPane.showInputDialog(view,
+                    "Ingrese el Domicilio del receptor:", "Datos del Receptor",
+                    JOptionPane.QUESTION_MESSAGE);
+                if (input == null) return false;
+                view.getTxtDomicilio().setText(input.trim());
+            }
+        }
+        return true;
+    }
 
     private boolean validarDatosReceptor() {
         if (view.getCmbPuntoVenta().getSelectedItem() == null || view.getCmbPuntoVenta().getSelectedItem().toString().isEmpty()) {

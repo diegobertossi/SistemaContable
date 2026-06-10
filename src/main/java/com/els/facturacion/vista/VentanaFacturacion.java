@@ -94,6 +94,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private JCheckBox chkContado, chkTarjetaDeb, chkTarjetaCred, chkCC, chkCheque, chkTransf, chkOtra;
     private JButton btnImportarRemito;
     private JButton btnVerEquipos;
+    private JButton btnFacturarPorCliente;
 
     // Operacion
     private JButton btnAnterior;
@@ -206,7 +207,11 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
         centerCol.add(crearSeccionPuntoVenta(), new GridBagConstraints(0, 0, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(4, 0, 4, 0), 0, 0));
         centerCol.add(crearSeccionEmision(), new GridBagConstraints(0, 1, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(4, 0, 4, 0), 0, 0));
-        centerCol.add(crearSeccionReceptor(), new GridBagConstraints(0, 2, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(4, 0, 4, 0), 0, 0));
+        JPanel receptorPanel = crearSeccionReceptor(); // creates panelBotonesReceptor as side effect
+        if (panelBotonesReceptor != null) {
+            centerCol.add(panelBotonesReceptor, new GridBagConstraints(0, 2, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 0, 2, 0), 0, 0));
+        }
+        centerCol.add(receptorPanel, new GridBagConstraints(0, 3, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(4, 0, 4, 0), 0, 0));
 
         chkModoPrueba = new JCheckBox("MODO PRUEBA");
         chkModoPrueba.setOpaque(false);
@@ -225,7 +230,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelNav.setBackground(currentTheme.bgSurface);
         panelNav.add(chkModoPrueba);
         panelNav.add(btnSiguiente);
-        centerCol.add(panelNav, new GridBagConstraints(0, 3, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(2, 0, 0, 0), 0, 0));
+        centerCol.add(panelNav, new GridBagConstraints(0, 4, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(2, 0, 0, 0), 0, 0));
 
         datosWrapper.add(centerCol);
 
@@ -730,24 +735,37 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelChecks.add(chkOtra);
         secReceptor.add(panelChecks, new GridBagConstraints(1, row, 5, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(4, 8, 5, 8), 0, 0));
 
-        row++;
-        btnImportarRemito = new JButton("VER REMITOS");
+        // Disable all receptor fields by default
+        setReceptorFieldsEnabled(false);
+
+        // ── Buttons panel is now added in centerCol (between secEmision and secReceptor) ──
+        btnImportarRemito = new JButton("FACTURAR POR REMITO");
         btnImportarRemito.setFont(FUENTE_BOTON);
         btnImportarRemito.setForeground(currentTheme.textPrimary);
         btnImportarRemito.setBackground(currentTheme.btnBg);
         btnImportarRemito.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnImportarRemito.setFocusPainted(false);
-        btnVerEquipos = new JButton("VER EQUIPOS");
+        btnVerEquipos = new JButton("FACTURAR POR EQUIPO");
         btnVerEquipos.setFont(FUENTE_BOTON);
         btnVerEquipos.setForeground(currentTheme.textPrimary);
         btnVerEquipos.setBackground(currentTheme.btnBg);
         btnVerEquipos.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnVerEquipos.setFocusPainted(false);
+        btnFacturarPorCliente = new JButton("FACTURAR POR CLIENTE");
+        btnFacturarPorCliente.setFont(FUENTE_BOTON);
+        btnFacturarPorCliente.setForeground(currentTheme.textPrimary);
+        btnFacturarPorCliente.setBackground(currentTheme.btnBg);
+        btnFacturarPorCliente.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnFacturarPorCliente.setFocusPainted(false);
+        btnFacturarPorCliente.addActionListener(e -> setReceptorFieldsEnabled(true));
+
         panelBotonesReceptor = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         panelBotonesReceptor.setBackground(currentTheme.bgSurface);
         panelBotonesReceptor.add(btnImportarRemito);
         panelBotonesReceptor.add(btnVerEquipos);
-        secReceptor.add(panelBotonesReceptor, new GridBagConstraints(0, row, 6, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(10, 8, 4, 8), 0, 0));
+        panelBotonesReceptor.add(btnFacturarPorCliente);
+
+        // NO add panelBotonesReceptor to secReceptor — it goes in centerCol
 
         return secReceptor;
     }
@@ -923,6 +941,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         if (chkOtra != null) { chkOtra.setBackground(t.bgBase); chkOtra.setForeground(t.textPrimary); }
         if (btnImportarRemito != null) { btnImportarRemito.setBackground(t.btnBg); btnImportarRemito.setForeground(t.textPrimary); }
         if (btnVerEquipos != null) { btnVerEquipos.setBackground(t.btnBg); btnVerEquipos.setForeground(t.textPrimary); }
+        if (btnFacturarPorCliente != null) { btnFacturarPorCliente.setBackground(t.btnBg); btnFacturarPorCliente.setForeground(t.textPrimary); }
         if (btnAnterior != null) { btnAnterior.setBackground(t.btnBg); btnAnterior.setForeground(t.textPrimary); }
         if (tablaItems != null) {
             boolean isDarkTheme = t.bgBase.getRed() < 50;
@@ -1161,6 +1180,31 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     }
     public JButton getBtnImportarRemito() { return btnImportarRemito; }
     public JButton getBtnVerEquipos() { return btnVerEquipos; }
+    public JButton getBtnFacturarPorCliente() { return btnFacturarPorCliente; }
+
+    public void setReceptorFieldsEnabled(boolean enabled) {
+        if (cmbCondicionIva != null) cmbCondicionIva.setEnabled(enabled);
+        if (cmbTipoDoc != null) cmbTipoDoc.setEnabled(enabled);
+        if (cmbNroDoc != null) cmbNroDoc.setEnabled(enabled);
+        if (cmbRazonSocial != null) cmbRazonSocial.setEnabled(enabled);
+        if (txtDomicilio != null) txtDomicilio.setEnabled(enabled);
+        if (txtEmail != null) txtEmail.setEnabled(enabled);
+        if (txtComprobanteAsoc != null) txtComprobanteAsoc.setEnabled(enabled);
+        if (panelChecks != null) {
+            for (java.awt.Component c : panelChecks.getComponents()) {
+                if (c instanceof JCheckBox) c.setEnabled(enabled);
+            }
+        }
+        // re-apply field background colors
+        Color bg = getFieldBg(enabled);
+        if (cmbCondicionIva != null) { cmbCondicionIva.setBackground(bg); installComboUI(cmbCondicionIva); }
+        if (cmbTipoDoc != null) { cmbTipoDoc.setBackground(bg); installComboUI(cmbTipoDoc); }
+        if (cmbNroDoc != null) { cmbNroDoc.setBackground(bg); installComboUI(cmbNroDoc); themeComboEditor(cmbNroDoc, currentTheme); }
+        if (cmbRazonSocial != null) { cmbRazonSocial.setBackground(bg); installComboUI(cmbRazonSocial); themeComboEditor(cmbRazonSocial, currentTheme); }
+        if (txtDomicilio != null) { txtDomicilio.setBackground(bg); txtDomicilio.setForeground(enabled ? currentTheme.textPrimary : getDisabledFg()); }
+        if (txtEmail != null) { txtEmail.setBackground(bg); txtEmail.setForeground(enabled ? currentTheme.textPrimary : getDisabledFg()); }
+        if (txtComprobanteAsoc != null) { txtComprobanteAsoc.setBackground(bg); txtComprobanteAsoc.setForeground(enabled ? currentTheme.textPrimary : getDisabledFg()); }
+    }
     public JButton getBtnAgregarItem() { return btnAgregarItem; }
     public JButton getBtnEliminarItem() { return btnEliminarItem; }
     public JComboBox<String> getCmbAlicuotaIva() { return cmbAlicuotaIva; }
