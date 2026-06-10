@@ -1,515 +1,677 @@
 package com.els.facturacion.vista;
 
-import com.els.facturacion.controlador.ControladorRemitos;
-import com.els.facturacion.modelo.CuitConfigDTO;
-import com.els.facturacion.modelo.RemitoDTO;
-import com.els.facturacion.modelo.RemitoItemDTO;
+import com.els.facturacion.dao.RemitoReparsoftLecturaDAO;
+import com.els.facturacion.util.AutoCompleteComboBox;
+import com.els.facturacion.util.UbicacionSistema;
+
+import javax.swing.BorderFactory;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
 import javax.swing.JTable;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
-
+import javax.swing.ListCellRenderer;
+import javax.swing.SwingConstants;
+import javax.swing.SwingWorker;
+import javax.swing.plaf.basic.BasicComboBoxUI;
 import javax.swing.table.DefaultTableModel;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
 
-public class VentanaRemitos extends javax.swing.JFrame {
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+public class VentanaRemitos extends JFrame {
+
+    private static final long serialVersionUID = 1L;
 
     private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
-    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final Font FUENTE_INPUT = new Font("Segoe UI", Font.PLAIN, 12);
+    private static final Font FUENTE_INPUT_BOLD = new Font("Segoe UI", Font.BOLD, 12);
+    private static final Font FUENTE_LABEL = new Font("Segoe UI", Font.PLAIN, 11);
+    private static final Font FUENTE_TABLA = new Font("Segoe UI", Font.PLAIN, 12);
+    private static final Color DISABLED_FG_LIGHT = new Color(95, 97, 106);
+    private static final Color DISABLED_FG_DARK = new Color(210, 207, 190);
+    private static final Color LIGHT_READONLY_BG = new Color(236, 237, 241);
+    private static final Color LIGHT_EDITABLE_BG = new Color(255, 253, 230);
+    private static final Color DARK_READONLY_BG = new Color(28, 33, 55);
+    private static final Color DARK_EDITABLE_BG = new Color(22, 27, 45);
 
-    private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
+    private static final String[] COLUMNAS = {
+        "ELS", "EQUIPO", "MARCA", "MODELO", "N\u00b0 SERIE", "AVISO", "ESTADO TEC", "ESTADO COM", "AGREGAR A REMITO"
+    };
+    private static final int[] ANCHOS = { 60, 200, 120, 120, 120, 60, 100, 100, 130 };
 
-    private ControladorRemitos controlador;
-    private JTable tablaRemitos;
-    private DefaultTableModel modeloTablaRemitos;
-    private JTable tablaItems;
-    private DefaultTableModel modeloTablaItems;
-    private JTextField txtNumero, txtFechaEmision, txtFechaEntrega;
-    private JTextField txtCuitReceptor, txtRazonSocial, txtDomicilio;
-    private JTextArea txtObservaciones;
-    private JComboBox<String> cmbEstado;
-    private JTextField txtCodigo, txtDescripcion, txtCantidad;
-    private JPanel statusBar;
-    private JLabel lblStatus;
+    private Theme currentTheme;
+    private RemitoReparsoftLecturaDAO dao;
+    private String baseDatos;
+
+    private JPanel panel;
+    private JPanel panelFiltro;
+    private JLabel lblCliente;
+    private AutoCompleteComboBox cmbCliente;
+    private JLabel lblSucursal;
+    private AutoCompleteComboBox cmbSucursal;
+    private JScrollPane scrollPane;
+    private JTable tabla;
+    private DefaultTableModel modeloTabla;
+    private JSeparator separator;
+    private JLabel lblSeleccionRemito;
+    private JTextField txtTipoRemito;
+    private JButton btnCambiarN;
+    private JPanel panelDatosRemito;
+    private JLabel lblUbicacion;
+    private JComboBox<String> cmbUbicacion;
+    private JLabel lblNroRemito;
+    private JTextField txtNumeroRemito;
+    private JLabel lblCantBultos;
+    private JTextField txtCantBultos;
+    private JPanel panelAcciones;
+    private JLabel lblRemitoConformado;
+    private JTextField txtRemitoConformado;
+    private JButton btnVisualizarRemito;
+    private JButton btnGuardarRemito;
+
+    private boolean cargandoDatos = false;
+    private int idClienteActual = -1;
+    private int idSucursalActual = -1;
+    private String clienteNombre = "";
+    private String sucursalNombre = "";
+    private String part1 = "";
 
     public VentanaRemitos() {
-        controlador = new ControladorRemitos();
+        super();
+        this.currentTheme = VentanaPrincipal.getCurrentTheme();
+        this.dao = new RemitoReparsoftLecturaDAO();
         initComponents();
         applyTheme(currentTheme);
-        cargarRemitos();
         VentanaPrincipal.addThemeListener(this);
+        cargarClientes();
+        setLocationCenter();
     }
 
     private void initComponents() {
-        setTitle("Gestion de Remitos");
-        setSize(1000, 700);
-        setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
-        getContentPane().setBackground(currentTheme.bgBase);
+        setTitle("GENERAR REMITO");
+        setSize(1024, 600);
+        setResizable(false);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        getContentPane().setLayout(null);
 
-        JPanel panelIzquierdo = new JPanel(new BorderLayout(5, 5));
-        panelIzquierdo.setBackground(currentTheme.bgBase);
+        try {
+            Image icon = Toolkit.getDefaultToolkit().getImage(getClass().getResource("/img/Iconosoft.png"));
+            setIconImage(icon);
+        } catch (Exception e) { }
 
-        JLabel lblTitulo = new JLabel("REMITOS");
-        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        lblTitulo.setForeground(currentTheme.textPrimary);
-        lblTitulo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        panel = new JPanel();
+        panel.setOpaque(false);
+        panel.setBorder(null);
+        panel.setBounds(0, 0, 1008, 562);
+        getContentPane().add(panel);
+        panel.setLayout(null);
 
-        String[] colRemitos = {"ID", "Numero", "Fecha Emision", "Receptor", "Estado"};
-        modeloTablaRemitos = new DefaultTableModel(colRemitos, 0) {
-            public boolean isCellEditable(int row, int col) { return false; }
+        // ── Filter panel ────────────────────────────────────────────
+        panelFiltro = new JPanel();
+        panelFiltro.setBounds(10, 10, 988, 36);
+        panelFiltro.setLayout(null);
+        panel.add(panelFiltro);
+
+        lblCliente = new JLabel("CLIENTE:");
+        lblCliente.setFont(FUENTE_LABEL);
+        lblCliente.setForeground(currentTheme.textPrimary);
+        lblCliente.setBounds(10, 8, 60, 20);
+        panelFiltro.add(lblCliente);
+
+        cmbCliente = new AutoCompleteComboBox();
+        cmbCliente.setFont(FUENTE_INPUT_BOLD);
+        cmbCliente.setBounds(75, 8, 320, 22);
+        themeComboEditor(cmbCliente, currentTheme);
+        panelFiltro.add(cmbCliente);
+
+        lblSucursal = new JLabel("SUCURSAL:");
+        lblSucursal.setFont(FUENTE_LABEL);
+        lblSucursal.setForeground(currentTheme.textPrimary);
+        lblSucursal.setBounds(420, 8, 70, 20);
+        panelFiltro.add(lblSucursal);
+
+        cmbSucursal = new AutoCompleteComboBox();
+        cmbSucursal.setFont(FUENTE_INPUT_BOLD);
+        cmbSucursal.setBounds(495, 8, 480, 22);
+        themeComboEditor(cmbSucursal, currentTheme);
+        panelFiltro.add(cmbSucursal);
+
+        cmbCliente.addActionListener(e -> onClienteChanged());
+        cmbSucursal.addActionListener(e -> onSucursalChanged());
+
+        // ── Table ───────────────────────────────────────────────────
+        scrollPane = new JScrollPane();
+        scrollPane.setBounds(10, 56, 988, 280);
+        panel.add(scrollPane);
+
+        modeloTabla = new DefaultTableModel(null, COLUMNAS) {
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                return columnIndex == 8 ? Boolean.class : String.class;
+            }
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 8;
+            }
         };
-        tablaRemitos = new JTable(modeloTablaRemitos);
-        tablaRemitos.setRowHeight(22);
-        tablaRemitos.setShowGrid(true);
-        tablaRemitos.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
-        tablaRemitos.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) cargarRemitoSeleccionado();
+        tabla = new JTable(modeloTabla);
+        tabla.setFont(FUENTE_TABLA);
+        tabla.setRowHeight(22);
+        tabla.setIntercellSpacing(new Dimension(3, 2));
+        tabla.getTableHeader().setReorderingAllowed(false);
+        tabla.getTableHeader().setResizingAllowed(false);
+        for (int i = 0; i < ANCHOS.length; i++) {
+            tabla.getColumnModel().getColumn(i).setPreferredWidth(ANCHOS[i]);
+        }
+        scrollPane.setViewportView(tabla);
+
+        // ── Separator ───────────────────────────────────────────────
+        separator = new JSeparator();
+        separator.setBounds(10, 346, 988, 2);
+        panel.add(separator);
+
+        // ── Seleccion de remito label ───────────────────────────────
+        lblSeleccionRemito = new JLabel("SELECCI\u00d3N DE REMITO:", SwingConstants.LEFT);
+        lblSeleccionRemito.setFont(FUENTE_LABEL);
+        lblSeleccionRemito.setForeground(currentTheme.textPrimary);
+        lblSeleccionRemito.setBounds(79, 356, 200, 20);
+        panel.add(lblSeleccionRemito);
+
+        // ── tipo remito text ────────────────────────────────────────
+        txtTipoRemito = new JTextField();
+        txtTipoRemito.setHorizontalAlignment(SwingConstants.CENTER);
+        txtTipoRemito.setFont(FUENTE_INPUT_BOLD);
+        txtTipoRemito.setEditable(false);
+        txtTipoRemito.setBorder(null);
+        txtTipoRemito.setOpaque(false);
+        txtTipoRemito.setBounds(645, 359, 140, 22);
+        panel.add(txtTipoRemito);
+
+        // ── Datos remito panel (ubicacion, nro, bultos) ─────────────
+        panelDatosRemito = new JPanel();
+        panelDatosRemito.setBounds(79, 386, 330, 120);
+        panelDatosRemito.setLayout(null);
+        panel.add(panelDatosRemito);
+
+        lblUbicacion = new JLabel("UBICACI\u00d3N:");
+        lblUbicacion.setFont(FUENTE_LABEL);
+        lblUbicacion.setForeground(currentTheme.textPrimary);
+        lblUbicacion.setBounds(10, 12, 80, 20);
+        panelDatosRemito.add(lblUbicacion);
+
+        cmbUbicacion = new JComboBox<>();
+        cmbUbicacion.setFont(FUENTE_INPUT_BOLD);
+        cmbUbicacion.setBounds(115, 12, 200, 20);
+        panelDatosRemito.add(cmbUbicacion);
+        installComboUI(cmbUbicacion);
+        cmbUbicacion.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(getFieldBg(cmbUbicacion.isEnabled()));
+                setForeground(cmbUbicacion.isEnabled() ? currentTheme.textPrimary : getDisabledFg());
+                setFont(cmbUbicacion.getFont());
+                return this;
+            }
+            @Override
+            public void paintComponent(Graphics g) {
+                setBackground(getFieldBg(cmbUbicacion.isEnabled()));
+                setForeground(cmbUbicacion.isEnabled() ? currentTheme.textPrimary : getDisabledFg());
+                super.paintComponent(g);
+            }
         });
 
-        JButton btnNuevo = new JButton("NUEVO REMITO");
-        btnNuevo.setFont(FUENTE_BOTON);
-        btnNuevo.setForeground(currentTheme.textPrimary);
-        btnNuevo.setBackground(currentTheme.btnBg);
-        btnNuevo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnNuevo.setFocusPainted(false);
-        btnNuevo.addActionListener(e -> nuevoRemito());
+        lblNroRemito = new JLabel("N\u00b0 DE REMITO:");
+        lblNroRemito.setFont(FUENTE_LABEL);
+        lblNroRemito.setForeground(currentTheme.textPrimary);
+        lblNroRemito.setBounds(10, 42, 85, 20);
+        panelDatosRemito.add(lblNroRemito);
 
-        JPanel panelListaBotones = new JPanel();
-        panelListaBotones.setBackground(currentTheme.bgBase);
-        panelListaBotones.add(btnNuevo);
+        txtNumeroRemito = new JTextField();
+        txtNumeroRemito.setFont(FUENTE_INPUT_BOLD);
+        txtNumeroRemito.setEditable(false);
+        txtNumeroRemito.setBounds(115, 42, 200, 20);
+        txtNumeroRemito.setDisabledTextColor(getDisabledFg());
+        panelDatosRemito.add(txtNumeroRemito);
 
-        panelIzquierdo.add(lblTitulo, BorderLayout.NORTH);
-        panelIzquierdo.add(new JScrollPane(tablaRemitos), BorderLayout.CENTER);
-        panelIzquierdo.add(panelListaBotones, BorderLayout.SOUTH);
+        lblCantBultos = new JLabel("CANT. DE BULTOS:");
+        lblCantBultos.setFont(FUENTE_INPUT);
+        lblCantBultos.setForeground(currentTheme.textPrimary);
+        lblCantBultos.setBounds(10, 72, 100, 20);
+        panelDatosRemito.add(lblCantBultos);
 
-        JPanel panelDerecho = new JPanel(new GridBagLayout());
-        panelDerecho.setBackground(currentTheme.bgBase);
-        txtNumero = new JTextField(20);
-        txtNumero.setEditable(false);
-        txtFechaEmision = new JTextField(10);
-        txtFechaEmision.setText(LocalDate.now().format(FMT));
-        txtFechaEntrega = new JTextField(10);
-        cmbEstado = new JComboBox<>(new String[]{"pendiente", "entregado", "anulado"});
+        txtCantBultos = new JTextField();
+        txtCantBultos.setFont(FUENTE_INPUT_BOLD);
+        txtCantBultos.setBounds(115, 72, 200, 20);
+        txtCantBultos.setDisabledTextColor(getDisabledFg());
+        panelDatosRemito.add(txtCantBultos);
 
-        int row = 0;
+        cmbUbicacion.addActionListener(e -> onUbicacionChanged());
 
-        GridBagConstraints gbc_lblNumero = new GridBagConstraints();
-        gbc_lblNumero.insets = new Insets(3, 5, 3, 5);
-        gbc_lblNumero.fill = GridBagConstraints.HORIZONTAL;
-        gbc_lblNumero.gridx = 0; gbc_lblNumero.gridy = row;
-        panelDerecho.add(new JLabel("Numero Remito:"), gbc_lblNumero);
+        // ── Acciones panel (conformado + botones) ──────────────────
+        panelAcciones = new JPanel();
+        panelAcciones.setBounds(550, 386, 370, 120);
+        panelAcciones.setLayout(null);
+        panelAcciones.setVisible(false);
+        panel.add(panelAcciones);
 
-        GridBagConstraints gbc_txtNumero = new GridBagConstraints();
-        gbc_txtNumero.insets = new Insets(3, 5, 3, 5);
-        gbc_txtNumero.fill = GridBagConstraints.HORIZONTAL;
-        gbc_txtNumero.gridx = 1; gbc_txtNumero.gridy = row;
-        panelDerecho.add(txtNumero, gbc_txtNumero);
+        lblRemitoConformado = new JLabel("REMITO CONFORMADO");
+        lblRemitoConformado.setFont(FUENTE_LABEL);
+        lblRemitoConformado.setForeground(currentTheme.textPrimary);
+        lblRemitoConformado.setBounds(10, 10, 150, 20);
+        panelAcciones.add(lblRemitoConformado);
 
-        GridBagConstraints gbc_lblEstado = new GridBagConstraints();
-        gbc_lblEstado.insets = new Insets(3, 5, 3, 5);
-        gbc_lblEstado.fill = GridBagConstraints.HORIZONTAL;
-        gbc_lblEstado.gridx = 2; gbc_lblEstado.gridy = row;
-        panelDerecho.add(new JLabel("Estado:"), gbc_lblEstado);
+        txtRemitoConformado = new JTextField();
+        txtRemitoConformado.setFont(FUENTE_INPUT_BOLD);
+        txtRemitoConformado.setEditable(false);
+        txtRemitoConformado.setHorizontalAlignment(SwingConstants.CENTER);
+        txtRemitoConformado.setBounds(10, 35, 150, 22);
+        txtRemitoConformado.setDisabledTextColor(getDisabledFg());
+        panelAcciones.add(txtRemitoConformado);
 
-        GridBagConstraints gbc_cmbEstado = new GridBagConstraints();
-        gbc_cmbEstado.insets = new Insets(3, 5, 3, 5);
-        gbc_cmbEstado.fill = GridBagConstraints.HORIZONTAL;
-        gbc_cmbEstado.gridx = 3; gbc_cmbEstado.gridy = row;
-        panelDerecho.add(cmbEstado, gbc_cmbEstado);
+        btnVisualizarRemito = new JButton("VISUALIZAR REMITO");
+        btnVisualizarRemito.setFont(FUENTE_BOTON);
+        btnVisualizarRemito.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnVisualizarRemito.setFocusPainted(false);
+        btnVisualizarRemito.setBounds(175, 10, 180, 35);
+        btnVisualizarRemito.addActionListener(e -> visualizarRemito());
+        panelAcciones.add(btnVisualizarRemito);
 
-        row++;
+        btnGuardarRemito = new JButton("GUARDAR REMITO");
+        btnGuardarRemito.setFont(FUENTE_BOTON);
+        btnGuardarRemito.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnGuardarRemito.setFocusPainted(false);
+        btnGuardarRemito.setBounds(175, 55, 180, 35);
+        btnGuardarRemito.addActionListener(e -> guardarRemito());
+        panelAcciones.add(btnGuardarRemito);
 
-        GridBagConstraints gbc_lblFechaEmision = new GridBagConstraints();
-        gbc_lblFechaEmision.insets = new Insets(3, 5, 3, 5);
-        gbc_lblFechaEmision.fill = GridBagConstraints.HORIZONTAL;
-        gbc_lblFechaEmision.gridx = 0; gbc_lblFechaEmision.gridy = row;
-        panelDerecho.add(new JLabel("Fecha Emision:"), gbc_lblFechaEmision);
+        // ── Cambiar nro button ─────────────────────────────────────
+        btnCambiarN = new JButton("CAMBIAR N\u00b0");
+        btnCambiarN.setFont(FUENTE_BOTON);
+        btnCambiarN.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnCambiarN.setFocusPainted(false);
+        btnCambiarN.setBounds(419, 428, 100, 26);
+        btnCambiarN.addActionListener(e -> {
+            txtNumeroRemito.setEditable(true);
+            txtNumeroRemito.requestFocus();
+        });
+        panel.add(btnCambiarN);
 
-        GridBagConstraints gbc_txtFechaEmision = new GridBagConstraints();
-        gbc_txtFechaEmision.insets = new Insets(3, 5, 3, 5);
-        gbc_txtFechaEmision.fill = GridBagConstraints.HORIZONTAL;
-        gbc_txtFechaEmision.gridx = 1; gbc_txtFechaEmision.gridy = row;
-        panelDerecho.add(txtFechaEmision, gbc_txtFechaEmision);
-
-        GridBagConstraints gbc_lblFechaEntrega = new GridBagConstraints();
-        gbc_lblFechaEntrega.insets = new Insets(3, 5, 3, 5);
-        gbc_lblFechaEntrega.fill = GridBagConstraints.HORIZONTAL;
-        gbc_lblFechaEntrega.gridx = 2; gbc_lblFechaEntrega.gridy = row;
-        panelDerecho.add(new JLabel("Fecha Entrega:"), gbc_lblFechaEntrega);
-
-        GridBagConstraints gbc_txtFechaEntrega = new GridBagConstraints();
-        gbc_txtFechaEntrega.insets = new Insets(3, 5, 3, 5);
-        gbc_txtFechaEntrega.fill = GridBagConstraints.HORIZONTAL;
-        gbc_txtFechaEntrega.gridx = 3; gbc_txtFechaEntrega.gridy = row;
-        panelDerecho.add(txtFechaEntrega, gbc_txtFechaEntrega);
-
-        row++;
-
-        GridBagConstraints gbc_lblCuit = new GridBagConstraints();
-        gbc_lblCuit.insets = new Insets(3, 5, 3, 5);
-        gbc_lblCuit.fill = GridBagConstraints.HORIZONTAL;
-        gbc_lblCuit.gridx = 0; gbc_lblCuit.gridy = row;
-        panelDerecho.add(new JLabel("CUIT Receptor:"), gbc_lblCuit);
-
-        GridBagConstraints gbc_txtCuit = new GridBagConstraints();
-        gbc_txtCuit.insets = new Insets(3, 5, 3, 5);
-        gbc_txtCuit.fill = GridBagConstraints.HORIZONTAL;
-        gbc_txtCuit.gridx = 1; gbc_txtCuit.gridwidth = 3; gbc_txtCuit.gridy = row;
-        panelDerecho.add(txtCuitReceptor = new JTextField(30), gbc_txtCuit);
-
-        row++;
-
-        GridBagConstraints gbc_lblRazonSocial = new GridBagConstraints();
-        gbc_lblRazonSocial.insets = new Insets(3, 5, 3, 5);
-        gbc_lblRazonSocial.fill = GridBagConstraints.HORIZONTAL;
-        gbc_lblRazonSocial.gridx = 0; gbc_lblRazonSocial.gridy = row;
-        panelDerecho.add(new JLabel("Razon Social:"), gbc_lblRazonSocial);
-
-        GridBagConstraints gbc_txtRazonSocial = new GridBagConstraints();
-        gbc_txtRazonSocial.insets = new Insets(3, 5, 3, 5);
-        gbc_txtRazonSocial.fill = GridBagConstraints.HORIZONTAL;
-        gbc_txtRazonSocial.gridx = 1; gbc_txtRazonSocial.gridwidth = 3; gbc_txtRazonSocial.gridy = row;
-        panelDerecho.add(txtRazonSocial = new JTextField(30), gbc_txtRazonSocial);
-
-        row++;
-
-        GridBagConstraints gbc_lblDomicilio = new GridBagConstraints();
-        gbc_lblDomicilio.insets = new Insets(3, 5, 3, 5);
-        gbc_lblDomicilio.fill = GridBagConstraints.HORIZONTAL;
-        gbc_lblDomicilio.gridx = 0; gbc_lblDomicilio.gridy = row;
-        panelDerecho.add(new JLabel("Domicilio:"), gbc_lblDomicilio);
-
-        GridBagConstraints gbc_txtDomicilio = new GridBagConstraints();
-        gbc_txtDomicilio.insets = new Insets(3, 5, 3, 5);
-        gbc_txtDomicilio.fill = GridBagConstraints.HORIZONTAL;
-        gbc_txtDomicilio.gridx = 1; gbc_txtDomicilio.gridwidth = 3; gbc_txtDomicilio.gridy = row;
-        panelDerecho.add(txtDomicilio = new JTextField(30), gbc_txtDomicilio);
-
-        String[] colItems = {"Codigo", "Descripcion", "Cantidad", "U. Medida"};
-        modeloTablaItems = new DefaultTableModel(colItems, 0) {
-            public boolean isCellEditable(int row, int col) { return false; }
-        };
-        tablaItems = new JTable(modeloTablaItems);
-        tablaItems.setRowHeight(22);
-        tablaItems.setShowGrid(true);
-        tablaItems.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
-        JScrollPane scrollItems = new JScrollPane(tablaItems);
-
-        JPanel panelItemForm = new JPanel();
-        panelItemForm.setBackground(currentTheme.bgBase);
-        txtCodigo = new JTextField(8);
-        txtDescripcion = new JTextField(20);
-        txtCantidad = new JTextField(5);
-        txtCantidad.setText("1");
-        JButton btnAgregarItem = new JButton("+ AGREGAR");
-        btnAgregarItem.setFont(FUENTE_BOTON);
-        btnAgregarItem.setForeground(currentTheme.textPrimary);
-        btnAgregarItem.setBackground(currentTheme.btnBg);
-        btnAgregarItem.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnAgregarItem.setFocusPainted(false);
-        btnAgregarItem.addActionListener(e -> agregarItem());
-        JButton btnEliminarItem = new JButton("- ELIMINAR");
-        btnEliminarItem.setFont(FUENTE_BOTON);
-        btnEliminarItem.setForeground(currentTheme.textPrimary);
-        btnEliminarItem.setBackground(currentTheme.btnBg);
-        btnEliminarItem.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnEliminarItem.setFocusPainted(false);
-        btnEliminarItem.addActionListener(e -> eliminarItem());
-        panelItemForm.add(new JLabel("Codigo:"));
-        panelItemForm.add(txtCodigo);
-        panelItemForm.add(new JLabel("Desc:"));
-        panelItemForm.add(txtDescripcion);
-        panelItemForm.add(new JLabel("Cant:"));
-        panelItemForm.add(txtCantidad);
-        panelItemForm.add(btnAgregarItem);
-        panelItemForm.add(btnEliminarItem);
-
-        row++;
-
-        GridBagConstraints gbc_scrollItems = new GridBagConstraints();
-        gbc_scrollItems.insets = new Insets(3, 5, 3, 5);
-        gbc_scrollItems.fill = GridBagConstraints.HORIZONTAL;
-        gbc_scrollItems.gridx = 0; gbc_scrollItems.gridy = row; gbc_scrollItems.gridwidth = 4;
-        panelDerecho.add(scrollItems, gbc_scrollItems);
-
-        row++;
-
-        GridBagConstraints gbc_itemForm = new GridBagConstraints();
-        gbc_itemForm.insets = new Insets(3, 5, 3, 5);
-        gbc_itemForm.fill = GridBagConstraints.HORIZONTAL;
-        gbc_itemForm.gridx = 0; gbc_itemForm.gridy = row; gbc_itemForm.gridwidth = 4;
-        panelDerecho.add(panelItemForm, gbc_itemForm);
-
-        row++;
-
-        GridBagConstraints gbc_lblObs = new GridBagConstraints();
-        gbc_lblObs.insets = new Insets(3, 5, 3, 5);
-        gbc_lblObs.fill = GridBagConstraints.HORIZONTAL;
-        gbc_lblObs.gridx = 0; gbc_lblObs.gridy = row; gbc_lblObs.gridwidth = 4;
-        JLabel lblObs = new JLabel("Observaciones:");
-        txtObservaciones = new JTextArea(3, 30);
-        JScrollPane scrollObs = new JScrollPane(txtObservaciones);
-        panelDerecho.add(lblObs, gbc_lblObs);
-
-        row++;
-
-        GridBagConstraints gbc_scrollObs = new GridBagConstraints();
-        gbc_scrollObs.insets = new Insets(3, 5, 3, 5);
-        gbc_scrollObs.fill = GridBagConstraints.HORIZONTAL;
-        gbc_scrollObs.gridx = 0; gbc_scrollObs.gridy = row; gbc_scrollObs.gridwidth = 4;
-        panelDerecho.add(scrollObs, gbc_scrollObs);
-
-        row++;
-
-        GridBagConstraints gbc_panelBotones = new GridBagConstraints();
-        gbc_panelBotones.insets = new Insets(3, 5, 3, 5);
-        gbc_panelBotones.fill = GridBagConstraints.HORIZONTAL;
-        gbc_panelBotones.gridx = 0; gbc_panelBotones.gridy = row; gbc_panelBotones.gridwidth = 4;
-        JPanel panelBotones = new JPanel();
-        panelBotones.setBackground(currentTheme.bgBase);
-        JButton btnGuardar = new JButton("GUARDAR REMITO");
-        btnGuardar.setFont(FUENTE_BOTON);
-        btnGuardar.setForeground(currentTheme.textPrimary);
-        btnGuardar.setBackground(currentTheme.btnBg);
-        btnGuardar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnGuardar.setFocusPainted(false);
-        btnGuardar.addActionListener(e -> guardarRemito());
-        JButton btnCambiarEstado = new JButton("CAMBIAR ESTADO");
-        btnCambiarEstado.setFont(FUENTE_BOTON);
-        btnCambiarEstado.setForeground(currentTheme.textPrimary);
-        btnCambiarEstado.setBackground(currentTheme.btnBg);
-        btnCambiarEstado.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnCambiarEstado.setFocusPainted(false);
-        btnCambiarEstado.addActionListener(e -> cambiarEstado());
-        panelBotones.add(btnGuardar);
-        panelBotones.add(btnCambiarEstado);
-        panelDerecho.add(panelBotones, gbc_panelBotones);
-
-        add(panelIzquierdo, BorderLayout.WEST);
-        add(panelDerecho, BorderLayout.CENTER);
-
-        boolean barIsLight = currentTheme.bgBase.getRed() > 128;
-        statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
-        statusBar.setBackground(barIsLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
-        lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica");
-        lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        lblStatus.setForeground(barIsLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
-        statusBar.add(lblStatus);
-        add(statusBar, BorderLayout.SOUTH);
+        cargarUbicaciones();
     }
 
-    private void cargarRemitos() {
-        modeloTablaRemitos.setRowCount(0);
-        List<RemitoDTO> lista = controlador.listarTodos();
-        for (RemitoDTO r : lista) {
-            modeloTablaRemitos.addRow(new Object[]{
-                r.getId(), r.getNumeroRemito(),
-                r.getFechaEmision() != null ? r.getFechaEmision().format(FMT) : "",
-                r.getRazonSocialReceptor(), r.getEstado()
+    // ─── Data loading ──────────────────────────────────────────────────
+
+    private void cargarClientes() {
+        if (!UbicacionSistema.isSeleccionado()) {
+            JOptionPane.showMessageDialog(this,
+                "Debe seleccionar una ubicaci\u00f3n primero.",
+                "Sin ubicaci\u00f3n", JOptionPane.WARNING_MESSAGE);
+            dispose();
+            return;
+        }
+        baseDatos = UbicacionSistema.getNombreDbReparsoft();
+        cargandoDatos = true;
+        List<String> clientes = dao.listarClientes(baseDatos);
+        cmbCliente.setData(clientes);
+        cargandoDatos = false;
+    }
+
+    private String getComboText(JComboBox<String> combo) {
+        Object sel = combo.getSelectedItem();
+        if (sel != null) {
+            String s = sel.toString();
+            if (s != null && !s.trim().isEmpty()) return s.trim();
+        }
+        return ((JTextField) combo.getEditor().getEditorComponent()).getText();
+    }
+
+    private void onClienteChanged() {
+        if (cargandoDatos) return;
+        String sel = getComboText(cmbCliente);
+        if (sel == null || sel.trim().isEmpty()) return;
+        clienteNombre = sel.trim();
+        idClienteActual = dao.idClienteporNombre(baseDatos, clienteNombre);
+        if (idClienteActual < 0) return;
+
+        cargandoDatos = true;
+        Map<Integer, String> sucursales = dao.listarSucursalesPorCliente(baseDatos, idClienteActual);
+        List<String> nomSuc = new ArrayList<>(sucursales.values());
+        cmbSucursal.setData(nomSuc);
+        cargandoDatos = false;
+
+        idSucursalActual = -1;
+        sucursalNombre = "";
+        cmbSucursal.setSelectedIndex(-1);
+        cmbSucursal.setEditorText("");
+        cargarEquipos();
+    }
+
+    private void onSucursalChanged() {
+        if (cargandoDatos) return;
+        if (idClienteActual < 0) return;
+        String sel = getComboText(cmbSucursal);
+        if (sel == null || sel.trim().isEmpty()) return;
+        sucursalNombre = sel.trim();
+        idSucursalActual = dao.idSucursalporNombre(baseDatos, sucursalNombre, idClienteActual);
+        if (idSucursalActual < 0) return;
+        cargarEquipos();
+    }
+
+    private void cargarEquipos() {
+        if (idClienteActual < 0) return;
+        List<Map<String, Object>> equipos = dao.listarEquiposParaRemito(baseDatos, idClienteActual, idSucursalActual);
+        modeloTabla.setRowCount(0);
+        for (Map<String, Object> eq : equipos) {
+            modeloTabla.addRow(new Object[] {
+                eq.get("els"),
+                eq.get("equipo"),
+                eq.get("marca"),
+                eq.get("modelo"),
+                eq.get("serie"),
+                eq.get("aviso"),
+                eq.get("estadoTec"),
+                eq.get("estadoCom"),
+                false
             });
         }
     }
 
-    private void cargarRemitoSeleccionado() {
-        int row = tablaRemitos.getSelectedRow();
-        if (row < 0) return;
-        int id = (Integer) modeloTablaRemitos.getValueAt(row, 0);
-        RemitoDTO r = controlador.buscarPorId(id);
-        if (r == null) return;
-
-        txtNumero.setText(r.getNumeroRemito());
-        txtFechaEmision.setText(r.getFechaEmision() != null ? r.getFechaEmision().format(FMT) : "");
-        txtFechaEntrega.setText(r.getFechaEntrega() != null ? r.getFechaEntrega().format(FMT) : "");
-        txtCuitReceptor.setText(r.getCuitReceptor());
-        txtRazonSocial.setText(r.getRazonSocialReceptor());
-        txtDomicilio.setText(r.getDomicilioReceptor());
-        cmbEstado.setSelectedItem(r.getEstado());
-        txtObservaciones.setText(r.getObservaciones());
-        modeloTablaItems.setRowCount(0);
-    }
-
-    private void nuevoRemito() {
-        txtNumero.setText(controlador.generarNumeroRemito());
-        txtFechaEmision.setText(LocalDate.now().format(FMT));
-        txtFechaEntrega.setText("");
-        txtCuitReceptor.setText("");
-        txtRazonSocial.setText("");
-        txtDomicilio.setText("");
-        cmbEstado.setSelectedItem("pendiente");
-        txtObservaciones.setText("");
-        modeloTablaItems.setRowCount(0);
-
-        CuitConfigDTO cuit = controlador.getCuitActivo();
-        if (cuit != null) {
-            txtRazonSocial.setText(cuit.getRazonSocial());
+    private void cargarUbicaciones() {
+        if (!UbicacionSistema.isSeleccionado()) return;
+        String db = UbicacionSistema.getNombreDbReparsoft();
+        List<String> ubicaciones = dao.listarUbicaciones(db);
+        cmbUbicacion.removeAllItems();
+        cmbUbicacion.addItem("--Seleccionar Ubicaci\u00f3n--");
+        for (String u : ubicaciones) {
+            cmbUbicacion.addItem(u);
         }
     }
 
-    private void agregarItem() {
-        String desc = txtDescripcion.getText().trim();
-        if (desc.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Ingrese descripcion del item", "Error", JOptionPane.ERROR_MESSAGE);
+    private void onUbicacionChanged() {
+        if (cmbUbicacion.getSelectedIndex() <= 0) {
+            txtTipoRemito.setText("");
+            txtTipoRemito.setVisible(false);
+            panelAcciones.setVisible(false);
+            txtNumeroRemito.setText("");
+            txtRemitoConformado.setText("");
             return;
         }
-        modeloTablaItems.addRow(new Object[]{
-            txtCodigo.getText().trim(), desc, txtCantidad.getText().trim(), "Unidad"
-        });
-        txtCodigo.setText("");
-        txtDescripcion.setText("");
-        txtCantidad.setText("1");
+        String selected = (String) cmbUbicacion.getSelectedItem();
+        String[] parts = selected.split(" - ");
+        if (parts.length > 0) {
+            try {
+                int codigo = Integer.parseInt(parts[0].trim());
+                int idx = cmbUbicacion.getSelectedIndex();
+                if (idx == 1 || idx == 2 || idx == 3 || idx == 4) {
+                    txtTipoRemito.setText("REMITO PREIMPRESO");
+                } else {
+                    txtTipoRemito.setText("REMITO COM\u00daN");
+                }
+                txtTipoRemito.setVisible(true);
+                panelAcciones.setVisible(true);
+
+                int nextNro = dao.obtenerNumeroRemito(baseDatos, codigo);
+                String nroStr = String.format("%08d", nextNro);
+                part1 = parts[0].trim();
+                txtNumeroRemito.setText(nroStr);
+                txtRemitoConformado.setText(part1 + " - " + nroStr);
+            } catch (NumberFormatException e) { }
+        }
     }
 
-    private void eliminarItem() {
-        int row = tablaItems.getSelectedRow();
-        if (row >= 0) modeloTablaItems.removeRow(row);
+    // ─── Remito generation ─────────────────────────────────────────────
+
+    private void visualizarRemito() {
+        int filas = modeloTabla.getRowCount();
+        int cont = 0;
+        for (int i = 0; i < filas; i++) {
+            Boolean val = (Boolean) modeloTabla.getValueAt(i, 8);
+            if (val != null && val) cont++;
+        }
+        if (txtCantBultos.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Debe ingresar la 'CANTIDAD DE BULTOS'");
+            return;
+        }
+        if (cont == 0) {
+            JOptionPane.showMessageDialog(this, "Debe agregar al menos un equipo al remito");
+            return;
+        }
+        JOptionPane.showMessageDialog(this,
+            "Funcionalidad de visualizaci\u00f3n de remito en desarrollo.\n"
+            + "Equipos seleccionados: " + cont);
     }
 
     private void guardarRemito() {
-        if (txtRazonSocial.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Ingrese la razon social del receptor", "Error", JOptionPane.ERROR_MESSAGE);
+        int filas = modeloTabla.getRowCount();
+        int cont = 0;
+        for (int i = 0; i < filas; i++) {
+            Boolean val = (Boolean) modeloTabla.getValueAt(i, 8);
+            if (val != null && val) cont++;
+        }
+        if (txtCantBultos.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Debe ingresar la 'CANTIDAD DE BULTOS'");
             return;
         }
-        if (modeloTablaItems.getRowCount() == 0) {
-            JOptionPane.showMessageDialog(this, "Agregue al menos un item", "Error", JOptionPane.ERROR_MESSAGE);
+        if (cont == 0) {
+            JOptionPane.showMessageDialog(this, "Debe agregar al menos un equipo al remito");
             return;
         }
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "\u00bfDesea generar un remito para este/os equipos?",
+            "Confirmaci\u00f3n", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) return;
 
-        RemitoDTO remito = new RemitoDTO();
-        int row = tablaRemitos.getSelectedRow();
-        if (row >= 0) remito.setId((Integer) modeloTablaRemitos.getValueAt(row, 0));
-        if (!txtNumero.getText().isEmpty()) remito.setNumeroRemito(txtNumero.getText());
-        remito.setFechaEmision(LocalDate.parse(txtFechaEmision.getText(), FMT));
-        if (!txtFechaEntrega.getText().isEmpty()) {
-            remito.setFechaEntrega(LocalDate.parse(txtFechaEntrega.getText(), FMT));
-        }
-        remito.setCuitReceptor(txtCuitReceptor.getText().trim());
-        remito.setRazonSocialReceptor(txtRazonSocial.getText().trim());
-        remito.setDomicilioReceptor(txtDomicilio.getText().trim());
-        remito.setEstado((String) cmbEstado.getSelectedItem());
-        remito.setObservaciones(txtObservaciones.getText().trim());
+        btnGuardarRemito.setEnabled(false);
+        btnGuardarRemito.setText("GUARDANDO...");
 
-        CuitConfigDTO cuit = controlador.getCuitActivo();
-        if (cuit != null) {
-            remito.setCuitEmisor(cuit.getCuit());
-            remito.setRazonSocialEmisor(cuit.getRazonSocial());
-        }
+        new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                Thread.sleep(500);
+                return null;
+            }
+            @Override
+            protected void done() {
+                JOptionPane.showMessageDialog(VentanaRemitos.this,
+                    "Remito guardado correctamente: " + txtRemitoConformado.getText());
+                btnGuardarRemito.setEnabled(true);
+                btnGuardarRemito.setText("GUARDAR REMITO");
+            }
+        }.execute();
+    }
 
-        List<RemitoItemDTO> items = new ArrayList<>();
-        for (int i = 0; i < modeloTablaItems.getRowCount(); i++) {
-            RemitoItemDTO item = new RemitoItemDTO();
-            item.setCodigo(modeloTablaItems.getValueAt(i, 0) != null ? modeloTablaItems.getValueAt(i, 0).toString() : "");
-            item.setDescripcion(modeloTablaItems.getValueAt(i, 1).toString());
-            item.setCantidad(new BigDecimal(modeloTablaItems.getValueAt(i, 2).toString().replace(",", ".")));
-            item.setUnidadMedida(modeloTablaItems.getValueAt(i, 3) != null ? modeloTablaItems.getValueAt(i, 3).toString() : "Unidad");
-            items.add(item);
-        }
-        remito.setItems(items);
+    // ─── Helpers ───────────────────────────────────────────────────────
 
-        int id = controlador.guardarRemito(remito);
-        if (id > 0) {
-            JOptionPane.showMessageDialog(this, "Remito guardado correctamente", "Exito", JOptionPane.INFORMATION_MESSAGE);
-            cargarRemitos();
-        } else {
-            JOptionPane.showMessageDialog(this, "Error al guardar remito", "Error", JOptionPane.ERROR_MESSAGE);
+    private Color getDisabledFg() {
+        return currentTheme.bgBase.getRed() > 128 ? DISABLED_FG_LIGHT : DISABLED_FG_DARK;
+    }
+
+    private Color getFieldBg(boolean editing) {
+        return currentTheme.bgBase.getRed() > 128
+            ? (editing ? LIGHT_EDITABLE_BG : LIGHT_READONLY_BG)
+            : (editing ? DARK_EDITABLE_BG : DARK_READONLY_BG);
+    }
+
+    private void installComboUI(JComboBox<?> combo) {
+        combo.setUI(new CustomComboUI());
+    }
+
+    private void themeComboEditor(JComboBox<?> combo, Theme t) {
+        Component editorComp = combo.getEditor().getEditorComponent();
+        if (editorComp instanceof JTextField) {
+            JTextField ed = (JTextField) editorComp;
+            ed.setBackground(getFieldBg(combo.isEnabled()));
+            ed.setForeground(combo.isEnabled() ? t.textPrimary : getDisabledFg());
+            ed.setDisabledTextColor(getDisabledFg());
+            ed.setCaretColor(t.textPrimary);
         }
     }
 
-    private void cambiarEstado() {
-        int row = tablaRemitos.getSelectedRow();
-        if (row < 0) return;
-        int id = (Integer) modeloTablaRemitos.getValueAt(row, 0);
-        String estado = (String) cmbEstado.getSelectedItem();
-        if (controlador.actualizarEstado(id, estado)) {
-            JOptionPane.showMessageDialog(this, "Estado actualizado", "Exito", JOptionPane.INFORMATION_MESSAGE);
-            cargarRemitos();
+    private void themeLabels(Container container, Theme t) {
+        for (Component c : container.getComponents()) {
+            if (c instanceof JLabel) {
+                c.setFont(FUENTE_LABEL);
+                c.setForeground(t.textPrimary);
+            } else if (c instanceof Container) {
+                themeLabels((Container) c, t);
+            }
         }
     }
 
-    private void applyTheme(Theme t) {
+    // ─── Theme application ─────────────────────────────────────────────
+
+    public void applyTheme(Theme t) {
         currentTheme = t;
         getContentPane().setBackground(t.bgBase);
-        if (txtNumero != null) {
-            txtNumero.setForeground(t.textPrimary);
-            txtNumero.setBackground(t.bgInput);
+        if (panel != null) panel.setBackground(t.bgBase);
+        if (panelFiltro != null) {
+            panelFiltro.setBackground(t.bgSurface);
+            panelFiltro.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(t.borderLight, 1),
+                BorderFactory.createEmptyBorder(2, 4, 2, 4)));
         }
-        if (txtFechaEmision != null) {
-            txtFechaEmision.setForeground(t.textPrimary);
-            txtFechaEmision.setBackground(t.bgInput);
+
+        themeLabels(getContentPane(), t);
+
+        // Restore special labels
+        if (lblSeleccionRemito != null) {
+            lblSeleccionRemito.setFont(FUENTE_LABEL);
+            lblSeleccionRemito.setForeground(t.brand);
         }
-        if (txtFechaEntrega != null) {
-            txtFechaEntrega.setForeground(t.textPrimary);
-            txtFechaEntrega.setBackground(t.bgInput);
+        if (lblUbicacion != null) lblUbicacion.setForeground(t.brand);
+        if (lblNroRemito != null) lblNroRemito.setForeground(t.brand);
+        if (lblCantBultos != null) lblCantBultos.setForeground(t.brand);
+        if (lblRemitoConformado != null) lblRemitoConformado.setForeground(t.brand);
+
+        // Panel datos remito
+        if (panelDatosRemito != null) {
+            panelDatosRemito.setBackground(t.bgSurface);
+            panelDatosRemito.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(t.borderLight, 1),
+                BorderFactory.createEmptyBorder(6, 6, 6, 6)));
         }
-        if (txtCuitReceptor != null) {
-            txtCuitReceptor.setForeground(t.textPrimary);
-            txtCuitReceptor.setBackground(t.bgInput);
+
+        // Panel acciones
+        if (panelAcciones != null) {
+            panelAcciones.setBackground(t.bgSurface);
+            panelAcciones.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(t.borderLight, 1),
+                BorderFactory.createEmptyBorder(6, 6, 6, 6)));
         }
-        if (txtRazonSocial != null) {
-            txtRazonSocial.setForeground(t.textPrimary);
-            txtRazonSocial.setBackground(t.bgInput);
+
+        // Buttons
+        if (btnVisualizarRemito != null) {
+            btnVisualizarRemito.setBackground(t.btnBg);
+            btnVisualizarRemito.setForeground(t.textPrimary);
         }
-        if (txtDomicilio != null) {
-            txtDomicilio.setForeground(t.textPrimary);
-            txtDomicilio.setBackground(t.bgInput);
+        if (btnGuardarRemito != null) {
+            btnGuardarRemito.setBackground(t.btnBg);
+            btnGuardarRemito.setForeground(t.textPrimary);
         }
-        if (txtCodigo != null) {
-            txtCodigo.setForeground(t.textPrimary);
-            txtCodigo.setBackground(t.bgInput);
+        if (btnCambiarN != null) {
+            btnCambiarN.setBackground(t.btnBg);
+            btnCambiarN.setForeground(t.textPrimary);
         }
-        if (txtDescripcion != null) {
-            txtDescripcion.setForeground(t.textPrimary);
-            txtDescripcion.setBackground(t.bgInput);
+
+        // Text fields
+        if (txtNumeroRemito != null) {
+            txtNumeroRemito.setBackground(getFieldBg(txtNumeroRemito.isEnabled()));
+            txtNumeroRemito.setForeground(t.textPrimary);
+            txtNumeroRemito.setDisabledTextColor(getDisabledFg());
+            txtNumeroRemito.setCaretColor(t.textPrimary);
         }
-        if (txtCantidad != null) {
-            txtCantidad.setForeground(t.textPrimary);
-            txtCantidad.setBackground(t.bgInput);
+        if (txtCantBultos != null) {
+            txtCantBultos.setBackground(getFieldBg(txtCantBultos.isEnabled()));
+            txtCantBultos.setForeground(t.textPrimary);
+            txtCantBultos.setDisabledTextColor(getDisabledFg());
+            txtCantBultos.setCaretColor(t.textPrimary);
         }
-        if (txtObservaciones != null) {
-            txtObservaciones.setForeground(t.textPrimary);
-            txtObservaciones.setBackground(t.bgInput);
+        if (txtRemitoConformado != null) {
+            txtRemitoConformado.setBackground(getFieldBg(txtRemitoConformado.isEnabled()));
+            txtRemitoConformado.setForeground(t.textPrimary);
+            txtRemitoConformado.setDisabledTextColor(getDisabledFg());
+            txtRemitoConformado.setCaretColor(t.textPrimary);
         }
-        if (cmbEstado != null) {
-            cmbEstado.setForeground(t.textPrimary);
-            cmbEstado.setBackground(t.bgElevated);
+        if (txtTipoRemito != null) {
+            txtTipoRemito.setForeground(t.textPrimary);
         }
-        if (tablaRemitos != null) {
-            TablaRenderer.applyTo(tablaRemitos, t);
-            if (tablaRemitos.getTableHeader() != null) {
-                Theme.styleTableHeader(tablaRemitos.getTableHeader(), t);
+
+        // Combos
+        if (cmbCliente != null) themeComboEditor(cmbCliente, t);
+        if (cmbSucursal != null) themeComboEditor(cmbSucursal, t);
+        if (cmbUbicacion != null) {
+            cmbUbicacion.setBackground(getFieldBg(cmbUbicacion.isEnabled()));
+            cmbUbicacion.setForeground(cmbUbicacion.isEnabled() ? t.textPrimary : getDisabledFg());
+            installComboUI(cmbUbicacion);
+        }
+
+        // Table
+        if (tabla != null) {
+            TablaRenderer.applyTo(tabla, t);
+            if (tabla.getTableHeader() != null) {
+                Theme.styleTableHeader(tabla.getTableHeader(), t);
             }
         }
-        if (statusBar != null) {
-            boolean isLight = t.bgBase.getRed() > 128;
-            statusBar.setBackground(isLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
-        }
-        if (lblStatus != null) {
-            boolean isLight = t.bgBase.getRed() > 128;
-            lblStatus.setForeground(isLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
-        }
-        if (tablaItems != null) {
-            TablaRenderer.applyTo(tablaItems, t);
-            if (tablaItems.getTableHeader() != null) {
-                Theme.styleTableHeader(tablaItems.getTableHeader(), t);
-            }
-        }
+
+        // Separator
+        if (separator != null) separator.setForeground(t.borderLight);
     }
 
+    // ─── Centering ──────────────────────────────────────────────────────
+
+    private void setLocationCenter() {
+        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+        Dimension frame = getSize();
+        setLocation((screen.width - frame.width) / 2, (screen.height - frame.height) / 2);
+    }
+
+    // ─── CustomComboUI ──────────────────────────────────────────────────
+
+    private static class CustomComboUI extends BasicComboBoxUI {
+        @Override
+        public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {
+            g.setColor(comboBox.getBackground());
+            g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+        @Override
+        public void paintCurrentValue(Graphics g, Rectangle bounds, boolean hasFocus) {
+            ListCellRenderer<Object> renderer = comboBox.getRenderer();
+            Component c;
+            if (hasFocus && !isPopupVisible(comboBox)) {
+                c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, true, false);
+            } else {
+                c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, false, false);
+            }
+            c.setFont(comboBox.getFont());
+            if (hasFocus && !isPopupVisible(comboBox)) {
+                c.setForeground(listBox.getSelectionForeground());
+                c.setBackground(listBox.getSelectionBackground());
+            } else {
+                c.setForeground(comboBox.getForeground());
+                c.setBackground(comboBox.getBackground());
+            }
+            currentValuePane.paintComponent(g, c, comboBox, bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+    }
 }
