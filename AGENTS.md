@@ -73,3 +73,6 @@ Si se agrega un JComboBox a cualquier ventana del proyecto:
 2. Crear el combo como `new JComboBox<>(items)` — sin anonymous class.
 3. Llamar a `combo.setUI(new CustomComboUI())` después de la creación y en `applyTheme()`.
 4. Crear método helper `installComboUI(JComboBox<?> combo)` si no existe en la ventana.
+
+## Skill de referencia completa
+Para el patrón completo de estilizado de VentanaClientes, VentanaFacturacion y VentanaComprobantes (constantes, helpers, CustomComboUI, themeDateField, themeComboEditor, paneles, problemas conocidos), cargar el skill `swing-estilo-ventanas`.

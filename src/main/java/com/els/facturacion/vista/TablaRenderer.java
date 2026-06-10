@@ -44,7 +44,6 @@ public class TablaRenderer extends DefaultTableCellRenderer {
         this.centerColumns = centerColumns;
         this.evenBg = evenBg;
         this.oddBg = oddBg;
-        setFont(new Font("Segoe UI", Font.PLAIN, 10));
     }
 
     public void setTheme(Theme theme) {
@@ -79,9 +78,9 @@ public class TablaRenderer extends DefaultTableCellRenderer {
         }
 
         if (boldColumns.contains(modelColumn)) {
-            setFont(new Font("Segoe UI", Font.BOLD, 10));
+            setFont(table.getFont().deriveFont(Font.BOLD));
         } else {
-            setFont(new Font("Segoe UI", Font.PLAIN, 10));
+            setFont(table.getFont());
         }
 
         if (centerColumns.contains(modelColumn)) {

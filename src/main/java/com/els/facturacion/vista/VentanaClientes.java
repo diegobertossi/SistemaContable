@@ -55,7 +55,9 @@ public class VentanaClientes extends javax.swing.JFrame {
 
     private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
     private static final Font FUENTE_INPUT = new Font("Segoe UI", Font.PLAIN, 12);
+    private static final Font FUENTE_INPUT_BOLD = new Font("Segoe UI", Font.BOLD, 12);
     private static final Font FUENTE_LABEL = new Font("Segoe UI", Font.PLAIN, 11);
+    private static final Font FUENTE_TABLA = new Font("Segoe UI", Font.PLAIN, 12);
     private static final Color DISABLED_FG_LIGHT = new Color(95, 97, 106);
     private static final Color DISABLED_FG_DARK = new Color(210, 207, 190);
     private static final Color LIGHT_READONLY_BG = new Color(236, 237, 241);
@@ -85,6 +87,10 @@ public class VentanaClientes extends javax.swing.JFrame {
     private ButtonGroup groupTipoPersona;
     private JPanel panelForm;
     private JPanel panelDerecho;
+    private JPanel panelBusqueda;
+    private JLabel lblBuscar;
+    private JPanel panelIzquierdo;
+    private JPanel panelCentro;
     private JPanel panelBotonesForm;
     private JPanel statusBar;
     private JLabel lblStatus;
@@ -133,7 +139,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         getContentPane().setBackground(currentTheme.bgBase);
 
         // ── Panel superior (solo título) ──
-        panelSuperior = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 6));
+        panelSuperior = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 6));
         panelSuperior.setBackground(currentTheme.bgSurface);
         panelSuperior.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
 
@@ -157,6 +163,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         installComboUI(cmbTipoDoc);
         cmbTipoDoc.setForeground(currentTheme.textPrimary);
         cmbTipoDoc.setBackground(getFieldBg(false));
+        cmbTipoDoc.setFont(FUENTE_INPUT_BOLD);
         cmbTipoDoc.setRenderer(new DefaultListCellRenderer() {
             public Component getListCellRendererComponent(JList<?> list, Object value,
                   int index, boolean isSelected, boolean cellHasFocus) {
@@ -175,6 +182,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         installComboUI(cmbCondicionIva);
         cmbCondicionIva.setForeground(currentTheme.textPrimary);
         cmbCondicionIva.setBackground(getFieldBg(false));
+        cmbCondicionIva.setFont(FUENTE_INPUT_BOLD);
         cmbCondicionIva.setRenderer(new DefaultListCellRenderer() {
             public Component getListCellRendererComponent(JList<?> list, Object value,
                   int index, boolean isSelected, boolean cellHasFocus) {
@@ -187,7 +195,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         });
 
         txtNroDoc = new TextPrompt("");
-        txtNroDoc.setFont(FUENTE_INPUT);
+        txtNroDoc.setFont(FUENTE_INPUT_BOLD);
         txtNroDoc.setDisabledTextColor(getDisabledFg());
         txtNroDoc.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyTyped(java.awt.event.KeyEvent e) {
@@ -199,10 +207,10 @@ public class VentanaClientes extends javax.swing.JFrame {
             }
         });
         txtRazonSocial = new JTextField(20);
-        txtRazonSocial.setFont(FUENTE_INPUT);
+        txtRazonSocial.setFont(FUENTE_INPUT_BOLD);
         txtRazonSocial.setDisabledTextColor(getDisabledFg());
         txtDomicilio = new TextPrompt("");
-        txtDomicilio.setFont(FUENTE_INPUT);
+        txtDomicilio.setFont(FUENTE_INPUT_BOLD);
         txtDomicilio.setDisabledTextColor(getDisabledFg());
         buildPhonePanel();
         buildEmailPanel();
@@ -246,17 +254,17 @@ public class VentanaClientes extends javax.swing.JFrame {
         panelForm.add(pnlTipoRadios, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
 
         row++;
+        lblRazonSocial = new JLabel("Razon Social:");
+        panelForm.add(lblRazonSocial, new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 5, 3, 2), 0, 0));
+        panelForm.add(txtRazonSocial, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
+
+        row++;
         panelForm.add(new JLabel("Tipo Doc:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 5, 3, 2), 0, 0));
         panelForm.add(cmbTipoDoc, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
 
         row++;
         panelForm.add(new JLabel("N\u00b0 Doc:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 5, 3, 2), 0, 0));
         panelForm.add(txtNroDoc, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
-
-        row++;
-        lblRazonSocial = new JLabel("Razon Social:");
-        panelForm.add(lblRazonSocial, new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 5, 3, 2), 0, 0));
-        panelForm.add(txtRazonSocial, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
 
         row++;
         panelForm.add(new JLabel("Condicion IVA:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(3, 5, 3, 2), 0, 0));
@@ -286,8 +294,9 @@ public class VentanaClientes extends javax.swing.JFrame {
             public boolean isCellEditable(int row, int column) { return false; }
         };
         tabla = new JTable(modeloTabla);
-        tabla.setRowHeight(24);
-        tabla.setIntercellSpacing(new Dimension(4, 2));
+        tabla.setRowHeight(22);
+        tabla.setIntercellSpacing(new Dimension(3, 2));
+        tabla.setFont(FUENTE_TABLA);
         tabla.getColumnModel().getColumn(0).setMinWidth(0);
         tabla.getColumnModel().getColumn(0).setMaxWidth(0);
         tabla.getColumnModel().getColumn(0).setPreferredWidth(0);
@@ -317,15 +326,15 @@ public class VentanaClientes extends javax.swing.JFrame {
             public void changedUpdate(DocumentEvent e) { buscarCliente(); }
         });
 
-        JPanel panelBusqueda = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
+        panelBusqueda = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
         panelBusqueda.setBackground(currentTheme.bgSurface);
-        JLabel lblBuscar = new JLabel("Buscar:");
+        lblBuscar = new JLabel("BUSCAR:");
         lblBuscar.setFont(FUENTE_LABEL);
         panelBusqueda.add(lblBuscar);
         panelBusqueda.add(txtBuscar);
 
-        JPanel panelIzquierdo = new JPanel(new BorderLayout());
-        panelIzquierdo.setBackground(currentTheme.bgBase);
+        panelIzquierdo = new JPanel(new BorderLayout());
+        panelIzquierdo.setBackground(currentTheme.bgBase.getRed() > 128 ? new Color(182, 196, 220) : new Color(18, 55, 140));
         panelIzquierdo.add(panelBusqueda, BorderLayout.NORTH);
         panelIzquierdo.add(scrollTabla, BorderLayout.CENTER);
 
@@ -333,7 +342,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         panelIzquierdo.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 0));
 
         panelDerecho = new JPanel(new BorderLayout(0, 6));
-        panelDerecho.setBackground(currentTheme.bgBase);
+        panelDerecho.setBackground(currentTheme.bgBase.getRed() > 128 ? new Color(182, 196, 220) : new Color(18, 55, 140));
         panelDerecho.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 5));
 
         panelBotonesForm = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 6));
@@ -386,7 +395,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         panelDerecho.add(panelBotonesForm, BorderLayout.SOUTH);
 
         // ── Layout principal: 50/50 fijo con GridLayout (ignora preferred sizes) ──
-        JPanel panelCentro = new JPanel(new GridLayout(1, 2, 2, 0)) {
+        panelCentro = new JPanel(new GridLayout(1, 2, 6, 0)) {
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -400,7 +409,7 @@ public class VentanaClientes extends javax.swing.JFrame {
                 g2.dispose();
             }
         };
-        panelCentro.setBackground(currentTheme.bgBase);
+        panelCentro.setBackground(currentTheme.bgBase.getRed() > 128 ? new Color(182, 196, 220) : new Color(18, 55, 140));
         panelCentro.add(panelIzquierdo);
         panelCentro.add(panelDerecho);
 
@@ -1081,7 +1090,15 @@ public class VentanaClientes extends javax.swing.JFrame {
         if (txtBuscar != null) {
             txtBuscar.setForeground(t.textPrimary);
             txtBuscar.setBackground(t.bgInput);
+            txtBuscar.setCaretColor(t.textPrimary);
+            txtBuscar.setDisabledTextColor(getDisabledFg());
         }
+        if (panelBusqueda != null) panelBusqueda.setBackground(t.bgSurface);
+        if (lblBuscar != null) lblBuscar.setForeground(t.textPrimary);
+        Color bgCentral = t.bgBase.getRed() > 128 ? new Color(182, 196, 220) : new Color(18, 55, 140);
+        if (panelCentro != null) panelCentro.setBackground(bgCentral);
+        if (panelIzquierdo != null) panelIzquierdo.setBackground(bgCentral);
+        if (panelDerecho != null) panelDerecho.setBackground(bgCentral);
         if (rdParticular != null) {
             rdParticular.setForeground(rdParticular.isEnabled() ? t.textPrimary : getDisabledFg());
             rdParticular.setBackground(t.bgSurface);
@@ -1101,9 +1118,7 @@ public class VentanaClientes extends javax.swing.JFrame {
                 BorderFactory.createEmptyBorder(4, 6, 6, 6)));
             themeLabels(panelForm, t);
         }
-        if (panelDerecho != null) {
-            panelDerecho.setBackground(t.bgBase);
-        }
+
         if (panelBotonesForm != null) {
             panelBotonesForm.setBackground(t.bgSurface);
             panelBotonesForm.setBorder(BorderFactory.createCompoundBorder(

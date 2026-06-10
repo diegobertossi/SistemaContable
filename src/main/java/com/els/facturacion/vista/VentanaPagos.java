@@ -7,10 +7,12 @@ import com.els.facturacion.modelo.ItemFacturaDTO;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -32,6 +34,8 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Rectangle;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
@@ -44,7 +48,16 @@ import java.util.List;
 public class VentanaPagos extends javax.swing.JFrame {
 
     private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
-    private static final Font FUENTE_LABEL = new Font("Segoe UI", Font.BOLD, 12);
+    private static final Font FUENTE_INPUT = new Font("Segoe UI", Font.PLAIN, 12);
+    private static final Font FUENTE_INPUT_BOLD = new Font("Segoe UI", Font.BOLD, 12);
+    private static final Font FUENTE_LABEL = new Font("Segoe UI", Font.PLAIN, 11);
+    private static final Font FUENTE_TABLA = new Font("Segoe UI", Font.PLAIN, 12);
+    private static final Color DISABLED_FG_LIGHT = new Color(95, 97, 106);
+    private static final Color DISABLED_FG_DARK = new Color(210, 207, 190);
+    private static final Color LIGHT_READONLY_BG = new Color(236, 237, 241);
+    private static final Color LIGHT_EDITABLE_BG = new Color(255, 253, 230);
+    private static final Color DARK_READONLY_BG = new Color(28, 33, 55);
+    private static final Color DARK_EDITABLE_BG = new Color(22, 27, 45);
     private static final DecimalFormat DF = new DecimalFormat("#,##0.00");
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -64,6 +77,7 @@ public class VentanaPagos extends javax.swing.JFrame {
     private JLabel lblTotalFactura;
     private JTextField txtMontoPago;
     private JComboBox<String> cmbFormaPago;
+    private JLabel lblImporte;
     private JButton btnPagarItem;
     private JButton btnPagarCompleta;
     private JButton btnPagar;
@@ -82,8 +96,10 @@ public class VentanaPagos extends javax.swing.JFrame {
     private JPanel panelFacturas;
     private JPanel panelDetalle;
     private JPanel panelHeader;
+    private JPanel rowSuperior;
     private JPanel panelItems;
     private JPanel panelInferior;
+    private JPanel panelTitulo;
     private JPanel box1;
     private JPanel box2;
     private JPanel panelAcciones;
@@ -113,13 +129,13 @@ public class VentanaPagos extends javax.swing.JFrame {
         setSize(1024, 768);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(currentTheme.bgSurface);
+        getContentPane().setBackground(currentTheme.bgBase);
 
         lblTitulo = new JLabel("GESTI\u00d3N DE PAGOS / COBRANZAS", SwingConstants.CENTER);
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblTitulo.setForeground(currentTheme.brand);
 
-        JPanel panelTitulo = new JPanel(new BorderLayout());
+        panelTitulo = new JPanel(new BorderLayout());
         panelTitulo.setBackground(currentTheme.bgSurface);
         panelTitulo.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
         panelTitulo.add(lblTitulo, BorderLayout.CENTER);
@@ -218,13 +234,30 @@ public class VentanaPagos extends javax.swing.JFrame {
         ));
 
         lblFiltroCliente = new JLabel("CLIENTE:");
-        lblFiltroCliente.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        lblFiltroCliente.setFont(FUENTE_LABEL);
         lblFiltroCliente.setForeground(currentTheme.textPrimary);
 
         cmbFiltroCliente = new JComboBox<>();
         cmbFiltroCliente.setEditable(true);
-        cmbFiltroCliente.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        cmbFiltroCliente.setFont(FUENTE_INPUT_BOLD);
         cmbFiltroCliente.setMaximumRowCount(12);
+        cmbFiltroCliente.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(getFieldBg(cmbFiltroCliente.isEnabled()));
+                setForeground(cmbFiltroCliente.isEnabled() ? currentTheme.textPrimary : getDisabledFg());
+                setFont(cmbFiltroCliente.getFont());
+                return this;
+            }
+            @Override
+            public void paintComponent(Graphics g) {
+                setBackground(getFieldBg(cmbFiltroCliente.isEnabled()));
+                setForeground(cmbFiltroCliente.isEnabled() ? currentTheme.textPrimary : getDisabledFg());
+                super.paintComponent(g);
+            }
+        });
+        installComboUI(cmbFiltroCliente);
 
         panelFiltroFacturas = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
         panelFiltroFacturas.setBackground(currentTheme.bgSurface);
@@ -237,10 +270,9 @@ public class VentanaPagos extends javax.swing.JFrame {
             public boolean isCellEditable(int row, int col) { return false; }
         };
         tablaFacturas = new JTable(modeloTablaFacturas);
-        tablaFacturas.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        tablaFacturas.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
-        tablaFacturas.getTableHeader().setBackground(currentTheme.btnBg);
+        tablaFacturas.setFont(FUENTE_TABLA);
         tablaFacturas.setRowHeight(22);
+        tablaFacturas.setIntercellSpacing(new Dimension(3, 2));
         tablaFacturas.setShowGrid(true);
         tablaFacturas.setAutoCreateRowSorter(true);
         tablaFacturas.getSelectionModel().addListSelectionListener(e -> {
@@ -250,6 +282,10 @@ public class VentanaPagos extends javax.swing.JFrame {
         tablaFacturas.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 
         editorFiltroFacturas = (JTextField) cmbFiltroCliente.getEditor().getEditorComponent();
+        editorFiltroFacturas.setFont(FUENTE_INPUT_BOLD);
+        editorFiltroFacturas.setDisabledTextColor(getDisabledFg());
+        editorFiltroFacturas.setCaretColor(currentTheme.textPrimary);
+        themeComboEditor(cmbFiltroCliente, currentTheme);
         editorFiltroFacturas.getDocument().addDocumentListener(new DocumentListener() {
             @Override public void insertUpdate(DocumentEvent e) { onFiltroFacturasCambiado(); }
             @Override public void removeUpdate(DocumentEvent e) { onFiltroFacturasCambiado(); }
@@ -275,7 +311,7 @@ public class VentanaPagos extends javax.swing.JFrame {
         panelFacturas.add(panelCentroFacturas, BorderLayout.CENTER);
 
         panelInferior = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-        panelInferior.setBackground(bgAzulado(currentTheme));
+        panelInferior.setBackground(currentTheme.bgSurface);
         panelInferior.add(btnRefresh);
         panelFacturas.add(panelInferior, BorderLayout.SOUTH);
 
@@ -308,7 +344,7 @@ public class VentanaPagos extends javax.swing.JFrame {
         panelHeader.setBackground(currentTheme.bgSurface);
         panelHeader.setBorder(BorderFactory.createEmptyBorder(6, 8, 10, 8));
 
-        JPanel rowSuperior = new JPanel(new BorderLayout());
+        rowSuperior = new JPanel(new BorderLayout());
         rowSuperior.setBackground(currentTheme.bgSurface);
         rowSuperior.setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -326,7 +362,7 @@ public class VentanaPagos extends javax.swing.JFrame {
         panelHeader.add(Box.createVerticalStrut(10));
 
         lblInfoFactura = new JLabel("Seleccione una factura de la lista");
-        lblInfoFactura.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblInfoFactura.setFont(FUENTE_INPUT_BOLD);
         lblInfoFactura.setForeground(currentTheme.textPrimary);
         lblInfoFactura.setAlignmentX(Component.LEFT_ALIGNMENT);
         panelHeader.add(lblInfoFactura);
@@ -355,10 +391,9 @@ public class VentanaPagos extends javax.swing.JFrame {
             public boolean isCellEditable(int row, int col) { return false; }
         };
         tablaItems = new JTable(modeloTablaItems);
-        tablaItems.setFont(new Font("Segoe UI", Font.PLAIN, 10));
-        tablaItems.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 10));
-        tablaItems.getTableHeader().setBackground(currentTheme.btnBg);
+        tablaItems.setFont(FUENTE_TABLA);
         tablaItems.setRowHeight(22);
+        tablaItems.setIntercellSpacing(new Dimension(3, 2));
         tablaItems.setShowGrid(true);
 
         tablaItems.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
@@ -367,21 +402,23 @@ public class VentanaPagos extends javax.swing.JFrame {
         panelItems.add(scrollItems, BorderLayout.CENTER);
 
         txtMontoPago = new JTextField();
-        txtMontoPago.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        txtMontoPago.setFont(FUENTE_INPUT_BOLD);
         txtMontoPago.setHorizontalAlignment(JTextField.RIGHT);
+        txtMontoPago.setDisabledTextColor(getDisabledFg());
+        txtMontoPago.setCaretColor(currentTheme.textPrimary);
         txtMontoPago.setPreferredSize(new Dimension(130, 28));
         txtMontoPago.setMinimumSize(new Dimension(130, 28));
 
         ((AbstractDocument) txtMontoPago.getDocument()).setDocumentFilter(new DocumentFilter() {
             @Override
             public void insertString(FilterBypass fb, int offset, String text, AttributeSet attr) throws BadLocationException {
-                if (txtMontoPagoUpdating || esNumeroValido(fb, offset, text)) {
+                if (txtMontoPagoUpdating || esNumeroValido(text)) {
                     super.insertString(fb, offset, text, attr);
                 }
             }
             @Override
             public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
-                if (txtMontoPagoUpdating || esNumeroValido(fb, offset, text)) {
+                if (txtMontoPagoUpdating || esNumeroValido(text)) {
                     super.replace(fb, offset, length, text, attrs);
                 }
             }
@@ -389,14 +426,9 @@ public class VentanaPagos extends javax.swing.JFrame {
             public void remove(FilterBypass fb, int offset, int length) throws BadLocationException {
                 super.remove(fb, offset, length);
             }
-            private boolean esNumeroValido(FilterBypass fb, int offset, String text) throws BadLocationException {
+            private boolean esNumeroValido(String text) {
                 if (text == null || text.isEmpty()) return true;
-                String curText = fb.getDocument().getText(0, fb.getDocument().getLength());
-                StringBuilder sb = new StringBuilder(curText);
-                sb.insert(offset, text);
-                String nuevo = sb.toString();
-                if (nuevo.isEmpty()) return true;
-                return nuevo.matches("\\d*(,\\d{0,2})?");
+                return text.matches("[\\d,]*");
             }
         });
 
@@ -421,11 +453,28 @@ public class VentanaPagos extends javax.swing.JFrame {
         });
 
         cmbFormaPago = new JComboBox<>(new String[]{"Efectivo", "Transferencia", "Cheque", "Tarjeta", "Mercado Pago", "Otra"});
-        cmbFormaPago.setFont(FUENTE_BOTON);
+        cmbFormaPago.setFont(FUENTE_INPUT_BOLD);
         cmbFormaPago.setPreferredSize(new Dimension(90, 28));
+        cmbFormaPago.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(getFieldBg(cmbFormaPago.isEnabled()));
+                setForeground(cmbFormaPago.isEnabled() ? currentTheme.textPrimary : getDisabledFg());
+                setFont(cmbFormaPago.getFont());
+                return this;
+            }
+            @Override
+            public void paintComponent(Graphics g) {
+                setBackground(getFieldBg(cmbFormaPago.isEnabled()));
+                setForeground(cmbFormaPago.isEnabled() ? currentTheme.textPrimary : getDisabledFg());
+                super.paintComponent(g);
+            }
+        });
+        installComboUI(cmbFormaPago);
 
         box1 = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 2));
-        box1.setBackground(bgAzulado(currentTheme));
+        box1.setBackground(currentTheme.bgSurface);
         box1.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(currentTheme.brand),
             BorderFactory.createEmptyBorder(2, 8, 2, 8)
@@ -434,18 +483,21 @@ public class VentanaPagos extends javax.swing.JFrame {
         box1.add(btnPagarCompleta);
 
         box2 = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 2));
-        box2.setBackground(bgAzulado(currentTheme));
+        box2.setBackground(currentTheme.bgSurface);
         box2.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(currentTheme.brand),
             BorderFactory.createEmptyBorder(2, 8, 2, 8)
         ));
-        box2.add(new JLabel("Importe:"));
+        lblImporte = new JLabel("IMPORTE: ");
+        lblImporte.setFont(FUENTE_LABEL);
+        lblImporte.setForeground(currentTheme.textPrimary);
+        box2.add(lblImporte);
         box2.add(txtMontoPago);
         box2.add(btnPagar);
 
         panelAcciones = new JPanel();
         panelAcciones.setLayout(new BoxLayout(panelAcciones, BoxLayout.Y_AXIS));
-        panelAcciones.setBackground(bgAzulado(currentTheme));
+        panelAcciones.setBackground(currentTheme.bgSurface);
         panelAcciones.setBorder(BorderFactory.createEmptyBorder(4, 4, 2, 4));
         panelAcciones.add(box1);
         panelAcciones.add(Box.createVerticalStrut(2));
@@ -763,6 +815,58 @@ public class VentanaPagos extends javax.swing.JFrame {
         btn.setFocusPainted(false);
     }
 
+    private Color getDisabledFg() {
+        return currentTheme.bgBase.getRed() > 128 ? DISABLED_FG_LIGHT : DISABLED_FG_DARK;
+    }
+
+    private Color getFieldBg(boolean editing) {
+        return currentTheme.bgBase.getRed() > 128
+            ? (editing ? LIGHT_EDITABLE_BG : LIGHT_READONLY_BG)
+            : (editing ? DARK_EDITABLE_BG : DARK_READONLY_BG);
+    }
+
+    private static class CustomComboUI extends javax.swing.plaf.basic.BasicComboBoxUI {
+        @Override
+        public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {
+            g.setColor(comboBox.getBackground());
+            g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+        @Override
+        public void paintCurrentValue(Graphics g, Rectangle bounds, boolean hasFocus) {
+            javax.swing.ListCellRenderer<Object> renderer = comboBox.getRenderer();
+            java.awt.Component c;
+            if (hasFocus && !isPopupVisible(comboBox)) {
+                c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, true, false);
+            } else {
+                c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, false, false);
+            }
+            c.setFont(comboBox.getFont());
+            if (hasFocus && !isPopupVisible(comboBox)) {
+                c.setForeground(listBox.getSelectionForeground());
+                c.setBackground(listBox.getSelectionBackground());
+            } else {
+                c.setForeground(comboBox.getForeground());
+                c.setBackground(comboBox.getBackground());
+            }
+            currentValuePane.paintComponent(g, c, comboBox, bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+    }
+
+    private void installComboUI(JComboBox<?> combo) {
+        combo.setUI(new CustomComboUI());
+    }
+
+    private void themeComboEditor(JComboBox<?> combo, Theme t) {
+        java.awt.Component editorComp = combo.getEditor().getEditorComponent();
+        if (editorComp instanceof JTextField) {
+            JTextField ed = (JTextField) editorComp;
+            ed.setBackground(getFieldBg(combo.isEnabled()));
+            ed.setForeground(combo.isEnabled() ? t.textPrimary : getDisabledFg());
+            ed.setDisabledTextColor(getDisabledFg());
+            ed.setCaretColor(t.textPrimary);
+        }
+    }
+
     private String mostrarSelectorBaseReparsoft() {
         return com.els.facturacion.util.UbicacionSistema.getNombreDbReparsoft();
     }
@@ -772,8 +876,7 @@ public class VentanaPagos extends javax.swing.JFrame {
         dialog.getContentPane().setBackground(currentTheme.bgBase);
 
         JComboBox<String> combo = new JComboBox<>(new String[]{"Efectivo", "Transferencia", "Cheque", "Tarjeta", "Mercado Pago", "Otra"});
-        combo.setFont(FUENTE_BOTON);
-        combo.setBackground(currentTheme.bgInput);
+        combo.setFont(FUENTE_INPUT_BOLD);
 
         JLabel lbl = new JLabel("Seleccione el medio de pago:");
         lbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
@@ -876,15 +979,25 @@ public class VentanaPagos extends javax.swing.JFrame {
         Font titledFont = new Font("Segoe UI", Font.BOLD, 13);
 
         if (lblTitulo != null) lblTitulo.setForeground(t.brand);
+        if (panelTitulo != null) panelTitulo.setBackground(t.bgSurface);
         if (lblFiltroCliente != null) lblFiltroCliente.setForeground(t.textPrimary);
         if (panelFiltroFacturas != null) panelFiltroFacturas.setBackground(t.bgSurface);
         if (cmbFiltroCliente != null) {
-            cmbFiltroCliente.setBackground(t.bgInput);
+            cmbFiltroCliente.setBackground(getFieldBg(cmbFiltroCliente.isEnabled()));
             cmbFiltroCliente.setForeground(t.textPrimary);
+            installComboUI(cmbFiltroCliente);
+            themeComboEditor(cmbFiltroCliente, t);
+        }
+        if (editorFiltroFacturas != null) {
+            editorFiltroFacturas.setBackground(getFieldBg(true));
+            editorFiltroFacturas.setForeground(t.textPrimary);
+            editorFiltroFacturas.setDisabledTextColor(getDisabledFg());
+            editorFiltroFacturas.setCaretColor(t.textPrimary);
         }
 
         // FIX: live-theme — contenedores raíz
         if (splitHorizontal != null) { splitHorizontal.setBackground(t.bgSurface); splitHorizontal.setBorder(null); }
+        if (getContentPane() != null) getContentPane().setBackground(t.bgBase);
         if (panelFacturas != null) {
             panelFacturas.setBackground(t.bgSurface);
             panelFacturas.setBorder(BorderFactory.createCompoundBorder(
@@ -894,7 +1007,7 @@ public class VentanaPagos extends javax.swing.JFrame {
                     "FACTURAS PENDIENTES",
                     javax.swing.border.TitledBorder.LEFT,
                     javax.swing.border.TitledBorder.TOP,
-                    new Font("Segoe UI", Font.BOLD, 13), t.textPrimary)));
+                    titledFont, t.textPrimary)));
         }
         if (panelDetalle != null) {
             panelDetalle.setBackground(t.bgSurface);
@@ -905,9 +1018,10 @@ public class VentanaPagos extends javax.swing.JFrame {
                     "DETALLE DE FACTURA",
                     javax.swing.border.TitledBorder.LEFT,
                     javax.swing.border.TitledBorder.TOP,
-                    new Font("Segoe UI", Font.BOLD, 13), t.textPrimary)));
+                    titledFont, t.textPrimary)));
         }
         if (panelHeader != null) { panelHeader.setBackground(t.bgSurface); }
+        if (rowSuperior != null) { rowSuperior.setBackground(t.bgSurface); }
         if (panelItems != null) {
             panelItems.setBackground(t.bgSurface);
             panelItems.setBorder(BorderFactory.createTitledBorder(
@@ -917,20 +1031,20 @@ public class VentanaPagos extends javax.swing.JFrame {
                 javax.swing.border.TitledBorder.TOP,
                 titledFont, t.textPrimary));
         }
-        if (panelInferior != null) panelInferior.setBackground(bgAzulado(t));
+        if (panelInferior != null) panelInferior.setBackground(t.bgSurface);
         if (box1 != null) {
-            box1.setBackground(bgAzulado(t));
+            box1.setBackground(t.bgSurface);
             box1.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(t.brand),
                 BorderFactory.createEmptyBorder(2, 8, 2, 8)));
         }
         if (box2 != null) {
-            box2.setBackground(bgAzulado(t));
+            box2.setBackground(t.bgSurface);
             box2.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(t.brand),
                 BorderFactory.createEmptyBorder(2, 8, 2, 8)));
         }
-        if (panelAcciones != null) panelAcciones.setBackground(bgAzulado(t));
+        if (panelAcciones != null) panelAcciones.setBackground(t.bgSurface);
         if (statusBar != null) {
             boolean isLight = t.bgBase.getRed() > 128;
             statusBar.setBackground(isLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
@@ -943,12 +1057,22 @@ public class VentanaPagos extends javax.swing.JFrame {
         if (lblSaldoPendiente != null) lblSaldoPendiente.setForeground(t.danger);
         if (lblInfoFactura != null) lblInfoFactura.setForeground(t.textPrimary);
         if (lblTotalFactura != null) lblTotalFactura.setForeground(t.textPrimary);
+        if (lblImporte != null) lblImporte.setForeground(t.textPrimary);
         if (btnPagarItem != null) { btnPagarItem.setBackground(t.btnBg); btnPagarItem.setForeground(t.textPrimary); }
         if (btnPagarCompleta != null) { btnPagarCompleta.setBackground(t.btnBg); btnPagarCompleta.setForeground(t.textPrimary); }
         if (btnPagar != null) { btnPagar.setBackground(t.btnBg); btnPagar.setForeground(t.textPrimary); }
         if (btnRefresh != null) { btnRefresh.setBackground(t.btnBg); btnRefresh.setForeground(t.textPrimary); }
-        if (cmbFormaPago != null) { cmbFormaPago.setForeground(t.textPrimary); cmbFormaPago.setBackground(t.bgElevated); }
-        if (txtMontoPago != null) { txtMontoPago.setForeground(t.textPrimary); txtMontoPago.setBackground(t.bgInput); }
+        if (cmbFormaPago != null) {
+            cmbFormaPago.setBackground(getFieldBg(cmbFormaPago.isEnabled()));
+            cmbFormaPago.setForeground(cmbFormaPago.isEnabled() ? t.textPrimary : getDisabledFg());
+            installComboUI(cmbFormaPago);
+        }
+        if (txtMontoPago != null) {
+            txtMontoPago.setBackground(getFieldBg(true));
+            txtMontoPago.setForeground(t.textPrimary);
+            txtMontoPago.setDisabledTextColor(getDisabledFg());
+            txtMontoPago.setCaretColor(t.textPrimary);
+        }
         if (scrollFacturas != null) scrollFacturas.getViewport().setBackground(t.bgSurface);
         if (scrollItems != null) scrollItems.getViewport().setBackground(t.bgSurface);
         if (tablaFacturas != null) {

@@ -44,11 +44,24 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JList;
+import java.awt.Graphics;
+import java.awt.Rectangle;
 
 public class VentanaFacturacion extends javax.swing.JFrame {
 
     private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
+    private static final Font FUENTE_INPUT = new Font("Segoe UI", Font.PLAIN, 12);
+    private static final Font FUENTE_INPUT_BOLD = new Font("Segoe UI", Font.BOLD, 12);
+    private static final Font FUENTE_LABEL = new Font("Segoe UI", Font.PLAIN, 11);
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final Color DISABLED_FG_LIGHT = new Color(95, 97, 106);
+    private static final Color DISABLED_FG_DARK = new Color(210, 207, 190);
+    private static final Color LIGHT_READONLY_BG = new Color(236, 237, 241);
+    private static final Color LIGHT_EDITABLE_BG = new Color(255, 253, 230);
+    private static final Color DARK_READONLY_BG = new Color(28, 33, 55);
+    private static final Color DARK_EDITABLE_BG = new Color(22, 27, 45);
 
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
@@ -102,6 +115,8 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private JButton btnSiguiente;
 
     // FIX: live-theme — contenedores visibles (antes locales)
+    private JPanel panelTituloDatos;
+    private JPanel panelBotonesReceptor;
     private JPanel panelPrincipalWrapper;
     private JPanel panelOperacion;
     private JPanel panelItems;
@@ -126,6 +141,16 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private JPanel secEmision;
     private JPanel secReceptor;
     private JPanel panelChecks;
+
+    private Color getDisabledFg() {
+        return currentTheme.bgBase.getRed() > 128 ? DISABLED_FG_LIGHT : DISABLED_FG_DARK;
+    }
+
+    private Color getFieldBg(boolean editing) {
+        return currentTheme.bgBase.getRed() > 128
+            ? (editing ? LIGHT_EDITABLE_BG : LIGHT_READONLY_BG)
+            : (editing ? DARK_EDITABLE_BG : DARK_READONLY_BG);
+    }
 
     public VentanaFacturacion() {
         initComponents();
@@ -167,21 +192,21 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         lblTituloDatos.setForeground(currentTheme.brand);
         lblTituloDatos.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JPanel panelTituloDatos = new JPanel();
+        panelTituloDatos = new JPanel();
         panelTituloDatos.setLayout(new BoxLayout(panelTituloDatos, BoxLayout.Y_AXIS));
         panelTituloDatos.setBackground(currentTheme.bgSurface);
         panelTituloDatos.setBorder(BorderFactory.createEmptyBorder(4, 0, 2, 0));
         panelTituloDatos.add(lblTituloDatos);
 
         centerCol = new JPanel(new GridBagLayout());
-        centerCol.setBorder(new CompoundBorder(new LineBorder(currentTheme.brand), new EmptyBorder(10, 10, 10, 10)));
+        centerCol.setBorder(new CompoundBorder(new LineBorder(currentTheme.brand), new EmptyBorder(4, 10, 4, 10)));
         centerCol.setBackground(currentTheme.bgSurface);
         centerCol.setAlignmentX(Component.CENTER_ALIGNMENT);
         centerCol.setMaximumSize(new Dimension(900, 2000));
 
-        centerCol.add(crearSeccionPuntoVenta(), new GridBagConstraints(0, 0, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(8, 0, 8, 0), 0, 0));
-        centerCol.add(crearSeccionEmision(), new GridBagConstraints(0, 1, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(8, 0, 8, 0), 0, 0));
-        centerCol.add(crearSeccionReceptor(), new GridBagConstraints(0, 2, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(8, 0, 8, 0), 0, 0));
+        centerCol.add(crearSeccionPuntoVenta(), new GridBagConstraints(0, 0, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(4, 0, 4, 0), 0, 0));
+        centerCol.add(crearSeccionEmision(), new GridBagConstraints(0, 1, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(4, 0, 4, 0), 0, 0));
+        centerCol.add(crearSeccionReceptor(), new GridBagConstraints(0, 2, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(4, 0, 4, 0), 0, 0));
 
         chkModoPrueba = new JCheckBox("MODO PRUEBA");
         chkModoPrueba.setOpaque(false);
@@ -200,7 +225,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelNav.setBackground(currentTheme.bgSurface);
         panelNav.add(chkModoPrueba);
         panelNav.add(btnSiguiente);
-        centerCol.add(panelNav, new GridBagConstraints(0, 3, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(5, 0, 0, 0), 0, 0));
+        centerCol.add(panelNav, new GridBagConstraints(0, 3, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(2, 0, 0, 0), 0, 0));
 
         datosWrapper.add(centerCol);
 
@@ -265,8 +290,20 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         btnEliminarItem.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnEliminarItem.setFocusPainted(false);
         cmbAlicuotaIva = new JComboBox<>(new String[]{"", "21%", "10.5%", "0%", "27%"});
+        installComboUI(cmbAlicuotaIva);
+        cmbAlicuotaIva.setFont(FUENTE_INPUT_BOLD);
         cmbAlicuotaIva.setPreferredSize(new Dimension(80, 24));
         cmbAlicuotaIva.setPrototypeDisplayValue("21%");
+        cmbAlicuotaIva.setRenderer(new DefaultListCellRenderer() {
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                  int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbAlicuotaIva.isEnabled()));
+                setForeground(isSelected ? list.getSelectionForeground() :
+                    (cmbAlicuotaIva.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
+                return this;
+            }
+        });
 
         panelSur = new JPanel(new GridBagLayout());
         panelSur.setBackground(currentTheme.bgBase);
@@ -289,25 +326,30 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
         txtImporteNeto = new JTextField(8);
         txtImporteNeto.setEditable(false);
-        txtImporteNeto.setFont(FUENTE_BOTON);
+        txtImporteNeto.setFont(FUENTE_INPUT_BOLD);
         txtImporteNeto.setPreferredSize(new Dimension(75, 24));
         txtImporteNeto.setHorizontalAlignment(JTextField.RIGHT);
+        txtImporteNeto.setDisabledTextColor(getDisabledFg());
         txtImporteIva = new JTextField(8);
         txtImporteIva.setEditable(false);
-        txtImporteIva.setFont(FUENTE_BOTON);
+        txtImporteIva.setFont(FUENTE_INPUT_BOLD);
         txtImporteIva.setPreferredSize(new Dimension(75, 24));
         txtImporteIva.setHorizontalAlignment(JTextField.RIGHT);
+        txtImporteIva.setDisabledTextColor(getDisabledFg());
         txtOtrosImpuestos = new JTextField(6);
         txtOtrosImpuestos.setText("0,00");
         txtOtrosImpuestos.setPreferredSize(new Dimension(65, 24));
         txtOtrosImpuestos.setHorizontalAlignment(JTextField.RIGHT);
-        txtOtrosImpuestos.setFont(FUENTE_BOTON);
+        txtOtrosImpuestos.setFont(FUENTE_INPUT_BOLD);
+        txtOtrosImpuestos.setDisabledTextColor(getDisabledFg());
+        txtOtrosImpuestos.setCaretColor(currentTheme.textPrimary);
         txtImporteTotal = new JTextField(8);
         txtImporteTotal.setEditable(false);
-        txtImporteTotal.setFont(FUENTE_BOTON);
+        txtImporteTotal.setFont(FUENTE_INPUT_BOLD);
         txtImporteTotal.setPreferredSize(new Dimension(85, 24));
         txtImporteTotal.setHorizontalAlignment(JTextField.RIGHT);
         txtImporteTotal.setForeground(currentTheme.brandDark);
+        txtImporteTotal.setDisabledTextColor(getDisabledFg());
 
         panelTotales.add(new JLabel("Neto:"));
         panelTotales.add(txtImporteNeto);
@@ -398,9 +440,20 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         label.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         secPuntoVenta.add(label, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
         cmbPuntoVenta = new JComboBox<>(new String[]{"", "00001"});
-        cmbPuntoVenta.setFont(FUENTE_BOTON);
+        installComboUI(cmbPuntoVenta);
+        cmbPuntoVenta.setFont(FUENTE_INPUT_BOLD);
         cmbPuntoVenta.setPreferredSize(new Dimension(80, 24));
         cmbPuntoVenta.setPrototypeDisplayValue("00001");
+        cmbPuntoVenta.setRenderer(new DefaultListCellRenderer() {
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                  int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbPuntoVenta.isEnabled()));
+                setForeground(isSelected ? list.getSelectionForeground() :
+                    (cmbPuntoVenta.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
+                return this;
+            }
+        });
         secPuntoVenta.add(cmbPuntoVenta, new GridBagConstraints(1, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
 
         secPuntoVenta.add(new JLabel("Tipo Comprobante:"), new GridBagConstraints(2, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
@@ -410,9 +463,20 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             "Nota de D\u00e9bito Electr\u00f3nica MiPymes (FCE) C",
             "Nota de Cr\u00e9dito Electr\u00f3nica MiPymes (FCE) C"
         });
-        cmbTipoComprobante.setFont(FUENTE_BOTON);
+        installComboUI(cmbTipoComprobante);
+        cmbTipoComprobante.setFont(FUENTE_INPUT_BOLD);
         cmbTipoComprobante.setPreferredSize(new Dimension(240, 24));
         cmbTipoComprobante.setPrototypeDisplayValue("Factura de Cr\u00e9dito Electr\u00f3nica");
+        cmbTipoComprobante.setRenderer(new DefaultListCellRenderer() {
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                  int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbTipoComprobante.isEnabled()));
+                setForeground(isSelected ? list.getSelectionForeground() :
+                    (cmbTipoComprobante.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
+                return this;
+            }
+        });
         secPuntoVenta.add(cmbTipoComprobante, new GridBagConstraints(3, 0, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
         return secPuntoVenta;
     }
@@ -430,38 +494,57 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
         txtEmisorRazonSocial = new JTextField(25);
         txtEmisorRazonSocial.setEditable(false);
-        txtEmisorRazonSocial.setFont(FUENTE_BOTON);
+        txtEmisorRazonSocial.setFont(FUENTE_INPUT_BOLD);
         txtEmisorRazonSocial.setPreferredSize(new Dimension(300, 24));
-        txtEmisorRazonSocial.setBackground(currentTheme.bgInput);
+        txtEmisorRazonSocial.setDisabledTextColor(getDisabledFg());
+        txtEmisorRazonSocial.setBackground(getFieldBg(false));
 
         txtEmisorCuit = new JTextField(15);
         txtEmisorCuit.setEditable(false);
-        txtEmisorCuit.setFont(FUENTE_BOTON);
+        txtEmisorCuit.setFont(FUENTE_INPUT_BOLD);
         txtEmisorCuit.setPreferredSize(new Dimension(120, 24));
-        txtEmisorCuit.setBackground(currentTheme.bgInput);
+        txtEmisorCuit.setDisabledTextColor(getDisabledFg());
+        txtEmisorCuit.setBackground(getFieldBg(false));
 
         txtEmisorCondicionIva = new JTextField(15);
         txtEmisorCondicionIva.setEditable(false);
-        txtEmisorCondicionIva.setFont(FUENTE_BOTON);
+        txtEmisorCondicionIva.setFont(FUENTE_INPUT_BOLD);
         txtEmisorCondicionIva.setPreferredSize(new Dimension(120, 24));
-        txtEmisorCondicionIva.setBackground(currentTheme.bgInput);
+        txtEmisorCondicionIva.setDisabledTextColor(getDisabledFg());
+        txtEmisorCondicionIva.setBackground(getFieldBg(false));
 
         dateFecha = crearDateChooser();
+        themeDateField(dateFecha, currentTheme);
         cmbConcepto = new JComboBox<>(new String[]{"", "Productos", "Servicios", "Productos y Servicios"});
-        cmbConcepto.setFont(FUENTE_BOTON);
+        installComboUI(cmbConcepto);
+        cmbConcepto.setFont(FUENTE_INPUT_BOLD);
         cmbConcepto.setPreferredSize(new Dimension(180, 24));
         cmbConcepto.setPrototypeDisplayValue("Productos");
+        cmbConcepto.setRenderer(new DefaultListCellRenderer() {
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                  int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbConcepto.isEnabled()));
+                setForeground(isSelected ? list.getSelectionForeground() :
+                    (cmbConcepto.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
+                return this;
+            }
+        });
 
         txtActividades = new JTextField(25);
         txtActividades.setText("331290 - Reparacion y mantenimiento de maquinaria de uso especial n.c.p.");
         txtActividades.setEditable(false);
-        txtActividades.setFont(FUENTE_BOTON);
+        txtActividades.setFont(FUENTE_INPUT_BOLD);
         txtActividades.setPreferredSize(new Dimension(300, 24));
-        txtActividades.setBackground(currentTheme.bgInput);
+        txtActividades.setDisabledTextColor(getDisabledFg());
+        txtActividades.setBackground(getFieldBg(false));
 
         datePeriodoDesde = crearDateChooser();
+        themeDateField(datePeriodoDesde, currentTheme);
         datePeriodoHasta = crearDateChooser();
+        themeDateField(datePeriodoHasta, currentTheme);
         datePeriodoVto = crearDateChooser();
+        themeDateField(datePeriodoVto, currentTheme);
 
         int row = 0;
         secEmision.add(new JLabel("Emisor Razon Social:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
@@ -510,32 +593,82 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             "Responsable Monotributo", "Proveedor del Exterior", "Cliente del Exterior",
             "IVA Liberado - Ley 19.640", "Monotributista Social", "IVA No Alcanzado"
         });
-        cmbCondicionIva.setFont(FUENTE_BOTON);
+        installComboUI(cmbCondicionIva);
+        cmbCondicionIva.setFont(FUENTE_INPUT_BOLD);
         cmbCondicionIva.setPreferredSize(new Dimension(200, 24));
         cmbCondicionIva.setPrototypeDisplayValue("IVA Responsable Inscripto");
+        cmbCondicionIva.setRenderer(new DefaultListCellRenderer() {
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                  int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbCondicionIva.isEnabled()));
+                setForeground(isSelected ? list.getSelectionForeground() :
+                    (cmbCondicionIva.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
+                return this;
+            }
+        });
 
         cmbTipoDoc = new JComboBox<>(new String[]{"", "CUIT", "DNI"});
-        cmbTipoDoc.setFont(FUENTE_BOTON);
+        installComboUI(cmbTipoDoc);
+        cmbTipoDoc.setFont(FUENTE_INPUT_BOLD);
         cmbTipoDoc.setPreferredSize(new Dimension(80, 24));
         cmbTipoDoc.setPrototypeDisplayValue("CUIT");
+        cmbTipoDoc.setRenderer(new DefaultListCellRenderer() {
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                  int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbTipoDoc.isEnabled()));
+                setForeground(isSelected ? list.getSelectionForeground() :
+                    (cmbTipoDoc.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
+                return this;
+            }
+        });
 
         cmbNroDoc = new AutoCompleteComboBox();
         cmbNroDoc.setData(Arrays.asList(""));
-        cmbNroDoc.setFont(FUENTE_BOTON);
+        installComboUI(cmbNroDoc);
+        cmbNroDoc.setFont(FUENTE_INPUT_BOLD);
         cmbNroDoc.setPreferredSize(new Dimension(140, 24));
+        themeComboEditor(cmbNroDoc, currentTheme);
+        cmbNroDoc.setRenderer(new DefaultListCellRenderer() {
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                  int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbNroDoc.isEnabled()));
+                setForeground(isSelected ? list.getSelectionForeground() :
+                    (cmbNroDoc.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
+                return this;
+            }
+        });
 
         cmbRazonSocial = new AutoCompleteComboBox();
         cmbRazonSocial.setData(Arrays.asList(""));
-        cmbRazonSocial.setFont(FUENTE_BOTON);
+        installComboUI(cmbRazonSocial);
+        cmbRazonSocial.setFont(FUENTE_INPUT_BOLD);
         cmbRazonSocial.setPreferredSize(new Dimension(150, 24));
+        themeComboEditor(cmbRazonSocial, currentTheme);
+        cmbRazonSocial.setRenderer(new DefaultListCellRenderer() {
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                  int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbRazonSocial.isEnabled()));
+                setForeground(isSelected ? list.getSelectionForeground() :
+                    (cmbRazonSocial.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
+                return this;
+            }
+        });
 
         txtDomicilio = new JTextField(20);
-        txtDomicilio.setFont(FUENTE_BOTON);
+        txtDomicilio.setFont(FUENTE_INPUT_BOLD);
         txtDomicilio.setPreferredSize(new Dimension(180, 24));
+        txtDomicilio.setDisabledTextColor(getDisabledFg());
+        txtDomicilio.setCaretColor(currentTheme.textPrimary);
 
         txtEmail = new JTextField(18);
-        txtEmail.setFont(FUENTE_BOTON);
+        txtEmail.setFont(FUENTE_INPUT);
         txtEmail.setPreferredSize(new Dimension(160, 24));
+        txtEmail.setDisabledTextColor(getDisabledFg());
+        txtEmail.setCaretColor(currentTheme.textPrimary);
 
         int row = 0;
         secReceptor.add(new JLabel("Condicion IVA:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(4, 8, 5, 8), 0, 0));
@@ -556,9 +689,11 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
         row++;
         txtComprobanteAsoc = new JTextField(15);
-        txtComprobanteAsoc.setFont(FUENTE_BOTON);
+        txtComprobanteAsoc.setFont(FUENTE_INPUT_BOLD);
         txtComprobanteAsoc.setForeground(currentTheme.textPrimary);
-        txtComprobanteAsoc.setBackground(currentTheme.bgInput);
+        txtComprobanteAsoc.setBackground(getFieldBg(true));
+        txtComprobanteAsoc.setDisabledTextColor(getDisabledFg());
+        txtComprobanteAsoc.setCaretColor(currentTheme.textPrimary);
         secReceptor.add(new JLabel("N° OC:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(4, 8, 5, 8), 0, 0));
         secReceptor.add(txtComprobanteAsoc, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(4, 8, 5, 8), 0, 0));
 
@@ -608,11 +743,11 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         btnVerEquipos.setBackground(currentTheme.btnBg);
         btnVerEquipos.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnVerEquipos.setFocusPainted(false);
-        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        panelBotones.setBackground(currentTheme.bgSurface);
-        panelBotones.add(btnImportarRemito);
-        panelBotones.add(btnVerEquipos);
-        secReceptor.add(panelBotones, new GridBagConstraints(0, row, 6, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(10, 8, 4, 8), 0, 0));
+        panelBotonesReceptor = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        panelBotonesReceptor.setBackground(currentTheme.bgSurface);
+        panelBotonesReceptor.add(btnImportarRemito);
+        panelBotonesReceptor.add(btnVerEquipos);
+        secReceptor.add(panelBotonesReceptor, new GridBagConstraints(0, row, 6, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(10, 8, 4, 8), 0, 0));
 
         return secReceptor;
     }
@@ -627,6 +762,8 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             clazz.getMethod("setDate", java.util.Date.class).invoke(chooser,
                 java.util.Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant()));
             chooser.setPreferredSize(new Dimension(110, 24));
+            chooser.addPropertyChangeListener("date", e -> themeDateField(chooser, currentTheme));
+            installDateFocusListener(chooser);
             return chooser;
         } catch (Exception e) {
             JTextField tf = new JTextField(LocalDate.now().format(FMT));
@@ -729,24 +866,54 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         }
 
         // FIX: live-theme — inputs y controles (field references, siempre funcionan)
-        if (cmbPuntoVenta != null) { cmbPuntoVenta.setBackground(t.bgInput); cmbPuntoVenta.setForeground(t.textPrimary); }
-        if (cmbTipoComprobante != null) { cmbTipoComprobante.setBackground(t.bgInput); cmbTipoComprobante.setForeground(t.textPrimary); }
-        if (dateFecha != null) { dateFecha.setBackground(t.bgInput); dateFecha.setForeground(t.textPrimary); }
-        if (datePeriodoDesde != null) { datePeriodoDesde.setBackground(t.bgInput); datePeriodoDesde.setForeground(t.textPrimary); }
-        if (datePeriodoHasta != null) { datePeriodoHasta.setBackground(t.bgInput); datePeriodoHasta.setForeground(t.textPrimary); }
-        if (datePeriodoVto != null) { datePeriodoVto.setBackground(t.bgInput); datePeriodoVto.setForeground(t.textPrimary); }
-        if (cmbConcepto != null) { cmbConcepto.setBackground(t.bgInput); cmbConcepto.setForeground(t.textPrimary); }
-        if (txtActividades != null) { txtActividades.setBackground(t.bgInput); txtActividades.setForeground(t.textPrimary); }
-        if (txtEmisorRazonSocial != null) { txtEmisorRazonSocial.setBackground(t.bgInput); txtEmisorRazonSocial.setForeground(t.textPrimary); }
-        if (txtEmisorCuit != null) { txtEmisorCuit.setBackground(t.bgInput); txtEmisorCuit.setForeground(t.textPrimary); }
-        if (txtEmisorCondicionIva != null) { txtEmisorCondicionIva.setBackground(t.bgInput); txtEmisorCondicionIva.setForeground(t.textPrimary); }
-        if (cmbCondicionIva != null) { cmbCondicionIva.setBackground(t.bgInput); cmbCondicionIva.setForeground(t.textPrimary); }
-        if (cmbTipoDoc != null) { cmbTipoDoc.setBackground(t.bgInput); cmbTipoDoc.setForeground(t.textPrimary); }
-        if (cmbRazonSocial != null) { cmbRazonSocial.setBackground(t.bgInput); cmbRazonSocial.setForeground(t.textPrimary); }
-        if (cmbNroDoc != null) { cmbNroDoc.setBackground(t.bgInput); cmbNroDoc.setForeground(t.textPrimary); }
-        if (txtDomicilio != null) { txtDomicilio.setBackground(t.bgInput); txtDomicilio.setForeground(t.textPrimary); }
-        if (txtEmail != null) { txtEmail.setBackground(t.bgInput); txtEmail.setForeground(t.textPrimary); }
-        if (txtComprobanteAsoc != null) { txtComprobanteAsoc.setBackground(t.bgInput); txtComprobanteAsoc.setForeground(t.textPrimary); }
+        if (cmbPuntoVenta != null) {
+            installComboUI(cmbPuntoVenta);
+            cmbPuntoVenta.setBackground(getFieldBg(cmbPuntoVenta.isEnabled()));
+            cmbPuntoVenta.setForeground(cmbPuntoVenta.isEnabled() ? t.textPrimary : getDisabledFg());
+        }
+        if (cmbTipoComprobante != null) {
+            installComboUI(cmbTipoComprobante);
+            cmbTipoComprobante.setBackground(getFieldBg(cmbTipoComprobante.isEnabled()));
+            cmbTipoComprobante.setForeground(cmbTipoComprobante.isEnabled() ? t.textPrimary : getDisabledFg());
+        }
+        if (dateFecha != null) { themeDateField(dateFecha, t); }
+        if (datePeriodoDesde != null) { themeDateField(datePeriodoDesde, t); }
+        if (datePeriodoHasta != null) { themeDateField(datePeriodoHasta, t); }
+        if (datePeriodoVto != null) { themeDateField(datePeriodoVto, t); }
+        if (cmbConcepto != null) {
+            installComboUI(cmbConcepto);
+            cmbConcepto.setBackground(getFieldBg(cmbConcepto.isEnabled()));
+            cmbConcepto.setForeground(cmbConcepto.isEnabled() ? t.textPrimary : getDisabledFg());
+        }
+        if (txtActividades != null) { txtActividades.setBackground(getFieldBg(txtActividades.isEnabled())); txtActividades.setForeground(t.textPrimary); txtActividades.setDisabledTextColor(getDisabledFg()); txtActividades.setCaretColor(t.textPrimary); }
+        if (txtEmisorRazonSocial != null) { txtEmisorRazonSocial.setBackground(getFieldBg(txtEmisorRazonSocial.isEnabled())); txtEmisorRazonSocial.setForeground(t.textPrimary); txtEmisorRazonSocial.setDisabledTextColor(getDisabledFg()); txtEmisorRazonSocial.setCaretColor(t.textPrimary); }
+        if (txtEmisorCuit != null) { txtEmisorCuit.setBackground(getFieldBg(txtEmisorCuit.isEnabled())); txtEmisorCuit.setForeground(t.textPrimary); txtEmisorCuit.setDisabledTextColor(getDisabledFg()); txtEmisorCuit.setCaretColor(t.textPrimary); }
+        if (txtEmisorCondicionIva != null) { txtEmisorCondicionIva.setBackground(getFieldBg(txtEmisorCondicionIva.isEnabled())); txtEmisorCondicionIva.setForeground(t.textPrimary); txtEmisorCondicionIva.setDisabledTextColor(getDisabledFg()); txtEmisorCondicionIva.setCaretColor(t.textPrimary); }
+        if (cmbCondicionIva != null) {
+            installComboUI(cmbCondicionIva);
+            cmbCondicionIva.setBackground(getFieldBg(cmbCondicionIva.isEnabled()));
+            cmbCondicionIva.setForeground(cmbCondicionIva.isEnabled() ? t.textPrimary : getDisabledFg());
+        }
+        if (cmbTipoDoc != null) {
+            installComboUI(cmbTipoDoc);
+            cmbTipoDoc.setBackground(getFieldBg(cmbTipoDoc.isEnabled()));
+            cmbTipoDoc.setForeground(cmbTipoDoc.isEnabled() ? t.textPrimary : getDisabledFg());
+        }
+        if (cmbRazonSocial != null) {
+            installComboUI(cmbRazonSocial);
+            cmbRazonSocial.setBackground(getFieldBg(cmbRazonSocial.isEnabled()));
+            cmbRazonSocial.setForeground(cmbRazonSocial.isEnabled() ? t.textPrimary : getDisabledFg());
+            themeComboEditor(cmbRazonSocial, t);
+        }
+        if (cmbNroDoc != null) {
+            installComboUI(cmbNroDoc);
+            cmbNroDoc.setBackground(getFieldBg(cmbNroDoc.isEnabled()));
+            cmbNroDoc.setForeground(cmbNroDoc.isEnabled() ? t.textPrimary : getDisabledFg());
+            themeComboEditor(cmbNroDoc, t);
+        }
+        if (txtDomicilio != null) { txtDomicilio.setBackground(getFieldBg(txtDomicilio.isEnabled())); txtDomicilio.setForeground(t.textPrimary); txtDomicilio.setDisabledTextColor(getDisabledFg()); txtDomicilio.setCaretColor(t.textPrimary); }
+        if (txtEmail != null) { txtEmail.setBackground(getFieldBg(txtEmail.isEnabled())); txtEmail.setForeground(t.textPrimary); txtEmail.setDisabledTextColor(getDisabledFg()); txtEmail.setCaretColor(t.textPrimary); }
+        if (txtComprobanteAsoc != null) { txtComprobanteAsoc.setBackground(getFieldBg(txtComprobanteAsoc.isEnabled())); txtComprobanteAsoc.setForeground(t.textPrimary); txtComprobanteAsoc.setDisabledTextColor(getDisabledFg()); txtComprobanteAsoc.setCaretColor(t.textPrimary); }
         if (chkContado != null) { chkContado.setBackground(t.bgBase); chkContado.setForeground(t.textPrimary); }
         if (chkTarjetaDeb != null) { chkTarjetaDeb.setBackground(t.bgBase); chkTarjetaDeb.setForeground(t.textPrimary); }
         if (chkTarjetaCred != null) { chkTarjetaCred.setBackground(t.bgBase); chkTarjetaCred.setForeground(t.textPrimary); }
@@ -770,11 +937,15 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             }
         }
         if (lblTotal != null) { lblTotal.setForeground(t.brandDark); }
-        if (txtImporteNeto != null) { txtImporteNeto.setBackground(t.bgInput); txtImporteNeto.setForeground(t.textPrimary); }
-        if (txtImporteIva != null) { txtImporteIva.setBackground(t.bgInput); txtImporteIva.setForeground(t.textPrimary); }
-        if (txtImporteTotal != null) { txtImporteTotal.setBackground(t.bgInput); txtImporteTotal.setForeground(t.brandDark); }
-        if (txtOtrosImpuestos != null) { txtOtrosImpuestos.setBackground(t.bgInput); txtOtrosImpuestos.setForeground(t.textPrimary); }
-        if (cmbAlicuotaIva != null) { cmbAlicuotaIva.setBackground(t.bgInput); cmbAlicuotaIva.setForeground(t.textPrimary); }
+        if (txtImporteNeto != null) { txtImporteNeto.setBackground(getFieldBg(txtImporteNeto.isEnabled())); txtImporteNeto.setForeground(t.textPrimary); txtImporteNeto.setDisabledTextColor(getDisabledFg()); txtImporteNeto.setCaretColor(t.textPrimary); }
+        if (txtImporteIva != null) { txtImporteIva.setBackground(getFieldBg(txtImporteIva.isEnabled())); txtImporteIva.setForeground(t.textPrimary); txtImporteIva.setDisabledTextColor(getDisabledFg()); txtImporteIva.setCaretColor(t.textPrimary); }
+        if (txtImporteTotal != null) { txtImporteTotal.setBackground(getFieldBg(txtImporteTotal.isEnabled())); txtImporteTotal.setForeground(t.brandDark); txtImporteTotal.setDisabledTextColor(getDisabledFg()); txtImporteTotal.setCaretColor(t.brandDark); }
+        if (txtOtrosImpuestos != null) { txtOtrosImpuestos.setBackground(getFieldBg(txtOtrosImpuestos.isEnabled())); txtOtrosImpuestos.setForeground(t.textPrimary); txtOtrosImpuestos.setDisabledTextColor(getDisabledFg()); txtOtrosImpuestos.setCaretColor(t.textPrimary); }
+        if (cmbAlicuotaIva != null) {
+            installComboUI(cmbAlicuotaIva);
+            cmbAlicuotaIva.setBackground(getFieldBg(cmbAlicuotaIva.isEnabled()));
+            cmbAlicuotaIva.setForeground(cmbAlicuotaIva.isEnabled() ? t.textPrimary : getDisabledFg());
+        }
         if (btnEliminarItem != null) { btnEliminarItem.setBackground(t.btnBg); btnEliminarItem.setForeground(t.textPrimary); }
         if (btnAgregarItem != null) { btnAgregarItem.setBackground(t.btnBg); btnAgregarItem.setForeground(t.textPrimary); }
         if (btnEmitir != null) {
@@ -784,27 +955,33 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         if (btnLimpiar != null) { btnLimpiar.setBackground(t.btnBg); btnLimpiar.setForeground(t.textPrimary); }
         if (chkModoPrueba != null) { chkModoPrueba.setBackground(t.bgBase); chkModoPrueba.setForeground(t.danger); }
         if (btnSiguiente != null) { btnSiguiente.setBackground(t.btnBg); btnSiguiente.setForeground(t.textPrimary); }
+        if (panelTituloDatos != null) panelTituloDatos.setBackground(t.bgSurface);
+        if (panelBotonesReceptor != null) panelBotonesReceptor.setBackground(t.bgSurface);
         // FIX: live-theme — walk desde panelPrincipalWrapper (en lugar de this, que está fuera del árbol)
         if (panelPrincipalWrapper != null) {
             themeLabels(panelPrincipalWrapper, t);
         }
-        // FIX: re-aplicar color brand a los títulos DESPUÉS de themeLabels (que los sobreescribe)
-        if (lblTituloDatos != null) lblTituloDatos.setForeground(t.brand);
-        if (lblTituloOp != null) lblTituloOp.setForeground(t.brand);
+        // FIX: re-aplicar color brand y fuente a los títulos DESPUÉS de themeLabels (que los sobreescribe)
+        if (lblTituloDatos != null) {
+            lblTituloDatos.setForeground(t.brand);
+            lblTituloDatos.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        }
+        if (lblTituloOp != null) {
+            lblTituloOp.setForeground(t.brand);
+            lblTituloOp.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        }
+        if (lblSubtituloOp != null) lblSubtituloOp.setFont(new Font("Segoe UI", Font.PLAIN, 12));
     }
 
-    private void themeLabels(Container c, Theme t) {
+    private void themeLabels(java.awt.Container c, Theme t) {
         for (java.awt.Component comp : c.getComponents()) {
             if (comp instanceof JLabel) {
                 JLabel lbl = (JLabel) comp;
-                if (lbl == lblTituloDatos || lbl == lblTituloOp) {
-                    // Skip titles — they keep the brand color
-                } else {
-                    lbl.setForeground(t.textPrimary);
-                }
+                lbl.setForeground(t.textPrimary);
+                lbl.setFont(FUENTE_LABEL);
             }
-            if (comp instanceof Container) {
-                themeLabels((Container) comp, t);
+            if (comp instanceof java.awt.Container) {
+                themeLabels((java.awt.Container) comp, t);
             }
         }
     }
@@ -835,6 +1012,94 @@ public class VentanaFacturacion extends javax.swing.JFrame {
                 return c;
             }
         });
+    }
+
+    // ── Inner classes ──
+
+    private static class CustomComboUI extends javax.swing.plaf.basic.BasicComboBoxUI {
+        @Override
+        public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {
+            g.setColor(comboBox.getBackground());
+            g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+
+        @Override
+        public void paintCurrentValue(Graphics g, Rectangle bounds, boolean hasFocus) {
+            javax.swing.ListCellRenderer<Object> renderer = comboBox.getRenderer();
+            java.awt.Component c;
+            if (hasFocus && !isPopupVisible(comboBox)) {
+                c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, true, false);
+            } else {
+                c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, false, false);
+            }
+            c.setFont(comboBox.getFont());
+            if (hasFocus && !isPopupVisible(comboBox)) {
+                c.setForeground(listBox.getSelectionForeground());
+                c.setBackground(listBox.getSelectionBackground());
+            } else {
+                c.setForeground(comboBox.getForeground());
+                c.setBackground(comboBox.getBackground());
+            }
+            currentValuePane.paintComponent(g, c, comboBox, bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+    }
+
+    private void installComboUI(JComboBox<?> combo) {
+        combo.setUI(new CustomComboUI());
+    }
+
+    private void themeDateField(JComponent comp, Theme t) {
+        if (comp instanceof JTextField) {
+            JTextField tf = (JTextField) comp;
+            tf.setBackground(getFieldBg(true));
+            tf.setForeground(t.textPrimary);
+            tf.setDisabledTextColor(getDisabledFg());
+            tf.setCaretColor(t.textPrimary);
+            tf.setFont(FUENTE_INPUT_BOLD);
+        } else {
+            for (java.awt.Component c : comp.getComponents()) {
+                if (c instanceof JTextField) {
+                    JTextField tf = (JTextField) c;
+                    tf.setBackground(getFieldBg(true));
+                    tf.setForeground(t.textPrimary);
+                    tf.setDisabledTextColor(getDisabledFg());
+                    tf.setCaretColor(t.textPrimary);
+                    tf.setFont(FUENTE_INPUT_BOLD);
+                }
+                if (c instanceof java.awt.Container) {
+                    themeDateField((JComponent) c, t);
+                }
+            }
+        }
+    }
+
+    private void themeComboEditor(JComboBox<?> combo, Theme t) {
+        java.awt.Component editorComp = combo.getEditor().getEditorComponent();
+        if (editorComp instanceof JTextField) {
+            JTextField ed = (JTextField) editorComp;
+            ed.setBackground(getFieldBg(combo.isEnabled()));
+            ed.setForeground(combo.isEnabled() ? t.textPrimary : getDisabledFg());
+            ed.setDisabledTextColor(getDisabledFg());
+            ed.setCaretColor(t.textPrimary);
+        }
+    }
+
+    private void installDateFocusListener(JComponent chooser) {
+        for (java.awt.Component c : chooser.getComponents()) {
+            if (c instanceof JTextField) {
+                JTextField tf = (JTextField) c;
+                tf.addFocusListener(new java.awt.event.FocusAdapter() {
+                    @Override
+                    public void focusLost(java.awt.event.FocusEvent e) {
+                        tf.setForeground(currentTheme.textPrimary);
+                    }
+                });
+                return;
+            }
+            if (c instanceof java.awt.Container) {
+                installDateFocusListener((JComponent) c);
+            }
+        }
     }
 
     // ===================== GETTERS =====================

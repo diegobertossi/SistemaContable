@@ -2,9 +2,12 @@ package com.els.facturacion.vista;
 
 import com.els.facturacion.dao.CuitDAO;
 import com.els.facturacion.modelo.CuitConfigDTO;
+import javax.swing.BorderFactory;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
+import javax.swing.JList;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -17,19 +20,32 @@ import javax.swing.SwingConstants;
 
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Color;
 import java.awt.Cursor;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.Rectangle;
 import java.util.List;
 
 public class VentanaConfigCertificados extends JFrame {
 
     private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
-    private static final Font FUENTE_LABEL = new Font("Segoe UI", Font.BOLD, 11);
+    private static final Font FUENTE_INPUT = new Font("Segoe UI", Font.PLAIN, 12);
+    private static final Font FUENTE_INPUT_BOLD = new Font("Segoe UI", Font.BOLD, 12);
+    private static final Font FUENTE_LABEL = new Font("Segoe UI", Font.PLAIN, 11);
+    private static final Font FUENTE_TABLA = new Font("Segoe UI", Font.PLAIN, 12);
+    private static final Color DISABLED_FG_LIGHT = new Color(95, 97, 106);
+    private static final Color DISABLED_FG_DARK = new Color(210, 207, 190);
+    private static final Color LIGHT_READONLY_BG = new Color(236, 237, 241);
+    private static final Color LIGHT_EDITABLE_BG = new Color(255, 253, 230);
+    private static final Color DARK_READONLY_BG = new Color(28, 33, 55);
+    private static final Color DARK_EDITABLE_BG = new Color(22, 27, 45);
 
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
@@ -56,6 +72,7 @@ public class VentanaConfigCertificados extends JFrame {
     private JButton btnModificar;
     private JButton btnEliminar;
     private JButton btnLimpiar;
+    private JPanel southWrapper;
 
     public VentanaConfigCertificados() {
         setTitle("Configuracion de Certificados ARCA");
@@ -74,13 +91,14 @@ public class VentanaConfigCertificados extends JFrame {
     private void initComponents() {
         panelSuperior = new JPanel(new BorderLayout());
         panelSuperior.setBackground(currentTheme.bgSurface);
+        panelSuperior.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         lblTitulo = new JLabel("GESTION DE CERTIFICADOS Y CUITs", SwingConstants.CENTER);
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblTitulo.setForeground(currentTheme.brand);
         lblTitulo.setBackground(currentTheme.bgSurface);
 
-        panelSuperior.add(lblTitulo, BorderLayout.NORTH);
+        panelSuperior.add(lblTitulo, BorderLayout.CENTER);
 
         String[] columnas = {"ID", "CUIT", "Razon Social", "Condicion IVA", "Punto Venta", "Activo"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
@@ -119,32 +137,58 @@ public class VentanaConfigCertificados extends JFrame {
         };
 
         tabla = new JTable(modeloTabla);
-        tabla.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        tabla.setFont(FUENTE_TABLA);
         tabla.setRowHeight(22);
+        tabla.setIntercellSpacing(new Dimension(3, 2));
         tabla.setShowGrid(true);
-        tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
-        tabla.getTableHeader().setBackground(currentTheme.btnBg);
         scrollTabla = new JScrollPane(tabla);
 
         panelFormulario = new JPanel(new GridBagLayout());
         panelFormulario.setBackground(currentTheme.bgSurface);
         txtCuit = new JTextField(15);
-        txtCuit.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        txtCuit.setFont(FUENTE_INPUT_BOLD);
+        txtCuit.setDisabledTextColor(getDisabledFg());
+        txtCuit.setCaretColor(currentTheme.textPrimary);
 
         txtRazonSocial = new JTextField(20);
-        txtRazonSocial.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        txtRazonSocial.setFont(FUENTE_INPUT_BOLD);
+        txtRazonSocial.setDisabledTextColor(getDisabledFg());
+        txtRazonSocial.setCaretColor(currentTheme.textPrimary);
 
         cmbCondicionIva = new JComboBox<>(new String[]{"RI", "Monotributista", "Exento", "Consumidor Final"});
-        cmbCondicionIva.setFont(FUENTE_BOTON);
+        cmbCondicionIva.setFont(FUENTE_INPUT_BOLD);
+        cmbCondicionIva.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(getFieldBg(cmbCondicionIva.isEnabled()));
+                setForeground(cmbCondicionIva.isEnabled() ? currentTheme.textPrimary : getDisabledFg());
+                setFont(cmbCondicionIva.getFont());
+                return this;
+            }
+            @Override
+            public void paintComponent(Graphics g) {
+                setBackground(getFieldBg(cmbCondicionIva.isEnabled()));
+                setForeground(cmbCondicionIva.isEnabled() ? currentTheme.textPrimary : getDisabledFg());
+                super.paintComponent(g);
+            }
+        });
+        installComboUI(cmbCondicionIva);
 
         txtPuntoVenta = new JTextField(10);
-        txtPuntoVenta.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        txtPuntoVenta.setFont(FUENTE_INPUT_BOLD);
+        txtPuntoVenta.setDisabledTextColor(getDisabledFg());
+        txtPuntoVenta.setCaretColor(currentTheme.textPrimary);
 
         txtRutaCertificado = new JTextField(25);
-        txtRutaCertificado.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        txtRutaCertificado.setFont(FUENTE_INPUT_BOLD);
+        txtRutaCertificado.setDisabledTextColor(getDisabledFg());
+        txtRutaCertificado.setCaretColor(currentTheme.textPrimary);
 
         txtPassword = new JPasswordField(15);
-        txtPassword.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        txtPassword.setFont(FUENTE_INPUT_BOLD);
+        txtPassword.setDisabledTextColor(getDisabledFg());
+        txtPassword.setCaretColor(currentTheme.textPrimary);
 
         btnSeleccionarArchivo = new JButton("SELECCIONAR");
         btnSeleccionarArchivo.setFont(FUENTE_BOTON);
@@ -304,7 +348,7 @@ public class VentanaConfigCertificados extends JFrame {
 
         add(panelSuperior, BorderLayout.NORTH);
         add(scrollTabla, BorderLayout.CENTER);
-        JPanel southWrapper = new JPanel(new BorderLayout());
+        southWrapper = new JPanel(new BorderLayout());
         southWrapper.setBackground(currentTheme.bgBase);
         southWrapper.add(panelSur, BorderLayout.CENTER);
         boolean barIsLight = currentTheme.bgBase.getRed() > 128;
@@ -316,6 +360,47 @@ public class VentanaConfigCertificados extends JFrame {
         statusBar.add(lblStatus);
         southWrapper.add(statusBar, BorderLayout.SOUTH);
         add(southWrapper, BorderLayout.SOUTH);
+    }
+
+    private Color getDisabledFg() {
+        return currentTheme.bgBase.getRed() > 128 ? DISABLED_FG_LIGHT : DISABLED_FG_DARK;
+    }
+
+    private Color getFieldBg(boolean editing) {
+        return currentTheme.bgBase.getRed() > 128
+            ? (editing ? LIGHT_EDITABLE_BG : LIGHT_READONLY_BG)
+            : (editing ? DARK_EDITABLE_BG : DARK_READONLY_BG);
+    }
+
+    private static class CustomComboUI extends javax.swing.plaf.basic.BasicComboBoxUI {
+        @Override
+        public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {
+            g.setColor(comboBox.getBackground());
+            g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+        @Override
+        public void paintCurrentValue(Graphics g, Rectangle bounds, boolean hasFocus) {
+            javax.swing.ListCellRenderer<Object> renderer = comboBox.getRenderer();
+            java.awt.Component c;
+            if (hasFocus && !isPopupVisible(comboBox)) {
+                c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, true, false);
+            } else {
+                c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, false, false);
+            }
+            c.setFont(comboBox.getFont());
+            if (hasFocus && !isPopupVisible(comboBox)) {
+                c.setForeground(listBox.getSelectionForeground());
+                c.setBackground(listBox.getSelectionBackground());
+            } else {
+                c.setForeground(comboBox.getForeground());
+                c.setBackground(comboBox.getBackground());
+            }
+            currentValuePane.paintComponent(g, c, comboBox, bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+    }
+
+    private void installComboUI(JComboBox<?> combo) {
+        combo.setUI(new CustomComboUI());
     }
 
     private void cargarTabla() {
@@ -478,6 +563,7 @@ public class VentanaConfigCertificados extends JFrame {
         }
         if (panelBotones != null) panelBotones.setBackground(t.bgSurface);
         if (panelSur != null) panelSur.setBackground(t.bgSurface);
+        if (southWrapper != null) southWrapper.setBackground(t.bgBase);
         if (statusBar != null) {
             boolean isLight = t.bgBase.getRed() > 128;
             statusBar.setBackground(isLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
@@ -487,28 +573,39 @@ public class VentanaConfigCertificados extends JFrame {
             lblStatus.setForeground(isLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
         }
         if (txtCuit != null) {
+            txtCuit.setBackground(getFieldBg(txtCuit.isEnabled()));
             txtCuit.setForeground(t.textPrimary);
-            txtCuit.setBackground(t.bgInput);
+            txtCuit.setDisabledTextColor(getDisabledFg());
+            txtCuit.setCaretColor(t.textPrimary);
         }
         if (txtRazonSocial != null) {
+            txtRazonSocial.setBackground(getFieldBg(txtRazonSocial.isEnabled()));
             txtRazonSocial.setForeground(t.textPrimary);
-            txtRazonSocial.setBackground(t.bgInput);
+            txtRazonSocial.setDisabledTextColor(getDisabledFg());
+            txtRazonSocial.setCaretColor(t.textPrimary);
         }
         if (txtPuntoVenta != null) {
+            txtPuntoVenta.setBackground(getFieldBg(txtPuntoVenta.isEnabled()));
             txtPuntoVenta.setForeground(t.textPrimary);
-            txtPuntoVenta.setBackground(t.bgInput);
+            txtPuntoVenta.setDisabledTextColor(getDisabledFg());
+            txtPuntoVenta.setCaretColor(t.textPrimary);
         }
         if (txtRutaCertificado != null) {
+            txtRutaCertificado.setBackground(getFieldBg(txtRutaCertificado.isEnabled()));
             txtRutaCertificado.setForeground(t.textPrimary);
-            txtRutaCertificado.setBackground(t.bgInput);
+            txtRutaCertificado.setDisabledTextColor(getDisabledFg());
+            txtRutaCertificado.setCaretColor(t.textPrimary);
         }
         if (txtPassword != null) {
+            txtPassword.setBackground(getFieldBg(txtPassword.isEnabled()));
             txtPassword.setForeground(t.textPrimary);
-            txtPassword.setBackground(t.bgInput);
+            txtPassword.setDisabledTextColor(getDisabledFg());
+            txtPassword.setCaretColor(t.textPrimary);
         }
         if (cmbCondicionIva != null) {
-            cmbCondicionIva.setForeground(t.textPrimary);
-            cmbCondicionIva.setBackground(t.bgElevated);
+            cmbCondicionIva.setBackground(getFieldBg(cmbCondicionIva.isEnabled()));
+            cmbCondicionIva.setForeground(cmbCondicionIva.isEnabled() ? t.textPrimary : getDisabledFg());
+            installComboUI(cmbCondicionIva);
         }
         if (btnSeleccionarArchivo != null) {
             btnSeleccionarArchivo.setForeground(t.textPrimary);

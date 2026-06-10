@@ -4,9 +4,11 @@ import com.els.facturacion.controlador.ControladorPagos;
 import com.els.facturacion.modelo.FacturaPagoDTO;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -24,6 +26,8 @@ import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Rectangle;
 import java.io.File;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
@@ -36,6 +40,16 @@ import java.util.List;
 public class VentanaRecibos extends javax.swing.JFrame {
 
     private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
+    private static final Font FUENTE_INPUT = new Font("Segoe UI", Font.PLAIN, 12);
+    private static final Font FUENTE_INPUT_BOLD = new Font("Segoe UI", Font.BOLD, 12);
+    private static final Font FUENTE_LABEL = new Font("Segoe UI", Font.PLAIN, 11);
+    private static final Font FUENTE_TABLA = new Font("Segoe UI", Font.PLAIN, 12);
+    private static final Color DISABLED_FG_LIGHT = new Color(95, 97, 106);
+    private static final Color DISABLED_FG_DARK = new Color(210, 207, 190);
+    private static final Color LIGHT_READONLY_BG = new Color(236, 237, 241);
+    private static final Color LIGHT_EDITABLE_BG = new Color(255, 253, 230);
+    private static final Color DARK_READONLY_BG = new Color(28, 33, 55);
+    private static final Color DARK_EDITABLE_BG = new Color(22, 27, 45);
     private static final DecimalFormat DF = new DecimalFormat("#,##0.00");
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -77,7 +91,7 @@ public class VentanaRecibos extends javax.swing.JFrame {
         setSize(1024, 768);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(currentTheme.bgSurface);
+        getContentPane().setBackground(currentTheme.bgBase);
 
         lblTitulo = new JLabel("GESTI\u00d3N DE RECIBOS", SwingConstants.CENTER);
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
@@ -89,14 +103,31 @@ public class VentanaRecibos extends javax.swing.JFrame {
         panelTitulo.add(lblTitulo, BorderLayout.CENTER);
 
         lblFiltroCliente = new JLabel("CLIENTE:");
-        lblFiltroCliente.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblFiltroCliente.setFont(FUENTE_LABEL);
         lblFiltroCliente.setForeground(currentTheme.textPrimary);
 
         cmbFiltroCliente = new JComboBox<>();
         cmbFiltroCliente.setEditable(true);
-        cmbFiltroCliente.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        cmbFiltroCliente.setFont(FUENTE_INPUT_BOLD);
         cmbFiltroCliente.setPreferredSize(new Dimension(260, 26));
         cmbFiltroCliente.setMaximumRowCount(12);
+        cmbFiltroCliente.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(getFieldBg(cmbFiltroCliente.isEnabled()));
+                setForeground(cmbFiltroCliente.isEnabled() ? currentTheme.textPrimary : getDisabledFg());
+                setFont(cmbFiltroCliente.getFont());
+                return this;
+            }
+            @Override
+            public void paintComponent(Graphics g) {
+                setBackground(getFieldBg(cmbFiltroCliente.isEnabled()));
+                setForeground(cmbFiltroCliente.isEnabled() ? currentTheme.textPrimary : getDisabledFg());
+                super.paintComponent(g);
+            }
+        });
+        installComboUI(cmbFiltroCliente);
 
         panelFiltro = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
         panelFiltro.setBackground(currentTheme.bgSurface);
@@ -111,6 +142,10 @@ public class VentanaRecibos extends javax.swing.JFrame {
         panelNorte.add(panelFiltro);
 
         JTextField editorFiltro = (JTextField) cmbFiltroCliente.getEditor().getEditorComponent();
+        editorFiltro.setFont(FUENTE_INPUT_BOLD);
+        editorFiltro.setDisabledTextColor(getDisabledFg());
+        editorFiltro.setCaretColor(currentTheme.textPrimary);
+        themeComboEditor(cmbFiltroCliente, currentTheme);
         editorFiltro.getDocument().addDocumentListener(new DocumentListener() {
             @Override public void insertUpdate(DocumentEvent e) { onFiltroCambiado(); }
             @Override public void removeUpdate(DocumentEvent e) { onFiltroCambiado(); }
@@ -154,10 +189,9 @@ public class VentanaRecibos extends javax.swing.JFrame {
             }
         };
         tablaPagos = new JTable(modeloTablaPagos);
-        tablaPagos.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        tablaPagos.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
-        tablaPagos.getTableHeader().setBackground(currentTheme.btnBg);
+        tablaPagos.setFont(FUENTE_TABLA);
         tablaPagos.setRowHeight(22);
+        tablaPagos.setIntercellSpacing(new Dimension(3, 2));
         tablaPagos.setShowGrid(true);
         tablaPagos.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 
@@ -178,7 +212,7 @@ public class VentanaRecibos extends javax.swing.JFrame {
         btnVerRecibo.addActionListener(e -> verReciboPagoSeleccionado());
 
         panelAcciones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-        panelAcciones.setBackground(bgAzulado(currentTheme));
+        panelAcciones.setBackground(currentTheme.bgSurface);
         panelAcciones.add(btnGenerarRecibo);
         panelAcciones.add(btnVerRecibo);
         panelPagos.add(panelAcciones, BorderLayout.SOUTH);
@@ -369,6 +403,58 @@ public class VentanaRecibos extends javax.swing.JFrame {
         btn.setFocusPainted(false);
     }
 
+    private Color getDisabledFg() {
+        return currentTheme.bgBase.getRed() > 128 ? DISABLED_FG_LIGHT : DISABLED_FG_DARK;
+    }
+
+    private Color getFieldBg(boolean editing) {
+        return currentTheme.bgBase.getRed() > 128
+            ? (editing ? LIGHT_EDITABLE_BG : LIGHT_READONLY_BG)
+            : (editing ? DARK_EDITABLE_BG : DARK_READONLY_BG);
+    }
+
+    private static class CustomComboUI extends javax.swing.plaf.basic.BasicComboBoxUI {
+        @Override
+        public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {
+            g.setColor(comboBox.getBackground());
+            g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+        @Override
+        public void paintCurrentValue(Graphics g, Rectangle bounds, boolean hasFocus) {
+            javax.swing.ListCellRenderer<Object> renderer = comboBox.getRenderer();
+            java.awt.Component c;
+            if (hasFocus && !isPopupVisible(comboBox)) {
+                c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, true, false);
+            } else {
+                c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, false, false);
+            }
+            c.setFont(comboBox.getFont());
+            if (hasFocus && !isPopupVisible(comboBox)) {
+                c.setForeground(listBox.getSelectionForeground());
+                c.setBackground(listBox.getSelectionBackground());
+            } else {
+                c.setForeground(comboBox.getForeground());
+                c.setBackground(comboBox.getBackground());
+            }
+            currentValuePane.paintComponent(g, c, comboBox, bounds.x, bounds.y, bounds.width, bounds.height);
+        }
+    }
+
+    private void installComboUI(JComboBox<?> combo) {
+        combo.setUI(new CustomComboUI());
+    }
+
+    private void themeComboEditor(JComboBox<?> combo, Theme t) {
+        java.awt.Component editorComp = combo.getEditor().getEditorComponent();
+        if (editorComp instanceof JTextField) {
+            JTextField ed = (JTextField) editorComp;
+            ed.setBackground(getFieldBg(combo.isEnabled()));
+            ed.setForeground(combo.isEnabled() ? t.textPrimary : getDisabledFg());
+            ed.setDisabledTextColor(getDisabledFg());
+            ed.setCaretColor(t.textPrimary);
+        }
+    }
+
     private void ajustarAnchoColumnas(JTable table, int... priorizar) {
         java.util.Set<Integer> prio = new java.util.HashSet<>();
         for (int p : priorizar) prio.add(p);
@@ -408,14 +494,18 @@ public class VentanaRecibos extends javax.swing.JFrame {
 
     private void applyTheme(Theme t) {
         currentTheme = t;
+        Font titledFont = new Font("Segoe UI", Font.BOLD, 13);
 
+        if (getContentPane() != null) getContentPane().setBackground(t.bgBase);
         if (lblTitulo != null) lblTitulo.setForeground(t.brand);
         if (panelTitulo != null) panelTitulo.setBackground(t.bgSurface);
         if (panelFiltro != null) panelFiltro.setBackground(t.bgSurface);
         if (lblFiltroCliente != null) lblFiltroCliente.setForeground(t.textPrimary);
         if (cmbFiltroCliente != null) {
-            cmbFiltroCliente.setBackground(t.bgInput);
-            cmbFiltroCliente.setForeground(t.textPrimary);
+            cmbFiltroCliente.setBackground(getFieldBg(cmbFiltroCliente.isEnabled()));
+            cmbFiltroCliente.setForeground(cmbFiltroCliente.isEnabled() ? t.textPrimary : getDisabledFg());
+            installComboUI(cmbFiltroCliente);
+            themeComboEditor(cmbFiltroCliente, t);
         }
 
         if (panelPagos != null) {
@@ -427,9 +517,9 @@ public class VentanaRecibos extends javax.swing.JFrame {
                     "PAGOS Y RECIBOS",
                     javax.swing.border.TitledBorder.LEFT,
                     javax.swing.border.TitledBorder.TOP,
-                    new Font("Segoe UI", Font.BOLD, 13), t.textPrimary)));
+                    titledFont, t.textPrimary)));
         }
-        if (panelAcciones != null) panelAcciones.setBackground(bgAzulado(t));
+        if (panelAcciones != null) panelAcciones.setBackground(t.bgSurface);
         if (btnGenerarRecibo != null) { btnGenerarRecibo.setBackground(t.btnBg); btnGenerarRecibo.setForeground(t.textPrimary); }
         if (btnVerRecibo != null) { btnVerRecibo.setBackground(t.btnBg); btnVerRecibo.setForeground(t.textPrimary); }
         if (scrollPagos != null && scrollPagos.getViewport() != null)
