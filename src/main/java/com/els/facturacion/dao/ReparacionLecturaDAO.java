@@ -172,11 +172,13 @@ public class ReparacionLecturaDAO {
                 + "e.Nombre as equipo_nombre, e.NumeroDeSerie, e.Modelo, e.Marca, "
                 + "c.nombre as cliente_nombre, c.CUIT, "
                 + "rep.Falla, rep.PrecioPeso, "
-                + "rep.FechaEntrada "
+                + "rep.FechaEntrada, "
+                + "s.NombreSucursal AS sucursal_nombre "
                 + "FROM " + baseDatos + ".remitos r "
                 + "JOIN " + baseDatos + ".reparaciones rep ON r.idRemito = rep.idRemito "
                 + "LEFT JOIN " + baseDatos + ".equipos e ON rep.idEquipo = e.IdEquipo "
                 + "LEFT JOIN " + baseDatos + ".cliente c ON e.idCliente = c.idCliente "
+                + "LEFT JOIN " + baseDatos + ".sucursal s ON e.IdSucursal = s.idSucursal "
                 + "WHERE r.NumeroRemitoSalida IS NOT NULL "
                 + "ORDER BY r.NumeroRemitoSalida DESC";
 
@@ -200,6 +202,9 @@ public class ReparacionLecturaDAO {
                     dto = new com.els.facturacion.modelo.RemitoReparsoftDTO(idRemito, numSalida, clienteNombre, cuit, idUbicacion);
                     dto.setItems(new ArrayList<>());
                     try { dto.setFechaEmision(rs.getDate("FechaEntrada")); } catch (Exception e) {}
+                    String sucNombre = "";
+                    try { sucNombre = rs.getString("sucursal_nombre"); } catch (Exception e) {}
+                    dto.setSucursalNombre(sucNombre);
                     map.put(idRemito, dto);
                 }
 
@@ -293,10 +298,12 @@ public class ReparacionLecturaDAO {
 
         String sql = "SELECT rep.ELS, e.Nombre as equipo_nombre, e.NumeroDeSerie, e.Modelo, e.Marca, "
                 + "rep.Falla, rep.PrecioPeso, c.nombre as cliente_nombre, "
-                + "r.IdUbicacion, r.NumeroRemitoSalida "
+                + "r.IdUbicacion, r.NumeroRemitoSalida, "
+                + "s.NombreSucursal AS sucursal_nombre "
                 + "FROM " + baseDatos + ".reparaciones rep "
                 + "JOIN " + baseDatos + ".equipos e ON rep.idEquipo = e.IdEquipo "
                 + "JOIN " + baseDatos + ".cliente c ON e.idCliente = c.idCliente "
+                + "LEFT JOIN " + baseDatos + ".sucursal s ON e.IdSucursal = s.idSucursal "
                 + "LEFT JOIN " + baseDatos + ".remitos r ON rep.idRemito = r.idRemito "
                 + "WHERE rep.PrecioPeso > 0 "
                 + "ORDER BY rep.ELS DESC";
@@ -315,6 +322,7 @@ public class ReparacionLecturaDAO {
                 String clienteNombre = "";
                 String numeroRemito = "";
                 int idUbic = 0;
+                String sucursalNombre = "";
                 try { els = rs.getInt("ELS"); } catch (Exception e) {}
                 try { equipoNombre = rs.getString("equipo_nombre"); } catch (Exception e) {}
                 try { serie = rs.getString("NumeroDeSerie"); } catch (Exception e) {}
@@ -324,6 +332,7 @@ public class ReparacionLecturaDAO {
                 try { precio = rs.getDouble("PrecioPeso"); } catch (Exception e) {}
                 try { clienteNombre = rs.getString("cliente_nombre"); } catch (Exception e) {}
                 try { idUbic = rs.getInt("IdUbicacion"); if (rs.wasNull()) idUbic = 0; } catch (Exception e) {}
+                try { sucursalNombre = rs.getString("sucursal_nombre"); } catch (Exception e) {}
                 try {
                     if (idUbic != 0) {
                         int nroSalida = 0;
@@ -337,7 +346,7 @@ public class ReparacionLecturaDAO {
 
                 lista.add(new com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem(
                     els, equipoNombre, serie, falla, modelo, marca, java.math.BigDecimal.valueOf(precio),
-                    false, numeroRemito, clienteNombre, baseDatos, idUbic));
+                    false, numeroRemito, clienteNombre, baseDatos, idUbic, sucursalNombre));
             }
         } catch (SQLException e) {
             System.err.println("Error listando todos los equipos con precio desde " + baseDatos + ": " + e.getMessage());
