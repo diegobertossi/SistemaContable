@@ -3,14 +3,17 @@ package com.els.facturacion.dao;
 import com.els.facturacion.conexion.ConexionFacturacion;
 import com.els.facturacion.conexion.ConexionReparsoft;
 import com.els.facturacion.modelo.ClienteDTO;
+import com.els.facturacion.modelo.SucursalDTO;
 import com.els.facturacion.util.UbicacionSistema;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class ClienteDAO {
@@ -245,6 +248,46 @@ public class ClienteDAO {
             System.err.println("Error importando desde " + base + ": " + e.getMessage());
         }
         return importados;
+    }
+
+    public Map<Integer, String> getNombresSucursalesPorCliente(String baseDatos) {
+        Map<Integer, String> mapa = new HashMap<>();
+        String sql = "SELECT s.idCliente, s.NombreSucursal FROM " + baseDatos + ".sucursal s "
+                   + "WHERE s.NombreSucursal IS NOT NULL AND s.NombreSucursal != '' "
+                   + "ORDER BY s.idCliente, s.NombreSucursal";
+        Connection conn = ConexionReparsoft.getInstancia().getConexion(baseDatos);
+        if (conn == null) return mapa;
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                int idCliente = rs.getInt("idCliente");
+                String nombre = rs.getString("NombreSucursal").trim();
+                mapa.merge(idCliente, nombre, (a, b) -> a + ", " + b);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error obteniendo sucursales desde " + baseDatos + ": " + e.getMessage());
+        }
+        return mapa;
+    }
+
+    public List<SucursalDTO> getSucursalesPorCliente(int elsReferencia, String baseDatos) {
+        List<SucursalDTO> lista = new ArrayList<>();
+        String sql = "SELECT s.NombreSucursal FROM " + baseDatos + ".sucursal s "
+                   + "WHERE s.idCliente = ? AND s.NombreSucursal IS NOT NULL AND s.NombreSucursal != '' "
+                   + "ORDER BY s.NombreSucursal";
+        Connection conn = ConexionReparsoft.getInstancia().getConexion(baseDatos);
+        if (conn == null) return lista;
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, elsReferencia);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    lista.add(new SucursalDTO(rs.getString("NombreSucursal").trim()));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error obteniendo sucursales para cliente " + elsReferencia + ": " + e.getMessage());
+        }
+        return lista;
     }
 
     private ClienteDTO mapear(ResultSet rs) throws SQLException {

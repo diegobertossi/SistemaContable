@@ -13,6 +13,7 @@ public class ClienteDTO {
     private Integer elsReferencia;
     private Boolean activo;
     private String tipoPersona;
+    private String sucursal;
 
     public ClienteDTO() {
         this.tipoDocumento = "CUIT";
@@ -45,4 +46,6 @@ public class ClienteDTO {
     public void setActivo(Boolean activo) { this.activo = activo; }
     public String getTipoPersona() { return tipoPersona; }
     public void setTipoPersona(String tipoPersona) { this.tipoPersona = tipoPersona; }
+    public String getSucursal() { return sucursal; }
+    public void setSucursal(String sucursal) { this.sucursal = sucursal; }
 }

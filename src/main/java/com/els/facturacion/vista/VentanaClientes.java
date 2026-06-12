@@ -1,10 +1,13 @@
 package com.els.facturacion.vista;
 
 import com.els.facturacion.controlador.ControladorClientes;
+import com.els.facturacion.dao.RemitoReparsoftLecturaDAO;
 import com.els.facturacion.modelo.ClienteDTO;
+import com.els.facturacion.modelo.SucursalDTO;
+import com.els.facturacion.util.AutoCompleteComboBox;
+import com.els.facturacion.util.UbicacionSistema;
 
 import javax.swing.BorderFactory;
-import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.ButtonModel;
@@ -38,7 +41,6 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
@@ -49,6 +51,7 @@ import javax.swing.event.ChangeListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 public class VentanaClientes extends javax.swing.JFrame {
@@ -71,9 +74,14 @@ public class VentanaClientes extends javax.swing.JFrame {
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
     private ControladorClientes controlador;
+    private RemitoReparsoftLecturaDAO dao;
     private JTable tabla;
     private DefaultTableModel modeloTabla;
-    private JTextField txtBuscar;
+    private JPanel panelFiltro;
+    private AutoCompleteComboBox cmbCliente;
+    private JLabel lblClienteFiltro;
+    private boolean cargandoDatos = false;
+    private Map<Integer, String> mapSucursales;
     private JTextField txtNroDoc;
     private JTextField txtRazonSocial;
     private JTextField txtDomicilio;
@@ -87,8 +95,7 @@ public class VentanaClientes extends javax.swing.JFrame {
     private ButtonGroup groupTipoPersona;
     private JPanel panelForm;
     private JPanel panelDerecho;
-    private JPanel panelBusqueda;
-    private JLabel lblBuscar;
+
     private JPanel panelIzquierdo;
     private JPanel panelCentro;
     private JPanel panelBotonesForm;
@@ -97,6 +104,31 @@ public class VentanaClientes extends javax.swing.JFrame {
     private JButton btnGuardar;
     private JButton btnNuevo;
     private JButton btnEditar;
+    private JButton btnMostrarSucursales;
+    private JButton btnVolverSucursales;
+    private JPanel panelSucursalView;
+    private JPanel formSuc;
+    private JTable tablaSucursales;
+    private DefaultTableModel modeloSucursales;
+    private JTextField txtSucNombre;
+    private JTextField txtSucDireccion;
+    private JTextField txtSucContacto;
+    private List<JTextField> sucPhoneFields = new ArrayList<>();
+    private JPanel sucPhonePanel;
+    private JButton btnSucAddPhone;
+    private JButton btnSucRemovePhone;
+    private List<JTextField> sucEmailFields = new ArrayList<>();
+    private JPanel sucEmailPanel;
+    private JButton btnSucAddEmail;
+    private JButton btnSucRemoveEmail;
+    private JPanel panelBotonesSucursal;
+    private JButton btnGuardarSucursal;
+    private JButton btnNuevoSucursal;
+    private JButton btnEditarSucursal;
+    private boolean enVistaSucursales = false;
+    private boolean modoEdicionSucursal = false;
+    private List<SucursalDTO> sucursalesCargadas = new ArrayList<>();
+    private Integer idClienteSucursalActual = null;
     private JScrollPane scrollTabla;
     private boolean modoEdicion;
     private boolean guardando;
@@ -123,6 +155,7 @@ public class VentanaClientes extends javax.swing.JFrame {
 
     public VentanaClientes() {
         controlador = new ControladorClientes();
+        dao = new RemitoReparsoftLecturaDAO();
         initComponents();
         applyTheme(currentTheme);
         VentanaPrincipal.addThemeListener(this);
@@ -282,6 +315,21 @@ public class VentanaClientes extends javax.swing.JFrame {
         panelForm.add(new JLabel("Email:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.NONE, new Insets(5, 5, 3, 2), 0, 0));
         panelForm.add(emailPanel, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
 
+        row++;
+        btnMostrarSucursales = new JButton("MOSTRAR SUCURSALES");
+        btnMostrarSucursales.setFont(FUENTE_BOTON);
+        btnMostrarSucursales.setForeground(currentTheme.textPrimary);
+        btnMostrarSucursales.setBackground(currentTheme.btnBg);
+        btnMostrarSucursales.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnMostrarSucursales.setFocusPainted(false);
+        btnMostrarSucursales.setVisible(false);
+        addButtonFeedback(btnMostrarSucursales);
+        btnMostrarSucursales.addActionListener(e -> toggleSucursalesView());
+        JPanel btnWrap = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 2));
+        btnWrap.setOpaque(false);
+        btnWrap.add(btnMostrarSucursales);
+        panelForm.add(btnWrap, new GridBagConstraints(0, row, 2, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 5, 2, 5), 0, 0));
+
         // ── Espaciador vertical para que el form ocupe el espacio ──
         row++;
         JPanel panel = new JPanel();
@@ -289,7 +337,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         panelForm.add(panel, new GridBagConstraints(0, row, 2, 1, 1, 1.0, GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0));
 
         // ── Tabla (lado izquierdo) ──
-        String[] columnas = {"ID", "Tipo", "Razon Social", "Tipo Doc", "Nro Doc", "Condicion IVA", "Domicilio", "Telefono", "Email"};
+        String[] columnas = {"ID", "Tipo", "Razon Social", "SUCURSAL", "Tipo Doc", "Nro Doc", "Condicion IVA", "Domicilio", "Telefono", "Email"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             public boolean isCellEditable(int row, int column) { return false; }
         };
@@ -300,42 +348,43 @@ public class VentanaClientes extends javax.swing.JFrame {
         tabla.getColumnModel().getColumn(0).setMinWidth(0);
         tabla.getColumnModel().getColumn(0).setMaxWidth(0);
         tabla.getColumnModel().getColumn(0).setPreferredWidth(0);
-        int[] hiddenCols = {1, 3, 5, 6, 8};
+        int[] hiddenCols = {1, 3, 4, 6, 7, 9};
         for (int c : hiddenCols) {
             tabla.getColumnModel().getColumn(c).setMinWidth(0);
             tabla.getColumnModel().getColumn(c).setMaxWidth(0);
             tabla.getColumnModel().getColumn(c).setPreferredWidth(0);
         }
-        tabla.getColumnModel().getColumn(4).setPreferredWidth(80);
-        tabla.getColumnModel().getColumn(4).setMaxWidth(120);
-        tabla.getColumnModel().getColumn(7).setPreferredWidth(80);
-        tabla.getColumnModel().getColumn(7).setMaxWidth(120);
+        tabla.getColumnModel().getColumn(5).setPreferredWidth(80);
+        tabla.getColumnModel().getColumn(5).setMaxWidth(120);
+        tabla.getColumnModel().getColumn(8).setPreferredWidth(80);
+        tabla.getColumnModel().getColumn(8).setMaxWidth(120);
         tabla.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) cargarClienteSeleccionado();
         });
 
         scrollTabla = new JScrollPane(tabla);
 
-        // ── Buscador (lado izquierdo, arriba de la tabla) ──
-        txtBuscar = new JTextField(20);
-        txtBuscar.setHorizontalAlignment(JTextField.LEFT);
-        txtBuscar.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        txtBuscar.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { buscarCliente(); }
-            public void removeUpdate(DocumentEvent e) { buscarCliente(); }
-            public void changedUpdate(DocumentEvent e) { buscarCliente(); }
-        });
+        // ── Filter panel (lado izquierdo, arriba de la tabla) ──
+        panelFiltro = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
+        panelFiltro.setBackground(currentTheme.bgSurface);
 
-        panelBusqueda = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
-        panelBusqueda.setBackground(currentTheme.bgSurface);
-        lblBuscar = new JLabel("BUSCAR:");
-        lblBuscar.setFont(FUENTE_LABEL);
-        panelBusqueda.add(lblBuscar);
-        panelBusqueda.add(txtBuscar);
+        lblClienteFiltro = new JLabel("CLIENTE:");
+        lblClienteFiltro.setFont(FUENTE_LABEL);
+        lblClienteFiltro.setForeground(currentTheme.textPrimary);
+        panelFiltro.add(lblClienteFiltro);
+
+        cmbCliente = new AutoCompleteComboBox();
+        cmbCliente.setFont(FUENTE_INPUT_BOLD);
+        cmbCliente.setPreferredSize(new Dimension(160, 22));
+        panelFiltro.add(cmbCliente);
+        themeComboEditor(cmbCliente, currentTheme);
+        addLiveFilter(cmbCliente);
+
+        cmbCliente.addActionListener(e -> onClienteFiltroChanged());
 
         panelIzquierdo = new JPanel(new BorderLayout());
         panelIzquierdo.setBackground(currentTheme.bgBase.getRed() > 128 ? new Color(182, 196, 220) : new Color(18, 55, 140));
-        panelIzquierdo.add(panelBusqueda, BorderLayout.NORTH);
+        panelIzquierdo.add(panelFiltro, BorderLayout.NORTH);
         panelIzquierdo.add(scrollTabla, BorderLayout.CENTER);
 
         // ── Panel contenedor derecho: form arriba, botones abajo fijos ──
@@ -393,25 +442,28 @@ public class VentanaClientes extends javax.swing.JFrame {
 
         panelDerecho.add(panelForm, BorderLayout.CENTER);
         panelDerecho.add(panelBotonesForm, BorderLayout.SOUTH);
+        buildSucursalPanel();
 
-        // ── Layout principal: 50/50 fijo con GridLayout (ignora preferred sizes) ──
-        panelCentro = new JPanel(new GridLayout(1, 2, 6, 0)) {
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                int borderColor = currentTheme.bgBase.getRed() > 128 ? 120 : 60;
-                Color c1 = new Color(borderColor, borderColor + 8, borderColor + 20, 100);
-                Color c2 = new Color(borderColor, borderColor + 8, borderColor + 20, 0);
-                int gapX = getWidth() / 2 - 1;
-                g2.setPaint(new java.awt.GradientPaint(gapX, 0, c1, gapX + 2, 0, c2));
-                g2.fillRect(gapX, 0, 2, getHeight());
-                g2.dispose();
-            }
-        };
+        // ── Layout principal: 50/50 fijo con GridBagLayout ──
+        panelIzquierdo.setMinimumSize(new Dimension(0, 0));
+        panelIzquierdo.setPreferredSize(new Dimension(0, 0));
+        panelDerecho.setMinimumSize(new Dimension(0, 0));
+        panelDerecho.setPreferredSize(new Dimension(0, 0));
+        panelCentro = new JPanel();
+        panelCentro.setLayout(new GridBagLayout());
         panelCentro.setBackground(currentTheme.bgBase.getRed() > 128 ? new Color(182, 196, 220) : new Color(18, 55, 140));
-        panelCentro.add(panelIzquierdo);
-        panelCentro.add(panelDerecho);
+        GridBagConstraints gbcIzq = new GridBagConstraints();
+        gbcIzq.gridx = 0; gbcIzq.gridy = 0;
+        gbcIzq.weightx = 0.5; gbcIzq.weighty = 1.0;
+        gbcIzq.fill = GridBagConstraints.BOTH;
+        gbcIzq.insets = new Insets(0, 0, 0, 3);
+        panelCentro.add(panelIzquierdo, gbcIzq);
+        GridBagConstraints gbcDer = new GridBagConstraints();
+        gbcDer.gridx = 1; gbcDer.gridy = 0;
+        gbcDer.weightx = 0.5; gbcDer.weighty = 1.0;
+        gbcDer.fill = GridBagConstraints.BOTH;
+        gbcDer.insets = new Insets(0, 3, 0, 0);
+        panelCentro.add(panelDerecho, gbcDer);
 
         getContentPane().add(panelSuperior, BorderLayout.NORTH);
         getContentPane().add(panelCentro, BorderLayout.CENTER);
@@ -883,31 +935,694 @@ public class VentanaClientes extends javax.swing.JFrame {
     }
 
     private void cargarClientes() {
+        cargandoDatos = true;
+        cargarSucursales();
+        modeloTabla.setRowCount(0);
+        List<String> nombresClientes = new ArrayList<>();
+        List<ClienteDTO> lista = controlador.listarTodos();
+        for (ClienteDTO c : lista) {
+            String tipo = "empresa".equals(c.getTipoPersona()) ? "Empresa" : "Particular";
+            String suc = "";
+            if (c.getElsReferencia() != null && mapSucursales != null) {
+                suc = mapSucursales.getOrDefault(c.getElsReferencia(), "");
+            }
+            c.setSucursal(suc);
+            nombresClientes.add(c.getRazonSocial());
+            modeloTabla.addRow(new Object[]{
+                c.getId(), tipo, c.getRazonSocial(), suc,
+                c.getTipoDocumento(), c.getNroDocumento(), c.getCondicionIva(),
+                c.getDomicilio(), c.getTelefono(), c.getEmail()
+            });
+        }
+        nombresClientes.add(0, "--Todos--");
+        cmbCliente.setData(nombresClientes);
+        cargandoDatos = false;
+    }
+
+    private void cargarSucursales() {
+        if (!UbicacionSistema.isSeleccionado()) return;
+        String base = UbicacionSistema.getNombreDbReparsoft();
+        mapSucursales = controlador.getClienteDAO().getNombresSucursalesPorCliente(base);
+    }
+
+    private void filtrarTabla() {
+        String clienteText = getComboText(cmbCliente).trim();
         modeloTabla.setRowCount(0);
         List<ClienteDTO> lista = controlador.listarTodos();
         for (ClienteDTO c : lista) {
             String tipo = "empresa".equals(c.getTipoPersona()) ? "Empresa" : "Particular";
-            modeloTabla.addRow(new Object[]{
-                c.getId(), tipo, c.getRazonSocial(), c.getTipoDocumento(),
-                c.getNroDocumento(), c.getCondicionIva(),
-                c.getDomicilio(), c.getTelefono(), c.getEmail()
+            String suc = "";
+            if (c.getElsReferencia() != null && mapSucursales != null) {
+                suc = mapSucursales.getOrDefault(c.getElsReferencia(), "");
+            }
+            c.setSucursal(suc);
+            boolean matchesCliente = clienteText.isEmpty() || "--Todos--".equals(clienteText) || c.getRazonSocial().toLowerCase().contains(clienteText.toLowerCase());
+            if (matchesCliente) {
+                modeloTabla.addRow(new Object[]{
+                    c.getId(), tipo, c.getRazonSocial(), suc,
+                    c.getTipoDocumento(), c.getNroDocumento(), c.getCondicionIva(),
+                    c.getDomicilio(), c.getTelefono(), c.getEmail()
+                });
+            }
+        }
+    }
+
+    private String getComboText(JComboBox<String> combo) {
+        Object sel = combo.getSelectedItem();
+        if (sel != null) {
+            String s = sel.toString();
+            if (s != null && !s.trim().isEmpty()) return s.trim();
+        }
+        return ((JTextField) combo.getEditor().getEditorComponent()).getText();
+    }
+
+    private void onClienteFiltroChanged() {
+        if (cargandoDatos) return;
+        filtrarTabla();
+    }
+
+    private void themeComboEditor(JComboBox<?> combo, Theme t) {
+        Component editorComp = combo.getEditor().getEditorComponent();
+        if (editorComp instanceof JTextField) {
+            JTextField ed = (JTextField) editorComp;
+            ed.setBackground(getFieldBg(combo.isEnabled()));
+            ed.setForeground(combo.isEnabled() ? t.textPrimary : getDisabledFg());
+            ed.setDisabledTextColor(getDisabledFg());
+            ed.setCaretColor(t.textPrimary);
+        }
+    }
+
+    private void buildSucursalPanel() {
+        // ── Table ──
+        modeloSucursales = new DefaultTableModel(new String[]{"NOMBRE SUCURSAL"}, 0) {
+            public boolean isCellEditable(int row, int col) { return false; }
+        };
+        tablaSucursales = new JTable(modeloSucursales);
+        tablaSucursales.setFont(FUENTE_TABLA);
+        tablaSucursales.setRowHeight(22);
+        tablaSucursales.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) cargarSucursalSeleccionada();
+        });
+        JScrollPane scrollSuc = new JScrollPane(tablaSucursales);
+        scrollSuc.setPreferredSize(new Dimension(100, 5 * 22 + 20));
+
+        // ── Form fields ──
+        txtSucNombre = new JTextField(20);
+        txtSucNombre.setFont(FUENTE_INPUT_BOLD);
+        txtSucDireccion = new JTextField(20);
+        txtSucDireccion.setFont(FUENTE_INPUT_BOLD);
+        txtSucContacto = new JTextField(20);
+        txtSucContacto.setFont(FUENTE_INPUT_BOLD);
+        buildSucursalPhonePanel();
+        buildSucursalEmailPanel();
+
+        formSuc = new JPanel(new GridBagLayout());
+        formSuc.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(currentTheme.brand),
+                "DATOS DE LA SUCURSAL",
+                TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 14), currentTheme.textPrimary),
+            BorderFactory.createEmptyBorder(4, 6, 6, 6)));
+        int r = 0;
+        formSuc.add(new JLabel("Nombre:"), new GridBagConstraints(0, r, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 5, 1, 2), 0, 0));
+        formSuc.add(txtSucNombre, new GridBagConstraints(1, r, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(1, 0, 1, 5), 0, 0));
+        r++;
+        formSuc.add(new JLabel("Dirección:"), new GridBagConstraints(0, r, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 5, 1, 2), 0, 0));
+        formSuc.add(txtSucDireccion, new GridBagConstraints(1, r, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(1, 0, 1, 5), 0, 0));
+        r++;
+        formSuc.add(new JLabel("Contacto:"), new GridBagConstraints(0, r, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(1, 5, 1, 2), 0, 0));
+        formSuc.add(txtSucContacto, new GridBagConstraints(1, r, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(1, 0, 1, 5), 0, 0));
+        r++;
+        formSuc.add(new JLabel("Tel. Contacto:"), new GridBagConstraints(0, r, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.NONE, new Insets(2, 5, 1, 2), 0, 0));
+        formSuc.add(sucPhonePanel, new GridBagConstraints(1, r, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(1, 0, 1, 5), 0, 0));
+        r++;
+        formSuc.add(new JLabel("Email:"), new GridBagConstraints(0, r, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.NONE, new Insets(2, 5, 1, 2), 0, 0));
+        formSuc.add(sucEmailPanel, new GridBagConstraints(1, r, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(1, 0, 1, 5), 0, 0));
+        r++;
+        JPanel spacerSuc = new JPanel();
+        spacerSuc.setOpaque(false);
+        formSuc.add(spacerSuc, new GridBagConstraints(0, r, 2, 1, 1, 1.0, GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0));
+
+        // ── Action buttons for sucursal ──
+        btnVolverSucursales = new JButton("VOLVER");
+        btnVolverSucursales.setFont(FUENTE_BOTON);
+        btnVolverSucursales.setForeground(currentTheme.textPrimary);
+        btnVolverSucursales.setBackground(currentTheme.btnBg);
+        btnVolverSucursales.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnVolverSucursales.setFocusPainted(false);
+        addButtonFeedback(btnVolverSucursales);
+        btnVolverSucursales.addActionListener(e -> toggleSucursalesView());
+
+        btnGuardarSucursal = new JButton("GUARDAR SUCURSAL");
+        btnGuardarSucursal.setFont(FUENTE_BOTON);
+        btnGuardarSucursal.setForeground(currentTheme.textPrimary);
+        btnGuardarSucursal.setBackground(currentTheme.btnBg);
+        btnGuardarSucursal.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnGuardarSucursal.setFocusPainted(false);
+        addButtonFeedback(btnGuardarSucursal);
+        btnGuardarSucursal.addActionListener(e -> guardarSucursal());
+
+        btnNuevoSucursal = new JButton("NUEVA SUCURSAL");
+        btnNuevoSucursal.setFont(FUENTE_BOTON);
+        btnNuevoSucursal.setForeground(currentTheme.textPrimary);
+        btnNuevoSucursal.setBackground(currentTheme.btnBg);
+        btnNuevoSucursal.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnNuevoSucursal.setFocusPainted(false);
+        addButtonFeedback(btnNuevoSucursal);
+        btnNuevoSucursal.addActionListener(e -> limpiarFormSucursal());
+
+        btnEditarSucursal = new JButton("EDITAR");
+        btnEditarSucursal.setFont(FUENTE_BOTON);
+        btnEditarSucursal.setForeground(currentTheme.textPrimary);
+        btnEditarSucursal.setBackground(currentTheme.btnBg);
+        btnEditarSucursal.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnEditarSucursal.setFocusPainted(false);
+        addButtonFeedback(btnEditarSucursal);
+        btnEditarSucursal.addActionListener(e -> habilitarEdicionSucursal(true));
+
+        panelBotonesSucursal = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 6));
+        panelBotonesSucursal.setBackground(currentTheme.bgSurface);
+        panelBotonesSucursal.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(currentTheme.brand),
+                "ACCIONES",
+                TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 14), currentTheme.textPrimary),
+            BorderFactory.createEmptyBorder(4, 8, 6, 8)));
+        panelBotonesSucursal.add(btnNuevoSucursal);
+        panelBotonesSucursal.add(btnGuardarSucursal);
+        panelBotonesSucursal.add(btnEditarSucursal);
+        panelBotonesSucursal.add(btnVolverSucursales);
+
+        panelSucursalView = new JPanel(new BorderLayout(0, 4));
+        panelSucursalView.setBackground(currentTheme.bgSurface);
+        scrollSuc.setPreferredSize(new Dimension(100, 5 * 22 + 20));
+        panelSucursalView.add(scrollSuc, BorderLayout.NORTH);
+        panelSucursalView.add(formSuc, BorderLayout.CENTER);
+    }
+
+    // ── Sucursal phone multi-field ──
+
+    private void buildSucursalPhonePanel() {
+        sucPhonePanel = new JPanel();
+        sucPhonePanel.setLayout(new BoxLayout(sucPhonePanel, BoxLayout.Y_AXIS));
+        sucPhonePanel.setOpaque(false);
+        JTextField first = new JTextField(20);
+        initSucursalPhoneField(first, "");
+        sucPhoneFields.add(first);
+        JPanel w0 = new JPanel(new BorderLayout());
+        w0.setOpaque(false);
+        w0.add(first, BorderLayout.CENTER);
+        w0.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
+        sucPhonePanel.add(w0);
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 1));
+        btnRow.setOpaque(false);
+        btnSucAddPhone = new JButton("+");
+        btnSucAddPhone.setFont(FUENTE_BOTON);
+        btnSucAddPhone.setFocusPainted(false);
+        btnSucAddPhone.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnSucAddPhone.setPreferredSize(new Dimension(40, 20));
+        btnSucAddPhone.setForeground(currentTheme.textPrimary);
+        addButtonFeedback(btnSucAddPhone);
+        btnSucAddPhone.addActionListener(e -> addSucursalPhoneField());
+        btnSucRemovePhone = new JButton("\u2212");
+        btnSucRemovePhone.setFont(FUENTE_BOTON);
+        btnSucRemovePhone.setFocusPainted(false);
+        btnSucRemovePhone.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnSucRemovePhone.setPreferredSize(new Dimension(40, 20));
+        btnSucRemovePhone.setForeground(currentTheme.textPrimary);
+        addButtonFeedback(btnSucRemovePhone);
+        btnSucRemovePhone.addActionListener(e -> removeSucursalPhoneField());
+        btnRow.add(btnSucAddPhone);
+        btnRow.add(btnSucRemovePhone);
+        sucPhonePanel.add(btnRow);
+        updateSucursalPhoneButtons();
+    }
+
+    private void initSucursalPhoneField(JTextField field, String text) {
+        field.setText(text);
+        field.setFont(FUENTE_INPUT);
+        field.setForeground(currentTheme.textPrimary);
+        field.setBackground(getFieldBg(false));
+        field.setDisabledTextColor(getDisabledFg());
+        field.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent e) {
+                char c = e.getKeyChar();
+                if (!Character.isDigit(c) && c != java.awt.event.KeyEvent.VK_BACK_SPACE
+                    && c != java.awt.event.KeyEvent.VK_DELETE) {
+                    e.consume();
+                }
+            }
+        });
+    }
+
+    private void addSucursalPhoneField() {
+        if (sucPhoneFields.size() >= MAX_PHONES) return;
+        JTextField newField = new JTextField(20);
+        initSucursalPhoneField(newField, "");
+        sucPhoneFields.add(newField);
+        JPanel w = new JPanel(new BorderLayout());
+        w.setOpaque(false);
+        w.add(newField, BorderLayout.CENTER);
+        w.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
+        sucPhonePanel.add(w, sucPhonePanel.getComponentCount() - 1);
+        sucPhonePanel.revalidate();
+        sucPhonePanel.repaint();
+        newField.requestFocusInWindow();
+        updateSucursalPhoneButtons();
+    }
+
+    private void removeSucursalPhoneField() {
+        if (sucPhoneFields.size() <= 1) return;
+        int resp = JOptionPane.showConfirmDialog(this,
+            "\u00bfEst\u00e1 seguro de eliminar este tel\u00e9fono?",
+            "Confirmar eliminaci\u00f3n", JOptionPane.YES_NO_OPTION);
+        if (resp != JOptionPane.YES_OPTION) return;
+        JTextField last = sucPhoneFields.remove(sucPhoneFields.size() - 1);
+        sucPhonePanel.remove(last.getParent());
+        sucPhonePanel.revalidate();
+        sucPhonePanel.repaint();
+        updateSucursalPhoneButtons();
+    }
+
+    private String getSucursalPhoneTexts() {
+        StringBuilder sb = new StringBuilder();
+        for (JTextField f : sucPhoneFields) {
+            String t = f.getText().trim();
+            if (!t.isEmpty()) {
+                if (sb.length() > 0) sb.append("; ");
+                sb.append(t);
+            }
+        }
+        return sb.toString();
+    }
+
+    private void setSucursalPhoneTexts(String concatenated) {
+        resetSucursalPhoneFields();
+        if (concatenated == null || concatenated.trim().isEmpty()) return;
+        String[] parts = concatenated.split("\\s*;\\s*");
+        for (int i = 0; i < parts.length; i++) {
+            if (i == 0) {
+                sucPhoneFields.get(0).setText(parts[i].trim());
+            } else if (i < MAX_PHONES) {
+                JTextField f = new JTextField(20);
+                initSucursalPhoneField(f, parts[i].trim());
+                sucPhoneFields.add(f);
+                JPanel w = new JPanel(new BorderLayout());
+                w.setOpaque(false);
+                w.add(f, BorderLayout.CENTER);
+                w.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
+                sucPhonePanel.add(w, sucPhonePanel.getComponentCount() - 1);
+            }
+        }
+        sucPhonePanel.revalidate();
+        sucPhonePanel.repaint();
+        updateSucursalPhoneButtons();
+    }
+
+    private void resetSucursalPhoneFields() {
+        while (sucPhoneFields.size() > 1) {
+            JTextField f = sucPhoneFields.remove(sucPhoneFields.size() - 1);
+            sucPhonePanel.remove(f.getParent());
+        }
+        if (!sucPhoneFields.isEmpty()) {
+            JTextField first = sucPhoneFields.get(0);
+            first.setText("");
+        } else {
+            JTextField first = new JTextField(20);
+            initSucursalPhoneField(first, "");
+            sucPhoneFields.add(first);
+            JPanel w = new JPanel(new BorderLayout());
+            w.setOpaque(false);
+            w.add(first, BorderLayout.CENTER);
+            w.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
+            sucPhonePanel.add(w, 0);
+        }
+        sucPhonePanel.revalidate();
+        sucPhonePanel.repaint();
+        updateSucursalPhoneButtons();
+    }
+
+    private void updateSucursalPhoneButtons() {
+        boolean canAdd = sucPhoneFields.size() < MAX_PHONES;
+        boolean canRemove = sucPhoneFields.size() > 1;
+        if (btnSucAddPhone != null) btnSucAddPhone.setEnabled(canAdd);
+        if (btnSucRemovePhone != null) btnSucRemovePhone.setEnabled(canRemove);
+    }
+
+    // ── Sucursal email multi-field ──
+
+    private void buildSucursalEmailPanel() {
+        sucEmailPanel = new JPanel();
+        sucEmailPanel.setLayout(new BoxLayout(sucEmailPanel, BoxLayout.Y_AXIS));
+        sucEmailPanel.setOpaque(false);
+        JTextField first = new JTextField(20);
+        initSucursalEmailField(first, "");
+        sucEmailFields.add(first);
+        JPanel w0 = new JPanel(new BorderLayout());
+        w0.setOpaque(false);
+        w0.add(first, BorderLayout.CENTER);
+        w0.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
+        sucEmailPanel.add(w0);
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 1));
+        btnRow.setOpaque(false);
+        btnSucAddEmail = new JButton("+");
+        btnSucAddEmail.setFont(FUENTE_BOTON);
+        btnSucAddEmail.setFocusPainted(false);
+        btnSucAddEmail.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnSucAddEmail.setPreferredSize(new Dimension(40, 20));
+        btnSucAddEmail.setForeground(currentTheme.textPrimary);
+        addButtonFeedback(btnSucAddEmail);
+        btnSucAddEmail.addActionListener(e -> addSucursalEmailField());
+        btnSucRemoveEmail = new JButton("\u2212");
+        btnSucRemoveEmail.setFont(FUENTE_BOTON);
+        btnSucRemoveEmail.setFocusPainted(false);
+        btnSucRemoveEmail.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnSucRemoveEmail.setPreferredSize(new Dimension(40, 20));
+        btnSucRemoveEmail.setForeground(currentTheme.textPrimary);
+        addButtonFeedback(btnSucRemoveEmail);
+        btnSucRemoveEmail.addActionListener(e -> removeSucursalEmailField());
+        btnRow.add(btnSucAddEmail);
+        btnRow.add(btnSucRemoveEmail);
+        sucEmailPanel.add(btnRow);
+        updateSucursalEmailButtons();
+    }
+
+    private void initSucursalEmailField(JTextField field, String text) {
+        field.setText(text);
+        field.setFont(FUENTE_INPUT);
+        field.setForeground(currentTheme.textPrimary);
+        field.setBackground(getFieldBg(false));
+        field.setDisabledTextColor(getDisabledFg());
+        field.addFocusListener(new FocusAdapter() {
+            public void focusLost(FocusEvent e) {
+                validateSucursalEmailBorder(field);
+            }
+        });
+        field.addActionListener(e -> validateSucursalEmailBorder(field));
+        field.getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) { clearSucursalEmailBorder(field); }
+            public void removeUpdate(DocumentEvent e) { clearSucursalEmailBorder(field); }
+            public void changedUpdate(DocumentEvent e) { clearSucursalEmailBorder(field); }
+        });
+    }
+
+    private void addSucursalEmailField() {
+        if (sucEmailFields.size() >= MAX_EMAILS) return;
+        JTextField newField = new JTextField(20);
+        initSucursalEmailField(newField, "");
+        sucEmailFields.add(newField);
+        JPanel w = new JPanel(new BorderLayout());
+        w.setOpaque(false);
+        w.add(newField, BorderLayout.CENTER);
+        w.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
+        sucEmailPanel.add(w, sucEmailPanel.getComponentCount() - 1);
+        sucEmailPanel.revalidate();
+        sucEmailPanel.repaint();
+        newField.requestFocusInWindow();
+        updateSucursalEmailButtons();
+    }
+
+    private void removeSucursalEmailField() {
+        if (sucEmailFields.size() <= 1) return;
+        int resp = JOptionPane.showConfirmDialog(this,
+            "\u00bfEst\u00e1 seguro de eliminar este email?",
+            "Confirmar eliminaci\u00f3n", JOptionPane.YES_NO_OPTION);
+        if (resp != JOptionPane.YES_OPTION) return;
+        JTextField last = sucEmailFields.remove(sucEmailFields.size() - 1);
+        sucEmailPanel.remove(last.getParent());
+        sucEmailPanel.revalidate();
+        sucEmailPanel.repaint();
+        updateSucursalEmailButtons();
+    }
+
+    private String getSucursalEmailTexts() {
+        StringBuilder sb = new StringBuilder();
+        for (JTextField f : sucEmailFields) {
+            String t = f.getText().trim();
+            if (!t.isEmpty()) {
+                if (sb.length() > 0) sb.append("; ");
+                sb.append(t);
+            }
+        }
+        return sb.toString();
+    }
+
+    private void setSucursalEmailTexts(String concatenated) {
+        resetSucursalEmailFields();
+        if (concatenated == null || concatenated.trim().isEmpty()) return;
+        String[] parts = concatenated.split("\\s*;\\s*");
+        for (int i = 0; i < parts.length; i++) {
+            if (i == 0) {
+                sucEmailFields.get(0).setText(parts[i].trim());
+            } else if (i < MAX_EMAILS) {
+                JTextField f = new JTextField(20);
+                initSucursalEmailField(f, parts[i].trim());
+                sucEmailFields.add(f);
+                JPanel w = new JPanel(new BorderLayout());
+                w.setOpaque(false);
+                w.add(f, BorderLayout.CENTER);
+                w.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
+                sucEmailPanel.add(w, sucEmailPanel.getComponentCount() - 1);
+            }
+        }
+        sucEmailPanel.revalidate();
+        sucEmailPanel.repaint();
+        updateSucursalEmailButtons();
+    }
+
+    private void resetSucursalEmailFields() {
+        while (sucEmailFields.size() > 1) {
+            JTextField f = sucEmailFields.remove(sucEmailFields.size() - 1);
+            sucEmailPanel.remove(f.getParent());
+        }
+        if (!sucEmailFields.isEmpty()) {
+            JTextField first = sucEmailFields.get(0);
+            first.setText("");
+        } else {
+            JTextField first = new JTextField(20);
+            initSucursalEmailField(first, "");
+            sucEmailFields.add(first);
+            JPanel w = new JPanel(new BorderLayout());
+            w.setOpaque(false);
+            w.add(first, BorderLayout.CENTER);
+            w.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
+            sucEmailPanel.add(w, 0);
+        }
+        sucEmailPanel.revalidate();
+        sucEmailPanel.repaint();
+        updateSucursalEmailButtons();
+    }
+
+    private void updateSucursalEmailButtons() {
+        boolean canAdd = sucEmailFields.size() < MAX_EMAILS;
+        boolean canRemove = sucEmailFields.size() > 1;
+        if (btnSucAddEmail != null) btnSucAddEmail.setEnabled(canAdd);
+        if (btnSucRemoveEmail != null) btnSucRemoveEmail.setEnabled(canRemove);
+    }
+
+    // ── Sucursal email validation (reuse patterns from cliente) ──
+
+    private void validateSucursalEmailBorder(JTextField field) {
+        String t = field.getText().trim();
+        if (!t.isEmpty() && !isValidEmail(t)) {
+            field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Color.RED, 1),
+                BorderFactory.createEmptyBorder(2, 4, 2, 4)));
+            if (field.hasFocus()) {
+                JOptionPane.showMessageDialog(this,
+                    "El email \"" + t + "\" no tiene un formato v\u00e1lido.",
+                    "Email inv\u00e1lido", JOptionPane.WARNING_MESSAGE);
+            }
+        }
+    }
+
+    private void clearSucursalEmailBorder(JTextField field) {
+        Border b = field.getBorder();
+        Color lineColor = null;
+        if (b instanceof javax.swing.border.CompoundBorder) {
+            Border outside = ((javax.swing.border.CompoundBorder) b).getOutsideBorder();
+            if (outside instanceof javax.swing.border.LineBorder) {
+                lineColor = ((javax.swing.border.LineBorder) outside).getLineColor();
+            }
+        } else if (b instanceof javax.swing.border.LineBorder) {
+            lineColor = ((javax.swing.border.LineBorder) b).getLineColor();
+        }
+        if (Color.RED.equals(lineColor)) {
+            String t = field.getText().trim();
+            if (t.isEmpty() || isValidEmail(t)) {
+                field.setBorder(normalBorder != null ? normalBorder : defaultBorder);
+            }
+        }
+    }
+
+    // ── Sucursal edit mode ──
+
+    private void setFormSucursalEditable(boolean editable) {
+        Color bg = getFieldBg(editable);
+        txtSucNombre.setEnabled(editable);
+        txtSucNombre.setBackground(bg);
+        txtSucDireccion.setEnabled(editable);
+        txtSucDireccion.setBackground(bg);
+        txtSucContacto.setEnabled(editable);
+        txtSucContacto.setBackground(bg);
+        for (JTextField f : sucPhoneFields) {
+            f.setEnabled(editable);
+            f.setBackground(bg);
+        }
+        btnSucAddPhone.setEnabled(editable && sucPhoneFields.size() < MAX_PHONES);
+        btnSucRemovePhone.setEnabled(editable && sucPhoneFields.size() > 1);
+        for (JTextField f : sucEmailFields) {
+            f.setEnabled(editable);
+            f.setBackground(bg);
+        }
+        btnSucAddEmail.setEnabled(editable && sucEmailFields.size() < MAX_EMAILS);
+        btnSucRemoveEmail.setEnabled(editable && sucEmailFields.size() > 1);
+        btnGuardarSucursal.setEnabled(editable);
+        btnEditarSucursal.setEnabled(!editable && tablaSucursales.getSelectedRow() >= 0);
+    }
+
+    private void habilitarEdicionSucursal(boolean editable) {
+        modoEdicionSucursal = editable;
+        setFormSucursalEditable(editable);
+        updateSucursalPhoneButtons();
+        updateSucursalEmailButtons();
+    }
+
+    private void limpiarFormSucursal() {
+        tablaSucursales.clearSelection();
+        txtSucNombre.setText("");
+        txtSucDireccion.setText("");
+        txtSucContacto.setText("");
+        resetSucursalPhoneFields();
+        resetSucursalEmailFields();
+        modoEdicionSucursal = false;
+        setFormSucursalEditable(true);
+    }
+
+    private void guardarSucursal() {
+        boolean hayEmailInvalido = false;
+        for (JTextField f : sucEmailFields) {
+            String t = f.getText().trim();
+            if (!t.isEmpty() && !isValidEmail(t)) {
+                hayEmailInvalido = true;
+                f.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Color.RED, 1),
+                    BorderFactory.createEmptyBorder(2, 4, 2, 4)));
+            }
+        }
+        if (hayEmailInvalido) {
+            JOptionPane.showMessageDialog(this,
+                "Uno o m\u00e1s emails tienen formato inv\u00e1lido.\nCorr\u00edjalos o elim\u00ednelos antes de guardar.",
+                "Error de validaci\u00f3n", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if (idClienteSucursalActual == null) {
+            JOptionPane.showMessageDialog(this, "Error: no hay cliente seleccionado.",
+                "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        SucursalDTO suc = new SucursalDTO();
+        int row = tablaSucursales.getSelectedRow();
+        if (row >= 0 && row < sucursalesCargadas.size()) {
+            suc.setIdSucursal(sucursalesCargadas.get(row).getIdSucursal());
+        }
+        suc.setIdCliente(idClienteSucursalActual);
+        suc.setNombre(txtSucNombre.getText().trim());
+        suc.setDireccion(txtSucDireccion.getText().trim());
+        suc.setContacto(txtSucContacto.getText().trim());
+        suc.setTelefono(getSucursalPhoneTexts());
+        suc.setEmail(getSucursalEmailTexts());
+
+        int result = controlador.guardarSucursal(suc);
+        if (result > 0) {
+            JOptionPane.showMessageDialog(this, "Sucursal guardada correctamente",
+                "\u00c9xito", JOptionPane.INFORMATION_MESSAGE);
+            modoEdicionSucursal = false;
+            setFormSucursalEditable(false);
+            sucursalesCargadas = controlador.getSucursalesPorCliente(idClienteSucursalActual);
+            modeloSucursales.setRowCount(0);
+            for (SucursalDTO s : sucursalesCargadas) {
+                modeloSucursales.addRow(new Object[]{s.getNombre()});
+            }
+            cargarSucursales();
+            filtrarTabla();
+        } else {
+            JOptionPane.showMessageDialog(this, "Error al guardar la sucursal.",
+                "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void toggleSucursalesView() {
+        enVistaSucursales = !enVistaSucursales;
+        if (enVistaSucursales) {
+            int row = tabla.getSelectedRow();
+            if (row < 0) { enVistaSucursales = false; return; }
+            Integer id = (Integer) modeloTabla.getValueAt(row, 0);
+            ClienteDTO cli = controlador.buscarPorId(id);
+            if (cli == null || cli.getElsReferencia() == null) { enVistaSucursales = false; return; }
+            if (!UbicacionSistema.isSeleccionado()) { enVistaSucursales = false; return; }
+            idClienteSucursalActual = cli.getElsReferencia();
+            sucursalesCargadas = controlador.getSucursalesPorCliente(idClienteSucursalActual);
+            modeloSucursales.setRowCount(0);
+            for (SucursalDTO s : sucursalesCargadas) {
+                modeloSucursales.addRow(new Object[]{s.getNombre()});
+            }
+            modoEdicionSucursal = false;
+            panelDerecho.remove(panelForm);
+            panelDerecho.remove(panelBotonesForm);
+            panelDerecho.add(panelSucursalView, BorderLayout.CENTER);
+            panelDerecho.add(panelBotonesSucursal, BorderLayout.SOUTH);
+            setFormSucursalEditable(false);
+        } else {
+            panelDerecho.remove(panelSucursalView);
+            panelDerecho.remove(panelBotonesSucursal);
+            panelDerecho.add(panelForm, BorderLayout.CENTER);
+            panelDerecho.add(panelBotonesForm, BorderLayout.SOUTH);
+            setFormEditable(false);
+            idClienteSucursalActual = null;
+            sucursalesCargadas = new ArrayList<>();
+        }
+        panelDerecho.revalidate();
+        panelDerecho.repaint();
+    }
+
+    private void cargarSucursalSeleccionada() {
+        int row = tablaSucursales.getSelectedRow();
+        if (row < 0 || row >= sucursalesCargadas.size()) {
+            txtSucNombre.setText("");
+            txtSucDireccion.setText("");
+            txtSucContacto.setText("");
+            resetSucursalPhoneFields();
+            resetSucursalEmailFields();
+            btnEditarSucursal.setEnabled(false);
+            return;
+        }
+        SucursalDTO s = sucursalesCargadas.get(row);
+        txtSucNombre.setText(s.getNombre() != null ? s.getNombre() : "");
+        txtSucDireccion.setText(s.getDireccion() != null ? s.getDireccion() : "");
+        txtSucContacto.setText(s.getContacto() != null ? s.getContacto() : "");
+        setSucursalPhoneTexts(s.getTelefono());
+        setSucursalEmailTexts(s.getEmail());
+        txtSucNombre.setCaretPosition(0);
+        btnEditarSucursal.setEnabled(!modoEdicionSucursal);
+    }
+
+    private void addLiveFilter(JComboBox<?> combo) {
+        Component editorComp = combo.getEditor().getEditorComponent();
+        if (editorComp instanceof JTextField) {
+            ((JTextField) editorComp).getDocument().addDocumentListener(new DocumentListener() {
+                public void insertUpdate(DocumentEvent e) { onFilterTextChanged(); }
+                public void removeUpdate(DocumentEvent e) { onFilterTextChanged(); }
+                public void changedUpdate(DocumentEvent e) { onFilterTextChanged(); }
             });
         }
     }
 
-    private void buscarCliente() {
-        String termino = txtBuscar.getText().trim();
-        if (termino.isEmpty()) { cargarClientes(); return; }
-        modeloTabla.setRowCount(0);
-        List<ClienteDTO> lista = controlador.buscarPorRazonSocial(termino);
-        for (ClienteDTO c : lista) {
-            String tipo = "empresa".equals(c.getTipoPersona()) ? "Empresa" : "Particular";
-            modeloTabla.addRow(new Object[]{
-                c.getId(), tipo, c.getRazonSocial(), c.getTipoDocumento(),
-                c.getNroDocumento(), c.getCondicionIva(),
-                c.getDomicilio(), c.getTelefono(), c.getEmail()
-            });
-        }
+    private void onFilterTextChanged() {
+        if (cargandoDatos) return;
+        filtrarTabla();
     }
 
     private void cargarClienteSeleccionado() {
@@ -915,8 +1630,11 @@ public class VentanaClientes extends javax.swing.JFrame {
         if (row < 0) {
             modoEdicion = false;
             setFormEditable(false);
+            btnMostrarSucursales.setVisible(false);
+            if (enVistaSucursales) toggleSucursalesView();
             return;
         }
+        if (enVistaSucursales) toggleSucursalesView();
         String tipo = modeloTabla.getValueAt(row, 1) != null ? modeloTabla.getValueAt(row, 1).toString() : "Empresa";
         if ("Particular".equals(tipo)) {
             rdParticular.setSelected(true);
@@ -926,12 +1644,14 @@ public class VentanaClientes extends javax.swing.JFrame {
         updatePlaceholders();
         txtRazonSocial.setText(modeloTabla.getValueAt(row, 2) != null ? modeloTabla.getValueAt(row, 2).toString() : "");
         txtRazonSocial.setCaretPosition(0);
-        cmbTipoDoc.setSelectedItem(modeloTabla.getValueAt(row, 3));
-        txtNroDoc.setText(modeloTabla.getValueAt(row, 4) != null ? modeloTabla.getValueAt(row, 4).toString() : "");
-        cmbCondicionIva.setSelectedItem(modeloTabla.getValueAt(row, 5) != null ? modeloTabla.getValueAt(row, 5).toString() : "Consumidor Final");
-        txtDomicilio.setText(modeloTabla.getValueAt(row, 6) != null ? modeloTabla.getValueAt(row, 6).toString() : "");
-        setPhoneTexts(modeloTabla.getValueAt(row, 7) != null ? modeloTabla.getValueAt(row, 7).toString() : "");
-        setEmailTexts(modeloTabla.getValueAt(row, 8) != null ? modeloTabla.getValueAt(row, 8).toString() : "");
+        cmbTipoDoc.setSelectedItem(modeloTabla.getValueAt(row, 4));
+        txtNroDoc.setText(modeloTabla.getValueAt(row, 5) != null ? modeloTabla.getValueAt(row, 5).toString() : "");
+        cmbCondicionIva.setSelectedItem(modeloTabla.getValueAt(row, 6) != null ? modeloTabla.getValueAt(row, 6).toString() : "Consumidor Final");
+        txtDomicilio.setText(modeloTabla.getValueAt(row, 7) != null ? modeloTabla.getValueAt(row, 7).toString() : "");
+        setPhoneTexts(modeloTabla.getValueAt(row, 8) != null ? modeloTabla.getValueAt(row, 8).toString() : "");
+        setEmailTexts(modeloTabla.getValueAt(row, 9) != null ? modeloTabla.getValueAt(row, 9).toString() : "");
+        String sucStr = modeloTabla.getValueAt(row, 3) != null ? modeloTabla.getValueAt(row, 3).toString() : "";
+        btnMostrarSucursales.setVisible(!sucStr.isEmpty());
         modoEdicion = false;
         setFormEditable(false);
     }
@@ -1067,6 +1787,7 @@ public class VentanaClientes extends javax.swing.JFrame {
     }
 
     private void limpiarFormulario() {
+        btnMostrarSucursales.setVisible(false);
         tabla.clearSelection();
         rdEmpresa.setSelected(true);
         updatePlaceholders();
@@ -1087,14 +1808,14 @@ public class VentanaClientes extends javax.swing.JFrame {
         if (getContentPane() != null) getContentPane().setBackground(t.bgBase);
         if (panelSuperior != null) panelSuperior.setBackground(t.bgSurface);
         if (lblTitulo != null) lblTitulo.setForeground(t.brand);
-        if (txtBuscar != null) {
-            txtBuscar.setForeground(t.textPrimary);
-            txtBuscar.setBackground(t.bgInput);
-            txtBuscar.setCaretColor(t.textPrimary);
-            txtBuscar.setDisabledTextColor(getDisabledFg());
+        if (panelFiltro != null) {
+            panelFiltro.setBackground(t.bgSurface);
+            panelFiltro.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(t.borderLight, 1),
+                BorderFactory.createEmptyBorder(2, 4, 2, 4)));
         }
-        if (panelBusqueda != null) panelBusqueda.setBackground(t.bgSurface);
-        if (lblBuscar != null) lblBuscar.setForeground(t.textPrimary);
+        if (lblClienteFiltro != null) lblClienteFiltro.setForeground(t.textPrimary);
+        if (cmbCliente != null) themeComboEditor(cmbCliente, t);
         Color bgCentral = t.bgBase.getRed() > 128 ? new Color(182, 196, 220) : new Color(18, 55, 140);
         if (panelCentro != null) panelCentro.setBackground(bgCentral);
         if (panelIzquierdo != null) panelIzquierdo.setBackground(bgCentral);
@@ -1173,9 +1894,82 @@ public class VentanaClientes extends javax.swing.JFrame {
             btnRemoveEmail.setBackground(t.btnBg);
             btnRemoveEmail.setForeground(t.textPrimary);
         }
+        if (txtSucNombre != null) {
+            txtSucNombre.setForeground(t.textPrimary);
+            txtSucNombre.setBackground(getFieldBg(true));
+        }
+        if (txtSucDireccion != null) {
+            txtSucDireccion.setForeground(t.textPrimary);
+            txtSucDireccion.setBackground(getFieldBg(true));
+        }
+        if (txtSucContacto != null) {
+            txtSucContacto.setForeground(t.textPrimary);
+            txtSucContacto.setBackground(getFieldBg(true));
+        }
         if (btnGuardar != null) { btnGuardar.setBackground(t.btnBg); btnGuardar.setForeground(t.textPrimary); }
         if (btnNuevo != null) { btnNuevo.setBackground(t.btnBg); btnNuevo.setForeground(t.textPrimary); }
         if (btnEditar != null) { btnEditar.setBackground(t.btnBg); btnEditar.setForeground(t.textPrimary); }
+        if (btnMostrarSucursales != null) { btnMostrarSucursales.setBackground(t.btnBg); btnMostrarSucursales.setForeground(t.textPrimary); }
+        if (btnVolverSucursales != null) { btnVolverSucursales.setBackground(t.btnBg); btnVolverSucursales.setForeground(t.textPrimary); }
+        if (btnGuardarSucursal != null) { btnGuardarSucursal.setBackground(t.btnBg); btnGuardarSucursal.setForeground(t.textPrimary); }
+        if (btnNuevoSucursal != null) { btnNuevoSucursal.setBackground(t.btnBg); btnNuevoSucursal.setForeground(t.textPrimary); }
+        if (btnEditarSucursal != null) { btnEditarSucursal.setBackground(t.btnBg); btnEditarSucursal.setForeground(t.textPrimary); }
+        if (panelBotonesSucursal != null) {
+            panelBotonesSucursal.setBackground(t.bgSurface);
+            panelBotonesSucursal.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder(
+                    BorderFactory.createLineBorder(t.brand),
+                    "ACCIONES",
+                    TitledBorder.LEFT, TitledBorder.TOP,
+                    new Font("Segoe UI", Font.BOLD, 14), t.textPrimary),
+                BorderFactory.createEmptyBorder(4, 8, 6, 8)));
+        }
+        if (panelSucursalView != null) {
+            panelSucursalView.setBackground(t.bgSurface);
+            themeLabels(panelSucursalView, t);
+        }
+        if (formSuc != null) {
+            formSuc.setBackground(t.bgSurface);
+            formSuc.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder(
+                    BorderFactory.createLineBorder(t.brand),
+                    "DATOS DE LA SUCURSAL",
+                    TitledBorder.LEFT, TitledBorder.TOP,
+                    new Font("Segoe UI", Font.BOLD, 14), t.textPrimary),
+                BorderFactory.createEmptyBorder(4, 6, 6, 6)));
+        }
+        for (JTextField f : sucPhoneFields) {
+            f.setForeground(t.textPrimary);
+            f.setBackground(getFieldBg(f.isEnabled()));
+            f.setDisabledTextColor(getDisabledFg());
+        }
+        if (btnSucAddPhone != null) {
+            btnSucAddPhone.setBackground(t.btnBg);
+            btnSucAddPhone.setForeground(t.textPrimary);
+        }
+        if (btnSucRemovePhone != null) {
+            btnSucRemovePhone.setBackground(t.btnBg);
+            btnSucRemovePhone.setForeground(t.textPrimary);
+        }
+        for (JTextField f : sucEmailFields) {
+            f.setForeground(t.textPrimary);
+            f.setBackground(getFieldBg(f.isEnabled()));
+            f.setDisabledTextColor(getDisabledFg());
+        }
+        if (btnSucAddEmail != null) {
+            btnSucAddEmail.setBackground(t.btnBg);
+            btnSucAddEmail.setForeground(t.textPrimary);
+        }
+        if (btnSucRemoveEmail != null) {
+            btnSucRemoveEmail.setBackground(t.btnBg);
+            btnSucRemoveEmail.setForeground(t.textPrimary);
+        }
+        if (tablaSucursales != null) {
+            TablaRenderer.applyTo(tablaSucursales, t, Collections.emptySet(), Collections.singleton(0));
+            if (tablaSucursales.getTableHeader() != null) {
+                Theme.styleTableHeader(tablaSucursales.getTableHeader(), t);
+            }
+        }
         if (scrollTabla != null) scrollTabla.getViewport().setBackground(t.bgBase);
         if (tabla != null) {
             TablaRenderer.applyTo(tabla, t, Collections.emptySet(), Collections.singleton(2));
