@@ -20,8 +20,8 @@ public class RemitoDAO {
         String sql = "INSERT INTO remitos (numero_remito, fecha_emision, fecha_entrega, "
                 + "cuit_emisor, razon_social_emisor, domicilio_emisor, "
                 + "cuit_receptor, razon_social_receptor, domicilio_receptor, "
-                + "comprobante_id, estado, observaciones) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "comprobante_id, reparsoft_remito_id, estado, observaciones) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement ps = getConn().prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, remito.getNumeroRemito());
@@ -38,8 +38,13 @@ public class RemitoDAO {
             } else {
                 ps.setNull(10, java.sql.Types.INTEGER);
             }
-            ps.setString(11, remito.getEstado());
-            ps.setString(12, remito.getObservaciones());
+            if (remito.getReparsoftRemitoId() != null) {
+                ps.setInt(11, remito.getReparsoftRemitoId());
+            } else {
+                ps.setNull(11, java.sql.Types.INTEGER);
+            }
+            ps.setString(12, remito.getEstado());
+            ps.setString(13, remito.getObservaciones());
 
             int affected = ps.executeUpdate();
             if (affected > 0) {
@@ -81,6 +86,41 @@ public class RemitoDAO {
         } catch (SQLException e) {
             System.err.println("Error insertando items de remito: " + e.getMessage());
         }
+    }
+
+    public boolean eliminar(int id) {
+        String sql = "DELETE FROM remitos WHERE id = ?";
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+            ps.setInt(1, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error eliminando remito: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public List<RemitoDTO> listarConReparsoftId() {
+        String sql = "SELECT * FROM remitos WHERE reparsoft_remito_id IS NOT NULL";
+        List<RemitoDTO> lista = new ArrayList<>();
+        try (PreparedStatement ps = getConn().prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) lista.add(mapear(rs));
+        } catch (SQLException e) {
+            System.err.println("Error listando remitos con reparsoft_id: " + e.getMessage());
+        }
+        return lista;
+    }
+
+    public boolean actualizarReparsoftId(int id, int reparsoftRemitoId) {
+        String sql = "UPDATE remitos SET reparsoft_remito_id = ? WHERE id = ?";
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+            ps.setInt(1, reparsoftRemitoId);
+            ps.setInt(2, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error actualizando reparsoft_remito_id: " + e.getMessage());
+        }
+        return false;
     }
 
     public boolean actualizarEstado(int id, String estado) {
@@ -157,6 +197,7 @@ public class RemitoDAO {
         dto.setRazonSocialReceptor(rs.getString("razon_social_receptor"));
         dto.setDomicilioReceptor(rs.getString("domicilio_receptor"));
         dto.setComprobanteId(rs.getObject("comprobante_id") != null ? rs.getInt("comprobante_id") : null);
+        dto.setReparsoftRemitoId(rs.getObject("reparsoft_remito_id") != null ? rs.getInt("reparsoft_remito_id") : null);
         dto.setEstado(rs.getString("estado"));
         dto.setObservaciones(rs.getString("observaciones"));
         return dto;

@@ -205,6 +205,6 @@ public class RemitoReparsoftLecturaDAO {
             case 8:  display = 7;    break;
             default: display = idUbicacion; break;
         }
-        return String.format("%04d-%08d", display, numeroSalida);
+        return String.format("%04d - %08d", display, numeroSalida);
     }
 }

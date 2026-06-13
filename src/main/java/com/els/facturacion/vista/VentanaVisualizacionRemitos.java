@@ -37,6 +37,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -221,8 +222,57 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
                 return;
             }
         }
+
+        // Limpiar remitos huérfanos (eliminados de ReparSoft pero no de FacturaSoft)
+        int limpiados = controlador.limpiarRemitosHuerfanos();
+        if (limpiados > 0) {
+            System.out.println("Se limpiaron " + limpiados + " remitos huérfanos");
+        }
+
+        // Cargar desde ReparSoft
         allRemitosData = dao.listarRemitosConFechas(baseDatos);
         if (allRemitosData == null) allRemitosData = new ArrayList<>();
+
+        // Cargar desde FacturaSoft local y fusionar
+        List<RemitoDTO> locales = controlador.listarTodos();
+        if (locales != null) {
+            Map<String, RemitoDTO> localesPorNro = new java.util.HashMap<>();
+            for (RemitoDTO r : locales) {
+                if (r.getNumeroRemito() != null) {
+                    localesPorNro.put(r.getNumeroRemito(), r);
+                }
+            }
+            // Corregir fecha de emision con la local (correcta) para los que ya existen
+            for (Map<String, Object> item : allRemitosData) {
+                String nro = (String) item.get("numeroRemito");
+                if (nro != null && localesPorNro.containsKey(nro)) {
+                    RemitoDTO local = localesPorNro.get(nro);
+                    item.put("fechaEmision", java.sql.Date.valueOf(local.getFechaEmision()));
+                    if (local.getFechaEntrega() != null) {
+                        item.put("fechaEntrega", java.sql.Date.valueOf(local.getFechaEntrega()));
+                    }
+                }
+            }
+            // Agregar los que solo existen en local (no están en ReparSoft)
+            for (RemitoDTO r : locales) {
+                boolean existe = false;
+                for (Map<String, Object> item : allRemitosData) {
+                    if (r.getNumeroRemito().equals(item.get("numeroRemito"))) {
+                        existe = true;
+                        break;
+                    }
+                }
+                if (!existe) {
+                    Map<String, Object> item = new java.util.LinkedHashMap<>();
+                    item.put("numeroRemito", r.getNumeroRemito());
+                    item.put("cliente", r.getRazonSocialReceptor());
+                    item.put("items", r.getItems() != null ? r.getItems().size() : 0);
+                    item.put("fechaEmision", java.sql.Date.valueOf(r.getFechaEmision()));
+                    item.put("fechaEntrega", r.getFechaEntrega() != null ? java.sql.Date.valueOf(r.getFechaEntrega()) : null);
+                    allRemitosData.add(item);
+                }
+            }
+        }
 
         // Populate filter combo
         String seleccionActual = cmbFiltroCliente.getSelectedItem() != null

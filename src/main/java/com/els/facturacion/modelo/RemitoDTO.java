@@ -15,6 +15,7 @@ public class RemitoDTO {
     private String razonSocialReceptor;
     private String domicilioReceptor;
     private Integer comprobanteId;
+    private Integer reparsoftRemitoId;
     private String estado;
     private String observaciones;
     private List<RemitoItemDTO> items;
@@ -46,6 +47,8 @@ public class RemitoDTO {
     public void setDomicilioReceptor(String domicilioReceptor) { this.domicilioReceptor = domicilioReceptor; }
     public Integer getComprobanteId() { return comprobanteId; }
     public void setComprobanteId(Integer comprobanteId) { this.comprobanteId = comprobanteId; }
+    public Integer getReparsoftRemitoId() { return reparsoftRemitoId; }
+    public void setReparsoftRemitoId(Integer reparsoftRemitoId) { this.reparsoftRemitoId = reparsoftRemitoId; }
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }
     public String getObservaciones() { return observaciones; }

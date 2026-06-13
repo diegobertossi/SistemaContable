@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ControladorReparsoft {
 
@@ -291,6 +292,145 @@ public class ControladorReparsoft {
             System.err.println("Error actualizando cliente en ReparSoft: " + e.getMessage());
         }
         return false;
+    }
+
+    // ─── Sincronización bidireccional de remitos ────────────────────────
+
+    public Integer insertarRemitoEnReparsoft(String numeroRemito, List<Integer> elsList, int codigoUbicacion) {
+        String base = UbicacionSistema.getNombreDbReparsoft();
+        Connection conn = ConexionReparsoft.getInstancia().getConexion(base);
+        if (conn == null) return null;
+
+        // 1. obtener IdUbicacion desde el Codigo
+        int idUbicacion = -1;
+        String sqlUbic = "SELECT IdUbicacion FROM " + base + ".UbicacionRemitos WHERE Codigo = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sqlUbic)) {
+            ps.setInt(1, codigoUbicacion);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) idUbicacion = rs.getInt("IdUbicacion");
+        } catch (SQLException e) {
+            System.err.println("Error obteniendo IdUbicacion: " + e.getMessage());
+            return null;
+        }
+        if (idUbicacion < 0) {
+            System.err.println("No se encontró IdUbicacion para Codigo=" + codigoUbicacion);
+            return null;
+        }
+
+        // 2. calcular próximo idRemito
+        int nextId;
+        try (PreparedStatement ps = conn.prepareStatement("SELECT COALESCE(MAX(idRemito), 0) + 1 FROM " + base + ".remitos");
+             ResultSet rs = ps.executeQuery()) {
+            rs.next();
+            nextId = rs.getInt(1);
+        } catch (SQLException e) {
+            System.err.println("Error obteniendo próximo idRemito: " + e.getMessage());
+            return null;
+        }
+
+        // 3. extraer NumeroRemitoSalida del numeroRemito FacturaSoft (formato "XXXX - YYYYYYYY")
+        int numeroSalida;
+        try {
+            int idx = numeroRemito.lastIndexOf('-');
+            if (idx < 0) {
+                System.err.println("Formato de numeroRemito invalido (sin guion): " + numeroRemito);
+                return null;
+            }
+            String parteNumerica = numeroRemito.substring(idx + 1).trim();
+            numeroSalida = Integer.parseInt(parteNumerica);
+        } catch (Exception e) {
+            System.err.println("Error parseando numeroRemito: " + numeroRemito + " - " + e.getMessage());
+            return null;
+        }
+
+        // 4. INSERT en remitos
+        String sqlInsert = "INSERT INTO " + base + ".remitos (idRemito, NumeroRemitoSalida, IdUbicacion) VALUES (?, ?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(sqlInsert)) {
+            ps.setInt(1, nextId);
+            ps.setInt(2, numeroSalida);
+            ps.setInt(3, idUbicacion);
+            int affected = ps.executeUpdate();
+            if (affected == 0) {
+                System.err.println("Error insertando remito en ReparSoft");
+                return null;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error insertando remito en ReparSoft: " + e.getMessage());
+            return null;
+        }
+
+        // 5. UPDATE reparaciones SET idRemito, RemitoGenerado, RemitoCliente, Agregadoaremito
+        String elsPlaceholders = elsList.stream().map(e -> "?").collect(Collectors.joining(","));
+        String sqlUpdRep = "UPDATE " + base + ".reparaciones SET idRemito = ?, RemitoGenerado = 1, "
+                + "Agregadoaremito = 1 WHERE els IN (" + elsPlaceholders + ")";
+        try (PreparedStatement ps = conn.prepareStatement(sqlUpdRep)) {
+            ps.setInt(1, nextId);
+            for (int i = 0; i < elsList.size(); i++) {
+                ps.setInt(i + 2, elsList.get(i));
+            }
+            int updated = ps.executeUpdate();
+            System.out.println("✓ Remito " + numeroRemito + " sincronizado a ReparSoft (idRemito=" + nextId
+                    + ", " + updated + " reparaciones actualizadas)");
+        } catch (SQLException e) {
+            System.err.println("Error actualizando reparaciones en ReparSoft: " + e.getMessage());
+            return null;
+        }
+
+        return nextId;
+    }
+
+    public boolean eliminarRemitoEnReparsoft(int reparsoftRemitoId) {
+        String base = UbicacionSistema.getNombreDbReparsoft();
+        Connection conn = ConexionReparsoft.getInstancia().getConexion(base);
+        if (conn == null) return false;
+
+        try {
+            // desvincular reparaciones
+            String sqlUpd = "UPDATE " + base + ".reparaciones SET idRemito = 0, RemitoGenerado = 0, "
+                    + "Agregadoaremito = 0 WHERE idRemito = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sqlUpd)) {
+                ps.setInt(1, reparsoftRemitoId);
+                ps.executeUpdate();
+            }
+
+            // eliminar remito
+            String sqlDel = "DELETE FROM " + base + ".remitos WHERE idRemito = ?";
+            try (PreparedStatement ps = conn.prepareStatement(sqlDel)) {
+                ps.setInt(1, reparsoftRemitoId);
+                boolean ok = ps.executeUpdate() > 0;
+                if (ok) {
+                    System.out.println("✓ Remito eliminado de ReparSoft (idRemito=" + reparsoftRemitoId + ")");
+                }
+                return ok;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error eliminando remito de ReparSoft: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public List<Integer> verificarRemitosExistentes(List<Integer> idsReparsoft) {
+        if (idsReparsoft == null || idsReparsoft.isEmpty()) return new ArrayList<>();
+        String base = UbicacionSistema.getNombreDbReparsoft();
+        Connection conn = ConexionReparsoft.getInstancia().getConexion(base);
+        if (conn == null) return null;
+
+        String placeholders = idsReparsoft.stream().map(e -> "?").collect(Collectors.joining(","));
+        String sql = "SELECT idRemito FROM " + base + ".remitos WHERE idRemito IN (" + placeholders + ")";
+        List<Integer> existentes = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            for (int i = 0; i < idsReparsoft.size(); i++) {
+                ps.setInt(i + 1, idsReparsoft.get(i));
+            }
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                existentes.add(rs.getInt("idRemito"));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error verificando remitos en ReparSoft: " + e.getMessage());
+            return null;
+        }
+        return existentes;
     }
 
     public boolean eliminarClienteEnReparsoft(int elsReferencia) {

@@ -76,7 +76,8 @@ public class VentanaConfigCertificados extends JFrame {
 
     public VentanaConfigCertificados() {
         setTitle("Configuracion de Certificados ARCA");
-        setSize(950, 620);
+        setSize(1024, 600);
+        setResizable(false);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(currentTheme.bgBase);

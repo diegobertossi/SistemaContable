@@ -1,6 +1,10 @@
 package com.els.facturacion.vista;
 
+import com.els.facturacion.controlador.ControladorRemitos;
 import com.els.facturacion.dao.RemitoReparsoftLecturaDAO;
+import com.els.facturacion.modelo.CuitConfigDTO;
+import com.els.facturacion.modelo.RemitoDTO;
+import com.els.facturacion.modelo.RemitoItemDTO;
 import com.els.facturacion.util.AutoCompleteComboBox;
 import com.els.facturacion.util.UbicacionSistema;
 
@@ -36,6 +40,8 @@ import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -98,16 +104,19 @@ public class VentanaRemitos extends JFrame {
     private VentanaVisualizacionRemitos visView;
 
     private boolean cargandoDatos = false;
+    private boolean remitoGenerado = false;
     private int idClienteActual = -1;
     private int idSucursalActual = -1;
     private String clienteNombre = "";
     private String sucursalNombre = "";
     private String part1 = "";
+    private ControladorRemitos controladorRemitos;
 
     public VentanaRemitos() {
         super();
         this.currentTheme = VentanaPrincipal.getCurrentTheme();
         this.dao = new RemitoReparsoftLecturaDAO();
+        this.controladorRemitos = new ControladorRemitos();
         initComponents();
         applyTheme(currentTheme);
         VentanaPrincipal.addThemeListener(this);
@@ -196,7 +205,7 @@ public class VentanaRemitos extends JFrame {
             }
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 8;
+                return column == 8 && !remitoGenerado;
             }
         };
         tabla = new JTable(modeloTabla);
@@ -389,6 +398,7 @@ public class VentanaRemitos extends JFrame {
 
     private void onClienteChanged() {
         if (cargandoDatos) return;
+        if (remitoGenerado) resetForm();
         String sel = getComboText(cmbCliente);
         if (sel == null || sel.trim().isEmpty()) return;
         clienteNombre = sel.trim();
@@ -450,6 +460,7 @@ public class VentanaRemitos extends JFrame {
     }
 
     private void onUbicacionChanged() {
+        if (remitoGenerado) resetForm();
         if (cmbUbicacion.getSelectedIndex() <= 0) {
             txtTipoRemito.setText("");
             txtTipoRemito.setVisible(false);
@@ -505,16 +516,31 @@ public class VentanaRemitos extends JFrame {
 
     private void guardarRemito() {
         int filas = modeloTabla.getRowCount();
-        int cont = 0;
+        List<Integer> elsSeleccionados = new ArrayList<>();
+        List<RemitoItemDTO> items = new ArrayList<>();
         for (int i = 0; i < filas; i++) {
             Boolean val = (Boolean) modeloTabla.getValueAt(i, 8);
-            if (val != null && val) cont++;
+            if (val != null && val) {
+                int els = (int) modeloTabla.getValueAt(i, 0);
+                String equipo = (String) modeloTabla.getValueAt(i, 1);
+                String marca = (String) modeloTabla.getValueAt(i, 2);
+                String modelo = (String) modeloTabla.getValueAt(i, 3);
+                String serie = (String) modeloTabla.getValueAt(i, 4);
+                String descripcion = String.format("%s %s %s s/n: %s",
+                        equipo != null ? equipo : "",
+                        marca != null ? marca : "",
+                        modelo != null ? modelo : "",
+                        serie != null ? serie : "").trim();
+                elsSeleccionados.add(els);
+                items.add(new RemitoItemDTO(String.valueOf(els), descripcion,
+                        BigDecimal.ONE, "Unidad", els));
+            }
         }
         if (txtCantBultos.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Debe ingresar la 'CANTIDAD DE BULTOS'");
             return;
         }
-        if (cont == 0) {
+        if (elsSeleccionados.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Debe agregar al menos un equipo al remito");
             return;
         }
@@ -526,20 +552,92 @@ public class VentanaRemitos extends JFrame {
         btnGuardarRemito.setEnabled(false);
         btnGuardarRemito.setText("GUARDANDO...");
 
+        CuitConfigDTO emisor = controladorRemitos.getCuitActivo();
+        if (emisor == null) {
+            JOptionPane.showMessageDialog(this,
+                "No hay un CUIT emisor configurado.\nConfigure uno en Herramientas > Configurar Certificados.",
+                "Error", JOptionPane.ERROR_MESSAGE);
+            btnGuardarRemito.setEnabled(true);
+            btnGuardarRemito.setText("GUARDAR REMITO");
+            return;
+        }
+
+        RemitoDTO remito = new RemitoDTO();
+        remito.setNumeroRemito(txtRemitoConformado.getText().trim());
+        remito.setFechaEmision(LocalDate.now());
+        remito.setCuitEmisor(emisor.getCuit());
+        remito.setRazonSocialEmisor(emisor.getRazonSocial());
+        remito.setDomicilioEmisor("");
+        remito.setCuitReceptor("");
+        remito.setRazonSocialReceptor(clienteNombre);
+        remito.setDomicilioReceptor("");
+        remito.setEstado("pendiente");
+        remito.setObservaciones("Cant. bultos: " + txtCantBultos.getText().trim());
+        remito.setItems(items);
+
+        int codigoUbicacion;
+        try {
+            codigoUbicacion = Integer.parseInt(part1);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this,
+                "Error al determinar ubicaci\u00f3n del remito",
+                "Error", JOptionPane.ERROR_MESSAGE);
+            btnGuardarRemito.setEnabled(true);
+            btnGuardarRemito.setText("GUARDAR REMITO");
+            return;
+        }
+
         new SwingWorker<Void, Void>() {
+            private int remitoId;
+
             @Override
             protected Void doInBackground() throws Exception {
-                Thread.sleep(500);
+                remitoId = controladorRemitos.guardarRemito(remito, elsSeleccionados, codigoUbicacion);
                 return null;
             }
             @Override
             protected void done() {
-                JOptionPane.showMessageDialog(VentanaRemitos.this,
-                    "Remito guardado correctamente: " + txtRemitoConformado.getText());
-                btnGuardarRemito.setEnabled(true);
-                btnGuardarRemito.setText("GUARDAR REMITO");
+                if (remitoId > 0) {
+                    JOptionPane.showMessageDialog(VentanaRemitos.this,
+                        "Remito guardado correctamente: " + remito.getNumeroRemito());
+                    setFormEditable(false);
+                    remitoGenerado = true;
+                } else {
+                    JOptionPane.showMessageDialog(VentanaRemitos.this,
+                        "Error al guardar el remito",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                    btnGuardarRemito.setEnabled(true);
+                    btnGuardarRemito.setText("GUARDAR REMITO");
+                }
             }
         }.execute();
+    }
+
+    // ─── Form state ────────────────────────────────────────────────────
+
+    private void setFormEditable(boolean editable) {
+        cmbCliente.setEnabled(editable);
+        cmbSucursal.setEnabled(editable);
+        cmbUbicacion.setEnabled(editable);
+        txtCantBultos.setEnabled(editable);
+        btnCambiarN.setEnabled(editable);
+        btnGuardarRemito.setEnabled(editable);
+        btnVisualizarRemito.setEnabled(editable);
+        if (!editable) {
+            txtNumeroRemito.setEnabled(false);
+        }
+    }
+
+    private void resetForm() {
+        remitoGenerado = false;
+        setFormEditable(true);
+        txtCantBultos.setText("");
+        txtNumeroRemito.setText("");
+        txtRemitoConformado.setText("");
+        txtTipoRemito.setVisible(false);
+        panelAcciones.setVisible(false);
+        cmbUbicacion.setSelectedIndex(0);
+        modeloTabla.setRowCount(0);
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────

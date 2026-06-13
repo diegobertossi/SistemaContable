@@ -139,13 +139,15 @@ CREATE TABLE IF NOT EXISTS remitos (
     razon_social_receptor VARCHAR(200),
     domicilio_receptor VARCHAR(200),
     comprobante_id INT,
+    reparsoft_remito_id INT,
     estado VARCHAR(30) DEFAULT 'pendiente',
     observaciones TEXT,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_emisor (cuit_emisor),
     INDEX idx_receptor (cuit_receptor),
     INDEX idx_estado (estado),
-    INDEX idx_comprobante (comprobante_id)
+    INDEX idx_comprobante (comprobante_id),
+    INDEX idx_reparsoft_id (reparsoft_remito_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tabla: remito_items
@@ -285,6 +287,10 @@ SET @sql = (SELECT IF(COUNT(*)=0,"ALTER TABLE comprobantes ADD COLUMN otros_impu
 
 -- Migración: agregar columna tipo_persona si no existe
 SET @sql = (SELECT IF(COUNT(*)=0,"ALTER TABLE clientes ADD COLUMN tipo_persona VARCHAR(20) DEFAULT 'empresa' AFTER activo",'SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='clientes' AND COLUMN_NAME='tipo_persona'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- Migración: agregar columna reparsoft_remito_id si no existe
+SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE remitos ADD COLUMN reparsoft_remito_id INT DEFAULT NULL AFTER comprobante_id','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='remitos' AND COLUMN_NAME='reparsoft_remito_id'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE remitos ADD INDEX idx_reparsoft_id (reparsoft_remito_id)','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='remitos' AND COLUMN_NAME='reparsoft_remito_id'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 
 -- Migración: asegurar tamaño suficiente en columnas para datos largos
 SET @sql = (SELECT IF(COUNT(*)>0,'ALTER TABLE clientes MODIFY COLUMN email VARCHAR(500)','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='clientes' AND COLUMN_NAME='email' AND CHARACTER_MAXIMUM_LENGTH < 500); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;

@@ -282,6 +282,10 @@ SET @sql = (SELECT IF(COUNT(*)=0,"ALTER TABLE comprobantes ADD COLUMN estado_pag
 -- otros_impuestos
 SET @sql = (SELECT IF(COUNT(*)=0,"ALTER TABLE comprobantes ADD COLUMN otros_impuestos DECIMAL(12,2) DEFAULT 0.00 AFTER estado_pago",'SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='otros_impuestos'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 
+-- Migración: agregar columna reparsoft_remito_id si no existe
+SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE remitos ADD COLUMN reparsoft_remito_id INT DEFAULT NULL AFTER comprobante_id','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='remitos' AND COLUMN_NAME='reparsoft_remito_id'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE remitos ADD INDEX idx_reparsoft_id (reparsoft_remito_id)','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='remitos' AND COLUMN_NAME='reparsoft_remito_id'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
 -- Migración: asegurar tamaño suficiente en columnas para datos largos
 SET @sql = (SELECT IF(COUNT(*)>0,'ALTER TABLE clientes MODIFY COLUMN email VARCHAR(500)','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='clientes' AND COLUMN_NAME='email' AND CHARACTER_MAXIMUM_LENGTH < 500); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 SET @sql = (SELECT IF(COUNT(*)>0,'ALTER TABLE clientes MODIFY COLUMN nro_documento VARCHAR(50)','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='clientes' AND COLUMN_NAME='nro_documento' AND CHARACTER_MAXIMUM_LENGTH < 50); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
