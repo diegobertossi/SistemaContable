@@ -3,14 +3,16 @@ package com.els.facturacion.reportes;
 import com.els.facturacion.modelo.ComprobanteDTO;
 import com.els.facturacion.modelo.ReciboDTO;
 import com.els.facturacion.modelo.RemitoDTO;
+import com.els.facturacion.modelo.RemitoItemDTO;
 import net.sf.jasperreports.engine.JRDataSource;
+import net.sf.jasperreports.engine.JREmptyDataSource;
+import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReport;
-import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import net.sf.jasperreports.engine.export.JRPdfExporter;
-import net.sf.jasperreports.engine.JRExporterParameter;
 
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -56,28 +58,28 @@ public class GestorReportes {
 
     public String generarReporteRemito(RemitoDTO remito, String rutaSalida) {
         try {
-            InputStream jrxmlStream = getClass().getClassLoader().getResourceAsStream("reportes/remito.jrxml");
+            InputStream jrxmlStream = getClass().getClassLoader().getResourceAsStream("reportes/RemitoComun.jrxml");
             if (jrxmlStream == null) {
-                System.err.println("No se encontro reporte remito.jrxml");
+                System.err.println("No se encontro RemitoComun.jrxml");
                 return null;
             }
 
             Map<String, Object> params = new HashMap<>();
-            params.put("NUMERO_REMITO", remito.getNumeroRemito());
-            params.put("FECHA_EMISION", remito.getFechaEmision().format(FMT));
-            params.put("FECHA_ENTREGA", remito.getFechaEntrega() != null ? remito.getFechaEntrega().format(FMT) : "");
-            params.put("CUIT_EMISOR", remito.getCuitEmisor());
-            params.put("RAZON_SOCIAL_EMISOR", remito.getRazonSocialEmisor());
-            params.put("DOMICILIO_EMISOR", remito.getDomicilioEmisor());
-            params.put("CUIT_RECEPTOR", remito.getCuitReceptor());
-            params.put("RAZON_SOCIAL_RECEPTOR", remito.getRazonSocialReceptor());
-            params.put("DOMICILIO_RECEPTOR", remito.getDomicilioReceptor());
+            params.put("cliente", remito.getRazonSocialReceptor() != null ? remito.getRazonSocialReceptor() : "");
+            params.put("remitoConformado", remito.getNumeroRemito() != null ? remito.getNumeroRemito() : "");
+            params.put("cantBultos", 0);
+            params.put("cuit", remito.getCuitEmisor() != null ? remito.getCuitEmisor() : "");
+            params.put("domicilio", remito.getDomicilioEmisor() != null ? remito.getDomicilioEmisor() : "");
+
+            String descripcionTexto = remito.getItems() != null
+                ? remito.getItems().stream().map(RemitoItemDTO::getDescripcion).collect(java.util.stream.Collectors.joining("\n\n"))
+                : "";
+            params.put("descripcion", descripcionTexto);
+            params.put("fecha_Entrada", remito.getFechaEmision() != null ? remito.getFechaEmision().format(FMT) : "");
 
             JasperReport jasperReport = JasperCompileManager.compileReport(jrxmlStream);
-            JRDataSource dataSource = remito.getItems() != null
-                ? new JRBeanCollectionDataSource(remito.getItems())
-                : new JRBeanCollectionDataSource(java.util.Collections.emptyList());
-            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, dataSource);
+            JasperPrint jasperPrint = JasperFillManager.fillReport(
+                jasperReport, params, new JREmptyDataSource(1));
 
             FileOutputStream fos = new FileOutputStream(rutaSalida);
             JRPdfExporter exporter = new JRPdfExporter();

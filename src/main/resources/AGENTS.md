@@ -19,6 +19,7 @@
 - **Constantes**: MAYUSCULAS_CON_GUION_BAJO
 - **Variables**: camelCase (ej: `cuitEmisor`)
 - **Interfaces**: Prefijo `I` opcional (ej: `IComprobanteDAO`)
+- **Java 8 target**: NO usar `List.of()`, `Set.of()`, `Map.of()`, `Map.ofEntries()` ni otras API de Java 9+. Usar `Arrays.asList(...)`, `Collections.singletonList(...)`, `Collections.unmodifiableList(...)` o `new ArrayList<>(Arrays.asList(...))` según corresponda. El proyecto compila con `maven.compiler.source=8` y esas APIs no existen en Java 8.
 
 ### Propiedades Java
 - Longitud máxima de línea: 120 caracteres
@@ -125,12 +126,21 @@ Formato JSON encodeado en Base64:
 - Detalle: tabla_items
 - Pie: CAE + vencimiento + QR
 
+### Carga de reportes compilados vs. fuente
+- `.jasper` = binario compilado → usar `JasperFillManager.fillReport(inputStream, params, dataSource)` o `JRLoader.loadObject(inputStream)`. **NO** usar `JasperCompileManager.compileReport()` (espera `.jrxml` XML y falla con "Byte no válido 1 de la secuencia UTF-8").
+- `.jrxml` = XML fuente → usar `JasperCompileManager.compileReport(inputStream)`.
+
 ### Nombres de Reportes
 - `factura_a.jrxml`
 - `factura_c.jrxml`
 - `nota_credito.jrxml`
 - `reporte_caja_mensual.jrxml`
 - `reporte_gastos_anual.jrxml`
+
+### Orden XSD en JRXML
+El XSD de JasperReports exige orden estricto dentro de `<jasperReport>`:
+`property* → propertyExpression* → import* → template* → reportFont* → style* → subDataset* → scriptlet* → **parameter*** → queryString? → **field*** → sortField* → variable* → filterExpression? → group* → background? → title? → pageHeader? → columnHeader? → detail? → columnFooter? → pageFooter? → lastPageFooter? → summary? → noData?`
+- `<parameter>` va SIEMPRE **antes** que `<queryString>` y `<field>`, no después. (Error común: asumir que `parameter` va después de `field` porque es menos usado; el XSD de JasperReports 6.21.3 lo pone antes de `queryString`.)
 
 ---
 

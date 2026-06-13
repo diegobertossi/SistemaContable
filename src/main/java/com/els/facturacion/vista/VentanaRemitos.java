@@ -5,6 +5,11 @@ import com.els.facturacion.dao.RemitoReparsoftLecturaDAO;
 import com.els.facturacion.modelo.CuitConfigDTO;
 import com.els.facturacion.modelo.RemitoDTO;
 import com.els.facturacion.modelo.RemitoItemDTO;
+import com.els.facturacion.pdf.GestorRemitoPDF;
+import net.sf.jasperreports.engine.JREmptyDataSource;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.view.JasperViewer;
 import com.els.facturacion.util.AutoCompleteComboBox;
 import com.els.facturacion.util.UbicacionSistema;
 
@@ -24,6 +29,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListCellRenderer;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.plaf.basic.BasicComboBoxUI;
 import javax.swing.table.DefaultTableModel;
@@ -33,6 +39,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Cursor;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -40,12 +47,18 @@ import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
+import java.io.File;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class VentanaRemitos extends JFrame {
 
@@ -509,9 +522,99 @@ public class VentanaRemitos extends JFrame {
             JOptionPane.showMessageDialog(this, "Debe agregar al menos un equipo al remito");
             return;
         }
-        JOptionPane.showMessageDialog(this,
-            "Funcionalidad de visualizaci\u00f3n de remito en desarrollo.\n"
-            + "Equipos seleccionados: " + cont);
+
+        List<RemitoItemDTO> items = new ArrayList<>();
+        for (int i = 0; i < filas; i++) {
+            Boolean val = (Boolean) modeloTabla.getValueAt(i, 8);
+            if (val != null && val) {
+                int els = (int) modeloTabla.getValueAt(i, 0);
+                String equipo = (String) modeloTabla.getValueAt(i, 1);
+                String marca = (String) modeloTabla.getValueAt(i, 2);
+                String modelo = (String) modeloTabla.getValueAt(i, 3);
+                String serie = (String) modeloTabla.getValueAt(i, 4);
+                String descripcion = String.format("ELS: %d - EQUIPO: %s - MARCA: %s - MODELO: %s - N\u00b0 SERIE: %s",
+                        els,
+                        equipo != null ? equipo : "",
+                        marca != null ? marca : "",
+                        modelo != null ? modelo : "",
+                        serie != null ? serie : "").trim();
+                items.add(new RemitoItemDTO(String.valueOf(els), descripcion,
+                        BigDecimal.ONE, "Unidad", els));
+            }
+        }
+
+        CuitConfigDTO emisor = controladorRemitos.getCuitActivo();
+        if (emisor == null) {
+            JOptionPane.showMessageDialog(this,
+                "No hay un CUIT emisor configurado.\nConfigure uno en Herramientas > Configurar Certificados.",
+                "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        RemitoDTO remito = new RemitoDTO();
+        remito.setNumeroRemito(txtRemitoConformado.getText().trim());
+        remito.setFechaEmision(LocalDate.now());
+        remito.setCuitEmisor(emisor.getCuit());
+        remito.setRazonSocialEmisor(emisor.getRazonSocial());
+        remito.setDomicilioEmisor("");
+        remito.setCuitReceptor("");
+        remito.setRazonSocialReceptor(clienteNombre);
+        remito.setDomicilioReceptor("");
+        remito.setEstado("pendiente");
+        remito.setObservaciones("");
+        remito.setItems(items);
+
+        final int cantBultos = parseCantBultos(txtCantBultos.getText().trim());
+
+        new SwingWorker<JasperPrint, Void>() {
+            @Override
+            protected JasperPrint doInBackground() throws Exception {
+                String templateName;
+                if (part1 != null && Arrays.asList("0002", "0005", "0006", "0007").contains(part1.trim())) {
+                    templateName = "RemitoPreImpreso.jasper";
+                } else {
+                    templateName = "RemitoComun.jasper";
+                }
+
+                Map<String, Object> params = new HashMap<>();
+                params.put("cliente", remito.getRazonSocialReceptor() != null ? remito.getRazonSocialReceptor() : "");
+                params.put("remitoConformado", remito.getNumeroRemito() != null ? remito.getNumeroRemito() : "");
+                params.put("cantBultos", cantBultos);
+                params.put("cuit", remito.getCuitEmisor() != null ? remito.getCuitEmisor() : "");
+                params.put("domicilio", remito.getDomicilioEmisor() != null ? remito.getDomicilioEmisor() : "");
+                params.put("fecha_Entrada", remito.getFechaEmision() != null ? remito.getFechaEmision().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "");
+
+                String descripcionTexto = items.stream()
+                    .map(RemitoItemDTO::getDescripcion)
+                    .collect(Collectors.joining("\n\n"));
+                params.put("descripcion", descripcionTexto);
+
+                InputStream jasperStream = getClass().getClassLoader()
+                    .getResourceAsStream("reportes/" + templateName);
+                if (jasperStream == null) {
+                    throw new Exception("No se encontro " + templateName);
+                }
+
+                return JasperFillManager.fillReport(jasperStream, params, new JREmptyDataSource(1));
+            }
+            @Override
+            protected void done() {
+                try {
+                    JasperPrint jp = get();
+                    JasperViewer viewer = new JasperViewer(jp, false);
+                    viewer.setVisible(true);
+                    SwingUtilities.invokeLater(() -> {
+                        viewer.toFront();
+                        viewer.repaint();
+                        viewer.requestFocus();
+                    });
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(VentanaRemitos.this,
+                        "Error al generar la vista previa: " + e.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
     }
 
     private void guardarRemito() {
@@ -526,7 +629,8 @@ public class VentanaRemitos extends JFrame {
                 String marca = (String) modeloTabla.getValueAt(i, 2);
                 String modelo = (String) modeloTabla.getValueAt(i, 3);
                 String serie = (String) modeloTabla.getValueAt(i, 4);
-                String descripcion = String.format("%s %s %s s/n: %s",
+                String descripcion = String.format("ELS: %d - EQUIPO: %s - MARCA: %s - MODELO: %s - N\u00b0 SERIE: %s",
+                        els,
                         equipo != null ? equipo : "",
                         marca != null ? marca : "",
                         modelo != null ? modelo : "",
@@ -602,12 +706,42 @@ public class VentanaRemitos extends JFrame {
                         "Remito guardado correctamente: " + remito.getNumeroRemito());
                     setFormEditable(false);
                     remitoGenerado = true;
+                    generarPDFRemito(remito);
                 } else {
                     JOptionPane.showMessageDialog(VentanaRemitos.this,
                         "Error al guardar el remito",
                         "Error", JOptionPane.ERROR_MESSAGE);
                     btnGuardarRemito.setEnabled(true);
                     btnGuardarRemito.setText("GUARDAR REMITO");
+                }
+            }
+        }.execute();
+    }
+
+    // ─── PDF generation ────────────────────────────────────────────────
+
+    private void generarPDFRemito(RemitoDTO remito) {
+        new SwingWorker<String, Void>() {
+            @Override
+            protected String doInBackground() throws Exception {
+                GestorRemitoPDF gestor = new GestorRemitoPDF();
+                int cantBultos = parseCantBultos(txtCantBultos.getText().trim());
+                return gestor.generarPDFRemito(remito, part1, cantBultos);
+            }
+            @Override
+            protected void done() {
+                try {
+                    String ruta = get();
+                    if (ruta != null) {
+                        File pdfFile = new File(ruta);
+                        if (Desktop.isDesktopSupported()) {
+                            Desktop.getDesktop().open(pdfFile);
+                        }
+                    } else {
+                        System.err.println("Error al generar PDF del remito");
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error en generacion de PDF: " + e.getMessage());
                 }
             }
         }.execute();
@@ -664,6 +798,14 @@ public class VentanaRemitos extends JFrame {
             ed.setForeground(combo.isEnabled() ? t.textPrimary : getDisabledFg());
             ed.setDisabledTextColor(getDisabledFg());
             ed.setCaretColor(t.textPrimary);
+        }
+    }
+
+    private static int parseCantBultos(String text) {
+        try {
+            return Integer.parseInt(text);
+        } catch (NumberFormatException e) {
+            return 0;
         }
     }
 

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.20.6.final using JasperReports Library version 6.20.6-5c96b6aa8a39ac1dc6b6bea4b81168e16dd39231  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="RemitoComun" pageWidth="595" pageHeight="842" columnWidth="545" leftMargin="25" rightMargin="25" topMargin="20" bottomMargin="432" uuid="dff49ebd-6ce0-4f9d-ac8a-7466b65e877f">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+	<property name="com.jaspersoft.studio.unit." value="mm"/>
+	<property name="com.jaspersoft.studio.unit.pageHeight" value="mm"/>
+	<property name="com.jaspersoft.studio.unit.pageWidth" value="mm"/>
+	<parameter name="cliente" class="java.lang.String"/>
+	<parameter name="remitoConformado" class="java.lang.String"/>
+	<parameter name="cantBultos" class="java.lang.Integer"/>
+	<parameter name="descripcion" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<field name="cliente" class="java.lang.String"/>
+	<field name="remitoConformado" class="java.lang.String"/>
+	<field name="cantBultos" class="java.lang.Integer"/>
+	<field name="descripcion" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="68" splitType="Stretch">
+			<rectangle>
+				<reportElement x="10" y="15" width="525" height="49" uuid="3df7ecb0-0146-4e8f-ab86-ee3de5b1012f"/>
+			</rectangle>
+			<staticText>
+				<reportElement x="10" y="-5" width="162" height="20" uuid="3fdf08f7-189c-4652-9b85-12f141fb0c06"/>
+				<textElement>
+					<font fontName="Cambria" size="16" isBold="true"/>
+				</textElement>
+				<text><![CDATA[REMITO DE SALIDA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="375" y="33" width="50" height="13" uuid="01822e18-1d6e-4ea0-8eef-5fbe49857b17"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Cambria" size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[FECHA:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="375" y="49" width="90" height="13" uuid="87202ade-f14b-4357-a3e2-ec1817148af6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Cambria" size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[CANT. BULTOS:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="16" y="31" width="70" height="18" uuid="40adc7f1-4de3-40ec-a3ab-5d930b039f4b"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Cambria" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[CLIENTE: ]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="375" y="18" width="30" height="13" uuid="b8f21e0b-0063-41c0-bbb1-08e826efe131"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Cambria" size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[N°: ]]></text>
+			</staticText>
+			<line>
+				<reportElement x="10" y="67" width="525" height="1" uuid="76488d19-5694-41f3-8388-778227a3734f"/>
+			</line>
+			<textField>
+				<reportElement positionType="Float" x="86" y="31" width="269" height="18" uuid="295f1c9c-4e90-4578-b109-d43ae7e88854"/>
+				<textElement textAlignment="Left" verticalAlignment="Top">
+					<font fontName="Cambria" size="14" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{cliente}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement positionType="Float" x="425" y="18" width="105" height="13" uuid="fb5454e0-6879-44a2-9d63-f90d9bcc5b0e">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Cambria" size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{remitoConformado}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement positionType="Float" x="425" y="33" width="105" height="13" uuid="a16323ec-2b44-42b6-96df-45071b6aca1a">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Cambria" size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new java.text.SimpleDateFormat( "dd/MM/yyyy",new Locale("es", "ES")).format (new java.util.Date())]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement positionType="Float" x="465" y="49" width="65" height="13" uuid="2363b689-5f82-43ff-af19-9c6cc4b9528a"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Cambria" size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{cantBultos}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="358" y="17" width="1" height="45" uuid="0364a833-68ce-4b89-868c-a29df2a0aca1"/>
+			</line>
+		</band>
+	</title>
+	<detail>
+		<band height="240" splitType="Stretch">
+			<textField>
+				<reportElement x="16" y="30" width="519" height="205" uuid="5b4db7dd-6d64-408e-8b13-cc29e0153058"/>
+				<textElement textAlignment="Left">
+					<font fontName="Cambria" size="11" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{descripcion}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="16" y="4" width="519" height="20" uuid="1a096567-b7d4-4861-a615-e41bee10a2a0"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Cambria" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DESCRIPCIÓN]]></text>
+			</staticText>
+		</band>
+	</detail>
+	<summary>
+		<band height="82" splitType="Stretch">
+			<line>
+				<reportElement x="10" y="10" width="525" height="1" uuid="51727bfd-48c0-4ee4-80fb-32c6f8cc98ad"/>
+			</line>
+			<line>
+				<reportElement x="10" y="14" width="525" height="1" uuid="617cfff8-cdf0-4743-ae58-8a6130191532"/>
+			</line>
+			<rectangle>
+				<reportElement x="10" y="20" width="172" height="50" uuid="c919fa71-e969-466f-81e2-f6981a8ac822"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="182" y="20" width="172" height="50" uuid="bd3e312f-83cb-46ff-910d-2080575ceb7a"/>
+			</rectangle>
+			<rectangle>
+				<reportElement x="354" y="20" width="181" height="50" uuid="cfd40ed4-2be1-4d12-9046-ed9986a3f002"/>
+			</rectangle>
+			<staticText>
+				<reportElement x="11" y="21" width="40" height="18" uuid="98023972-4021-4576-b87e-0597ee0db83e"/>
+				<textElement>
+					<font fontName="Cambria" size="10"/>
+				</textElement>
+				<text><![CDATA[Firma:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="183" y="20" width="52" height="18" uuid="98665573-ee1b-4384-8542-545bce7af38a"/>
+				<textElement>
+					<font fontName="Cambria" size="10"/>
+				</textElement>
+				<text><![CDATA[Aclaración:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="355" y="21" width="52" height="18" uuid="af5db58e-044a-42d0-abca-2a03a40348cd"/>
+				<textElement>
+					<font fontName="Cambria" size="10"/>
+				</textElement>
+				<text><![CDATA[Fecha:]]></text>
+			</staticText>
+		</band>
+	</summary>
+</jasperReport>
