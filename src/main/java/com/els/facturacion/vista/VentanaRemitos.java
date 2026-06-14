@@ -28,9 +28,14 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListCellRenderer;
+import javax.swing.Timer;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.plaf.basic.BasicComboBoxUI;
 import javax.swing.table.DefaultTableModel;
 
@@ -124,6 +129,7 @@ public class VentanaRemitos extends JFrame {
     private String sucursalNombre = "";
     private String part1 = "";
     private ControladorRemitos controladorRemitos;
+    private List<Map<String, Object>> allEquiposData = new ArrayList<>();
 
     public VentanaRemitos() {
         super();
@@ -175,6 +181,7 @@ public class VentanaRemitos extends JFrame {
 
         // ── Filter panel ────────────────────────────────────────────
         panelFiltro = new JPanel();
+        panelFiltro.setBackground(currentTheme.bgSurface);
         panelFiltro.setBounds(10, 10, 988, 36);
         panelFiltro.setLayout(null);
         panel.add(panelFiltro);
@@ -189,6 +196,8 @@ public class VentanaRemitos extends JFrame {
         cmbCliente.setFont(FUENTE_INPUT_BOLD);
         cmbCliente.setBounds(75, 8, 320, 22);
         themeComboEditor(cmbCliente, currentTheme);
+        addLiveFilter(cmbCliente);
+
         panelFiltro.add(cmbCliente);
 
         lblSucursal = new JLabel("SUCURSAL:");
@@ -275,16 +284,10 @@ public class VentanaRemitos extends JFrame {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                setBackground(getFieldBg(cmbUbicacion.isEnabled()));
-                setForeground(cmbUbicacion.isEnabled() ? currentTheme.textPrimary : getDisabledFg());
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbUbicacion.isEnabled()));
+                setForeground(isSelected ? list.getSelectionForeground() : (cmbUbicacion.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
                 setFont(cmbUbicacion.getFont());
                 return this;
-            }
-            @Override
-            public void paintComponent(Graphics g) {
-                setBackground(getFieldBg(cmbUbicacion.isEnabled()));
-                setForeground(cmbUbicacion.isEnabled() ? currentTheme.textPrimary : getDisabledFg());
-                super.paintComponent(g);
             }
         });
 
@@ -395,25 +398,63 @@ public class VentanaRemitos extends JFrame {
         }
         baseDatos = UbicacionSistema.getNombreDbReparsoft();
         cargandoDatos = true;
-        List<String> clientes = dao.listarClientes(baseDatos);
+
+        allEquiposData = dao.listarTodosLosEquiposParaRemito(baseDatos);
+
+        java.util.Set<String> clientesSet = new java.util.LinkedHashSet<>();
+        for (Map<String, Object> eq : allEquiposData) {
+            String cli = (String) eq.get("cliente");
+            if (cli != null && !cli.isEmpty()) clientesSet.add(cli);
+        }
+        List<String> clientes = new ArrayList<>(clientesSet);
+        java.util.Collections.sort(clientes);
+        clientes.add(0, "--Todos--");
         cmbCliente.setData(clientes);
+        cmbCliente.setSelectedItem("--Todos--");
+
         cargandoDatos = false;
+        refreshTable();
     }
 
     private String getComboText(JComboBox<String> combo) {
         Object sel = combo.getSelectedItem();
+        String editorText = ((JTextField) combo.getEditor().getEditorComponent()).getText();
         if (sel != null) {
             String s = sel.toString();
+            if ("--Todos--".equals(s)) return editorText;
             if (s != null && !s.trim().isEmpty()) return s.trim();
         }
-        return ((JTextField) combo.getEditor().getEditorComponent()).getText();
+        return editorText;
+    }
+
+    private void addLiveFilter(JComboBox<?> combo) {
+        Component editorComp = combo.getEditor().getEditorComponent();
+        if (editorComp instanceof JTextField) {
+            ((JTextField) editorComp).getDocument().addDocumentListener(new DocumentListener() {
+                public void insertUpdate(DocumentEvent e) { onFilterTextChanged(); }
+                public void removeUpdate(DocumentEvent e) { onFilterTextChanged(); }
+                public void changedUpdate(DocumentEvent e) { onFilterTextChanged(); }
+            });
+        }
+    }
+
+    private void onFilterTextChanged() {
+        if (cargandoDatos) return;
+        refreshTable();
     }
 
     private void onClienteChanged() {
         if (cargandoDatos) return;
         if (remitoGenerado) resetForm();
         String sel = getComboText(cmbCliente);
-        if (sel == null || sel.trim().isEmpty()) return;
+        if (sel == null || sel.trim().isEmpty() || "--Todos--".equals(sel.trim())) {
+            clienteNombre = "";
+            idClienteActual = -1;
+            sucursalNombre = "";
+            idSucursalActual = -1;
+            cmbSucursal.setData(new ArrayList<>());
+            return;
+        }
         clienteNombre = sel.trim();
         idClienteActual = dao.idClienteporNombre(baseDatos, clienteNombre);
         if (idClienteActual < 0) return;
@@ -426,27 +467,37 @@ public class VentanaRemitos extends JFrame {
 
         idSucursalActual = -1;
         sucursalNombre = "";
-        cmbSucursal.setSelectedIndex(-1);
         cmbSucursal.setEditorText("");
-        cargarEquipos();
     }
 
     private void onSucursalChanged() {
         if (cargandoDatos) return;
-        if (idClienteActual < 0) return;
+        refreshTable();
         String sel = getComboText(cmbSucursal);
-        if (sel == null || sel.trim().isEmpty()) return;
+        if (sel == null || sel.trim().isEmpty() || idClienteActual < 0) return;
         sucursalNombre = sel.trim();
         idSucursalActual = dao.idSucursalporNombre(baseDatos, sucursalNombre, idClienteActual);
-        if (idSucursalActual < 0) return;
-        cargarEquipos();
     }
 
-    private void cargarEquipos() {
-        if (idClienteActual < 0) return;
-        List<Map<String, Object>> equipos = dao.listarEquiposParaRemito(baseDatos, idClienteActual, idSucursalActual);
+    private void refreshTable() {
+        if (cargandoDatos || allEquiposData == null) return;
+
+        String textCliente = getComboText(cmbCliente);
+        String textSucursal = getComboText(cmbSucursal);
+        boolean filtrarCliente = textCliente != null && !textCliente.isEmpty()
+            && !"--Todos--".equals(textCliente);
+        boolean filtrarSucursal = textSucursal != null && !textSucursal.isEmpty();
+        String clienteLower = filtrarCliente ? textCliente.trim().toLowerCase() : "";
+        String sucursalLower = filtrarSucursal ? textSucursal.trim().toLowerCase() : "";
+
+        java.util.Set<String> sucursalesSet = new java.util.LinkedHashSet<>();
         modeloTabla.setRowCount(0);
-        for (Map<String, Object> eq : equipos) {
+        for (Map<String, Object> eq : allEquiposData) {
+            String eqCli = (String) eq.get("cliente");
+            String eqSuc = (String) eq.get("sucursal");
+            if (filtrarCliente && !eqCli.toLowerCase().contains(clienteLower)) continue;
+            if (filtrarSucursal && !eqSuc.toLowerCase().contains(sucursalLower)) continue;
+            if (eqSuc != null && !eqSuc.isEmpty()) sucursalesSet.add(eqSuc);
             modeloTabla.addRow(new Object[] {
                 eq.get("els"),
                 eq.get("equipo"),
@@ -458,6 +509,14 @@ public class VentanaRemitos extends JFrame {
                 eq.get("estadoCom"),
                 false
             });
+        }
+
+        if (!filtrarSucursal) {
+            List<String> listaSuc = new ArrayList<>(sucursalesSet);
+            java.util.Collections.sort(listaSuc);
+            cargandoDatos = true;
+            cmbSucursal.setData(listaSuc);
+            cargandoDatos = false;
         }
     }
 

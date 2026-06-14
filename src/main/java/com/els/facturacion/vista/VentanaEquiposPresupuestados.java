@@ -63,14 +63,13 @@ public class VentanaEquiposPresupuestados extends JDialog {
     private ControladorReparsoft controlador;
     private JTable tablaEquipos;
     private DefaultTableModel modeloTablaEquipos;
-    private JLabel lblCliente;
     private JButton btnSeleccionar;
     private JButton btnCancelar;
     private JPanel panel;
     private JPanel panelInferior;
     private JScrollPane scrollEquipos;
-    private JLabel lblBase;
-    private JButton btnRefrescar;
+    private JPanel panelSuperior;
+    private JLabel lblTituloSuperior;
     private JPanel statusBar;
     private JLabel lblStatus;
 
@@ -86,7 +85,7 @@ public class VentanaEquiposPresupuestados extends JDialog {
     private boolean cargandoDatos = false;
 
     public VentanaEquiposPresupuestados(JFrame parent, String clienteNombre) {
-        super(parent, "Equipos Presupuestados" + (clienteNombre != null && !clienteNombre.isEmpty() ? " - " + clienteNombre : ""), true);
+        super(parent, "Seleccion de Equipos para facturar", true);
         this.controlador = new ControladorReparsoft();
         this.clienteNombreInicial = clienteNombre;
         this.seleccionados = new ArrayList<>();
@@ -122,26 +121,13 @@ public class VentanaEquiposPresupuestados extends JDialog {
         panel.setBackground(currentTheme.bgBase);
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JPanel panelSuperior = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        panelSuperior = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
         panelSuperior.setBackground(currentTheme.bgSurface);
-        lblBase = new JLabel("Base: " + UbicacionSistema.getNombreDbReparsoft());
-        lblBase.setFont(FUENTE_LABEL);
-        lblBase.setForeground(currentTheme.textPrimary);
-        panelSuperior.add(lblBase);
-
-        btnRefrescar = new JButton("Refrescar");
-        btnRefrescar.setFont(FUENTE_BOTON);
-        btnRefrescar.setForeground(currentTheme.textPrimary);
-        btnRefrescar.setBackground(currentTheme.btnBg);
-        btnRefrescar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnRefrescar.setFocusPainted(false);
-        btnRefrescar.addActionListener(e -> cargarEquipos());
-        panelSuperior.add(btnRefrescar);
-
-        lblCliente = new JLabel("Cargando...");
-        lblCliente.setFont(FUENTE_LABEL);
-        lblCliente.setForeground(currentTheme.textPrimary);
-        panelSuperior.add(lblCliente);
+        panelSuperior.setBorder(BorderFactory.createEmptyBorder(6, 0, 12, 0));
+        lblTituloSuperior = new JLabel("SELECCIONAR EL CLIENTE PARA VER LOS EQUIPOS PRESUPUESTADOS", SwingConstants.CENTER);
+        lblTituloSuperior.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblTituloSuperior.setForeground(currentTheme.textPrimary);
+        panelSuperior.add(lblTituloSuperior);
 
         JPanel northWrapper = new JPanel(new BorderLayout());
         northWrapper.setOpaque(false);
@@ -170,6 +156,9 @@ public class VentanaEquiposPresupuestados extends JDialog {
 
         panelFiltro = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
         panelFiltro.setBackground(currentTheme.bgSurface);
+        panelFiltro.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(currentTheme.borderLight, 1),
+            BorderFactory.createEmptyBorder(3, 6, 3, 6)));
         panelFiltro.add(lblFiltroCliente);
         panelFiltro.add(cmbFiltroCliente);
         panelFiltro.add(Box.createRigidArea(new Dimension(15, 0)));
@@ -266,7 +255,6 @@ public class VentanaEquiposPresupuestados extends JDialog {
     private void cargarEquipos() {
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         modeloTablaEquipos.setRowCount(0);
-        lblCliente.setText("Cargando...");
 
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
             @Override
@@ -303,6 +291,7 @@ public class VentanaEquiposPresupuestados extends JDialog {
                     cargandoDatos = false;
                 }
                 aplicarFiltro();
+                setCursor(Cursor.getDefaultCursor());
             }
         };
         worker.execute();
@@ -378,7 +367,6 @@ public class VentanaEquiposPresupuestados extends JDialog {
         }
         tablaEquipos.getTableHeader().repaint();
         tablaEquipos.repaint();
-        lblCliente.setText(modeloTablaEquipos.getRowCount() + " equipos cargados");
     }
 
     private RemitoReparsoftItem getItemAtRow(int row) {
@@ -414,6 +402,19 @@ public class VentanaEquiposPresupuestados extends JDialog {
                 "Seleccione al menos un equipo para importar",
                 "Seleccionar Equipos", JOptionPane.WARNING_MESSAGE);
             return;
+        }
+
+        String clientName = null;
+        for (RemitoReparsoftItem item : seleccionadosTemp) {
+            String itemClient = item.getNombreCliente();
+            if (clientName == null) {
+                clientName = itemClient;
+            } else if (!clientName.equals(itemClient)) {
+                JOptionPane.showMessageDialog(this,
+                    "El remito debe contener equipos del mismo cliente",
+                    "Seleccionar Equipos", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
         }
 
         this.seleccionados = seleccionadosTemp;
@@ -487,13 +488,9 @@ public class VentanaEquiposPresupuestados extends JDialog {
         currentTheme = t;
         getContentPane().setBackground(t.bgBase);
         if (panel != null) panel.setBackground(t.bgBase);
+        if (panelSuperior != null) panelSuperior.setBackground(t.bgSurface);
+        if (lblTituloSuperior != null) lblTituloSuperior.setForeground(t.textPrimary);
         if (panelInferior != null) panelInferior.setBackground(t.bgSurface);
-        if (lblBase != null) lblBase.setForeground(t.textPrimary);
-        if (lblCliente != null) lblCliente.setForeground(t.textPrimary);
-        if (btnRefrescar != null) {
-            btnRefrescar.setForeground(t.textPrimary);
-            btnRefrescar.setBackground(t.btnBg);
-        }
         if (btnCancelar != null) {
             btnCancelar.setForeground(t.textPrimary);
             btnCancelar.setBackground(t.btnBg);
@@ -502,7 +499,12 @@ public class VentanaEquiposPresupuestados extends JDialog {
             btnSeleccionar.setBackground(t.btnBg);
             btnSeleccionar.setForeground(t.textPrimary);
         }
-        if (panelFiltro != null) panelFiltro.setBackground(t.bgSurface);
+        if (panelFiltro != null) {
+            panelFiltro.setBackground(t.bgSurface);
+            panelFiltro.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(t.borderLight, 1),
+                BorderFactory.createEmptyBorder(3, 6, 3, 6)));
+        }
         if (lblFiltroCliente != null) lblFiltroCliente.setForeground(t.textPrimary);
         if (cmbFiltroCliente != null) {
             cmbFiltroCliente.setBackground(getFieldBg(cmbFiltroCliente.isEnabled()));

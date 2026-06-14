@@ -86,12 +86,15 @@ public class ControladorFacturacion {
         view.getBtnEmitir().addActionListener(e -> btnEmitirAction());
         view.getBtnLimpiar().addActionListener(e -> limpiarTodo());
         view.getBtnImportarRemito().addActionListener(e -> {
+            if (!view.validarCamposObligatorios()) return;
             importarRemitoReparsoft();
         });
         view.getBtnVerEquipos().addActionListener(e -> {
+            if (!view.validarCamposObligatorios()) return;
             verEquiposPresupuestados();
         });
         view.getBtnFacturarPorCliente().addActionListener(e -> {
+            if (!view.validarCamposObligatorios()) return;
             view.setReceptorFieldsEnabled(true);
         });
 
@@ -234,7 +237,7 @@ public class ControladorFacturacion {
         if (cli.getRazonSocial() != null) view.setRazonSocial(cli.getRazonSocial());
         if (cli.getNroDocumento() != null) view.setNroDoc(cli.getNroDocumento());
         if (cli.getCondicionIva() != null) view.setCmbCondicionIva(cli.getCondicionIva());
-        if (cli.getTipoDocumento() != null) view.setTipoDoc(cli.getTipoDocumento());
+        view.setTipoDoc(cli.getTipoDocumento() != null ? cli.getTipoDocumento() : "CUIT");
         view.getTxtDomicilio().setText(cli.getDomicilio() != null ? cli.getDomicilio() : "");
         view.getTxtEmail().setText(cli.getEmail() != null ? cli.getEmail() : "");
     }
@@ -280,7 +283,8 @@ public class ControladorFacturacion {
             List<ClienteDTO> clientes = buscarClientesPorRazonSocial(remito.getRazonSocialCliente());
             for (ClienteDTO c : clientes) {
                 if (c.getRazonSocial().equalsIgnoreCase(remito.getRazonSocialCliente())) {
-                    autocompletarCamposCliente(c);
+                    view.setRazonSocial(c.getRazonSocial());
+                    autocompletarPorRazonSocial();
                     encontrado = true;
                     break;
                 }
@@ -289,7 +293,8 @@ public class ControladorFacturacion {
                 String cuitLimpio = remito.getCuitCliente().replaceAll("[^0-9]", "");
                 for (ClienteDTO c : listarClientes()) {
                     if (c.getNroDocumento() != null && c.getNroDocumento().replaceAll("[^0-9]", "").equals(cuitLimpio)) {
-                        autocompletarCamposCliente(c);
+                        view.setRazonSocial(c.getRazonSocial());
+                        autocompletarPorRazonSocial();
                         encontrado = true;
                         break;
                     }
@@ -304,13 +309,7 @@ public class ControladorFacturacion {
             }
         }
 
-        // Prompt for missing required receptor data
-        if (!completarDatosReceptorPendientes()) return;
-
-        String tipo = (String) view.getCmbTipoComprobante().getSelectedItem();
-        String cliente = view.getCmbRazonSocial().getEditorText().trim();
-        view.setSubtituloOp(tipo + " para " + cliente);
-        view.getCardLayout().show(view.getPanelPrincipal(), "operacion");
+        // Populate items table (always, so Siguiente finds them)
         DefaultTableModel model = view.getModeloItems();
         model.setRowCount(0);
         if (remito.getItems() != null) {
@@ -330,6 +329,9 @@ public class ControladorFacturacion {
             }
         }
         recalcularTotales();
+
+        // Validate receptor fields with red borders — stay on datosCard regardless
+        view.validarReceptorConBordes();
     }
 
     // ===================== VER EQUIPOS PRESUPUESTADOS =====================
@@ -343,10 +345,24 @@ public class ControladorFacturacion {
         // Enable and populate receptor fields from equipos data
         view.setReceptorFieldsEnabled(true);
 
-        // Prompt for missing required receptor data
-        if (!completarDatosReceptorPendientes()) return;
+        // Try to autofill from the first item's client name
+        if (!equipos.isEmpty()) {
+            String clientName = equipos.get(0).getNombreCliente();
+            if (clientName != null && !clientName.isEmpty()) {
+                List<ClienteDTO> matches = buscarClientesPorRazonSocial(clientName);
+                for (ClienteDTO c : matches) {
+                    if (c.getRazonSocial().equalsIgnoreCase(clientName)) {
+                        view.setRazonSocial(c.getRazonSocial());
+                        autocompletarPorRazonSocial();
+                        break;
+                    }
+                }
+            }
+        }
 
+        // Populate items table (always, so Siguiente finds them)
         DefaultTableModel model = view.getModeloItems();
+        model.setRowCount(0);
         for (RemitoReparsoftItem item : equipos) {
             String descripcion = "Reparaci\u00f3n de "
                 + (item.getEquipoNombre() != null ? item.getEquipoNombre() : "Sin equipo") + " "
@@ -361,12 +377,10 @@ public class ControladorFacturacion {
             String codigo = String.valueOf(item.getEls());
             model.addRow(new Object[]{codigo, descripcion, "1", "Unidad", precioStr, "0,00", true});
         }
-
-        String tipo = (String) view.getCmbTipoComprobante().getSelectedItem();
-        String cliente = view.getCmbRazonSocial().getEditorText().trim();
-        view.setSubtituloOp(tipo + " para " + cliente);
-        view.getCardLayout().show(view.getPanelPrincipal(), "operacion");
         recalcularTotales();
+
+        // Validate receptor fields with red borders — stay on datosCard regardless
+        view.validarReceptorConBordes();
     }
 
     // ===================== EMITIR =====================
@@ -540,6 +554,8 @@ public class ControladorFacturacion {
     }
 
     private boolean validarDatosReceptor() {
+        view.clearReceptorErrorBorders();
+
         if (view.getCmbPuntoVenta().getSelectedItem() == null || view.getCmbPuntoVenta().getSelectedItem().toString().isEmpty()) {
             JOptionPane.showMessageDialog(view, "Seleccione un Punto de Venta", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
@@ -561,28 +577,7 @@ public class ControladorFacturacion {
             return false;
         }
 
-        String condIva = (String) view.getCmbCondicionIva().getSelectedItem();
-        if ("Consumidor Final".equals(condIva)) return true;
-
-        if (view.getCmbNroDoc().getEditorText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(view,
-                "El CUIT/Nro.Doc es obligatorio para la condici\u00f3n IVA seleccionada",
-                "Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-        if (view.getCmbRazonSocial().getEditorText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(view,
-                "La Raz\u00f3n Social es obligatoria para la condici\u00f3n IVA seleccionada",
-                "Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-        if (view.getTxtDomicilio().getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(view,
-                "El Domicilio es obligatorio para la condici\u00f3n IVA seleccionada",
-                "Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-        return true;
+        return view.validarReceptorConBordes();
     }
 
     private CuitConfigDTO obtenerCuitSeleccionado() {

@@ -4,6 +4,7 @@ import com.els.facturacion.controlador.ControladorRemitos;
 import com.els.facturacion.dao.RemitoReparsoftLecturaDAO;
 import com.els.facturacion.modelo.RemitoDTO;
 import com.els.facturacion.reportes.GestorReportes;
+import com.els.facturacion.util.AutoCompleteComboBox;
 import com.els.facturacion.util.UbicacionSistema;
 
 import javax.swing.BorderFactory;
@@ -21,6 +22,8 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.plaf.basic.BasicComboBoxUI;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -41,6 +44,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 
 public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
 
@@ -78,8 +82,9 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
     private List<String> listaNrosRemito;
     private JPanel panelFiltro;
     private JLabel lblFiltroCliente;
-    private JComboBox<String> cmbFiltroCliente;
+    private AutoCompleteComboBox cmbFiltroCliente;
     private List<Map<String, Object>> allRemitosData;
+    private boolean loadingData = false;
 
     private Color getDisabledFg() {
         return currentTheme.bgBase.getRed() > 128 ? DISABLED_FG_LIGHT : DISABLED_FG_DARK;
@@ -130,13 +135,15 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
         lblFiltroCliente.setFont(FUENTE_LABEL);
         lblFiltroCliente.setForeground(currentTheme.textPrimary);
 
-        cmbFiltroCliente = new JComboBox<>();
+        cmbFiltroCliente = new AutoCompleteComboBox();
         cmbFiltroCliente.setFont(FUENTE_INPUT_BOLD);
-        cmbFiltroCliente.setMaximumRowCount(12);
+        cmbFiltroCliente.setPreferredSize(new Dimension(160, 22));
+
+        themeComboEditor(cmbFiltroCliente, currentTheme);
+        addLiveFilter(cmbFiltroCliente);
         cmbFiltroCliente.addActionListener(e -> {
-            if (allRemitosData != null) aplicarFiltro();
+            if (!loadingData && allRemitosData != null) aplicarFiltro();
         });
-        installComboUI(cmbFiltroCliente);
         cmbFiltroCliente.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value,
@@ -149,7 +156,7 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
             }
         });
 
-        panelFiltro = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
+        panelFiltro = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
         panelFiltro.setBackground(currentTheme.bgSurface);
         panelFiltro.add(lblFiltroCliente);
         panelFiltro.add(cmbFiltroCliente);
@@ -275,10 +282,8 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
         }
 
         // Populate filter combo
-        String seleccionActual = cmbFiltroCliente.getSelectedItem() != null
-            ? cmbFiltroCliente.getSelectedItem().toString() : "";
-        cmbFiltroCliente.removeAllItems();
-        cmbFiltroCliente.addItem("Todos");
+        Object selObj = cmbFiltroCliente.getSelectedItem();
+        String seleccionActual = selObj != null ? selObj.toString() : "";
         java.util.Set<String> clientes = new java.util.LinkedHashSet<>();
         for (Map<String, Object> r : allRemitosData) {
             String cli = (String) r.get("cliente");
@@ -286,20 +291,57 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
         }
         java.util.List<String> listaClientes = new ArrayList<>(clientes);
         java.util.Collections.sort(listaClientes);
-        for (String c : listaClientes) cmbFiltroCliente.addItem(c);
-        cmbFiltroCliente.setSelectedItem(seleccionActual.isEmpty() ? "Todos" : seleccionActual);
+        listaClientes.add(0, "--Todos--");
+        loadingData = true;
+        cmbFiltroCliente.setData(listaClientes);
+        cmbFiltroCliente.setEditorText("");
+        if (!seleccionActual.isEmpty() && listaClientes.contains(seleccionActual)) {
+            cmbFiltroCliente.setSelectedItem(seleccionActual);
+        } else {
+            cmbFiltroCliente.setSelectedItem("--Todos--");
+        }
+        loadingData = false;
 
+        aplicarFiltro();
+    }
+
+    private String getComboText(JComboBox<String> combo) {
+        Object sel = combo.getSelectedItem();
+        String editorText = ((JTextField) combo.getEditor().getEditorComponent()).getText();
+        if (sel != null) {
+            String s = sel.toString();
+            if ("--Todos--".equals(s)) return editorText;
+            if (s != null && !s.trim().isEmpty()) return s.trim();
+        }
+        return editorText;
+    }
+
+    private void addLiveFilter(JComboBox<?> combo) {
+        Component editorComp = combo.getEditor().getEditorComponent();
+        if (editorComp instanceof JTextField) {
+            ((JTextField) editorComp).getDocument().addDocumentListener(new DocumentListener() {
+                public void insertUpdate(DocumentEvent e) { onFilterTextChanged(); }
+                public void removeUpdate(DocumentEvent e) { onFilterTextChanged(); }
+                public void changedUpdate(DocumentEvent e) { onFilterTextChanged(); }
+            });
+        }
+    }
+
+    private void onFilterTextChanged() {
+        if (loadingData) return;
         aplicarFiltro();
     }
 
     private void aplicarFiltro() {
         modeloTabla.setRowCount(0);
         listaNrosRemito = new ArrayList<>();
-        String filtro = cmbFiltroCliente.getSelectedItem() != null
-            ? cmbFiltroCliente.getSelectedItem().toString() : "Todos";
+        String filtro = getComboText(cmbFiltroCliente);
+        boolean filtrar = filtro != null && !filtro.trim().isEmpty()
+            && !"--Todos--".equals(filtro.trim());
+        String filtroLower = filtrar ? filtro.trim().toLowerCase() : "";
         for (Map<String, Object> r : allRemitosData) {
             String cli = (String) r.get("cliente");
-            if (!"Todos".equals(filtro) && !filtro.equals(cli)) continue;
+            if (filtrar && !cli.toLowerCase().contains(filtroLower)) continue;
             String nro = (String) r.get("numeroRemito");
             listaNrosRemito.add(nro);
             String cliente = (String) r.get("cliente");
@@ -425,9 +467,9 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
         if (panelFiltro != null) panelFiltro.setBackground(t.bgSurface);
         if (lblFiltroCliente != null) lblFiltroCliente.setForeground(t.textPrimary);
         if (cmbFiltroCliente != null) {
-            installComboUI(cmbFiltroCliente);
             cmbFiltroCliente.setBackground(getFieldBg(cmbFiltroCliente.isEnabled()));
             cmbFiltroCliente.setForeground(cmbFiltroCliente.isEnabled() ? t.textPrimary : getDisabledFg());
+            themeComboEditor(cmbFiltroCliente, t);
         }
         if (panelCentro != null) panelCentro.setBackground(t.bgBase);
         if (panelBotones != null) panelBotones.setBackground(t.bgBase);

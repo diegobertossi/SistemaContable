@@ -46,6 +46,7 @@ import javax.swing.border.LineBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 
@@ -143,6 +144,10 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private JPanel secReceptor;
     private JPanel panelChecks;
 
+    // Validation
+    private Border normalComboBorder;
+    private Border normalFieldBorder;
+
     private Color getDisabledFg() {
         return currentTheme.bgBase.getRed() > 128 ? DISABLED_FG_LIGHT : DISABLED_FG_DARK;
     }
@@ -151,6 +156,159 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         return currentTheme.bgBase.getRed() > 128
             ? (editing ? LIGHT_EDITABLE_BG : LIGHT_READONLY_BG)
             : (editing ? DARK_EDITABLE_BG : DARK_READONLY_BG);
+    }
+
+    private Color getErrorColor() {
+        return currentTheme.bgBase.getRed() > 128 ? new Color(220, 50, 50) : new Color(255, 100, 100);
+    }
+
+    private void saveComboBorder() {
+        if (normalComboBorder == null && cmbPuntoVenta != null) {
+            normalComboBorder = cmbPuntoVenta.getBorder();
+        }
+    }
+
+    private void applyErrorBorder(JComboBox<?> combo) {
+        saveComboBorder();
+        combo.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(getErrorColor(), 1),
+            BorderFactory.createEmptyBorder(2, 4, 2, 4)));
+    }
+
+    private void clearComboErrorBorder(JComboBox<?> combo) {
+        if (normalComboBorder == null) return;
+        Border b = combo.getBorder();
+        if (b instanceof CompoundBorder) {
+            Border outside = ((CompoundBorder) b).getOutsideBorder();
+            if (outside instanceof LineBorder) {
+                combo.setBorder(normalComboBorder);
+            }
+        }
+    }
+
+    private void saveFieldBorder() {
+        if (normalFieldBorder == null && txtDomicilio != null) {
+            normalFieldBorder = txtDomicilio.getBorder();
+        }
+    }
+
+    private void applyFieldErrorBorder(JTextField field) {
+        saveFieldBorder();
+        field.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(getErrorColor(), 1),
+            BorderFactory.createEmptyBorder(2, 4, 2, 4)));
+    }
+
+    private void clearFieldErrorBorder(JTextField field) {
+        if (normalFieldBorder == null) return;
+        Border b = field.getBorder();
+        if (b instanceof CompoundBorder) {
+            Border outside = ((CompoundBorder) b).getOutsideBorder();
+            if (outside instanceof LineBorder) {
+                field.setBorder(normalFieldBorder);
+            }
+        }
+    }
+
+    public void clearAllErrorBorders() {
+        if (normalComboBorder == null) return;
+        if (cmbPuntoVenta != null) cmbPuntoVenta.setBorder(normalComboBorder);
+        if (cmbTipoComprobante != null) cmbTipoComprobante.setBorder(normalComboBorder);
+        if (cmbConcepto != null) cmbConcepto.setBorder(normalComboBorder);
+    }
+
+    public void clearReceptorErrorBorders() {
+        if (normalComboBorder != null) {
+            if (cmbCondicionIva != null) cmbCondicionIva.setBorder(normalComboBorder);
+            if (cmbTipoDoc != null) cmbTipoDoc.setBorder(normalComboBorder);
+            if (cmbNroDoc != null) cmbNroDoc.setBorder(normalComboBorder);
+            if (cmbRazonSocial != null) cmbRazonSocial.setBorder(normalComboBorder);
+        }
+        if (normalFieldBorder != null) {
+            if (txtDomicilio != null) txtDomicilio.setBorder(normalFieldBorder);
+            if (txtEmail != null) txtEmail.setBorder(normalFieldBorder);
+        }
+        clearAllErrorBorders();
+    }
+
+    public boolean validarReceptorConBordes() {
+        saveComboBorder();
+        saveFieldBorder();
+        clearReceptorErrorBorders();
+
+        boolean valid = true;
+        StringBuilder missing = new StringBuilder();
+
+        String condIva = cmbCondicionIva.getSelectedItem() != null ? cmbCondicionIva.getSelectedItem().toString() : "";
+        if (condIva.isEmpty()) {
+            applyErrorBorder(cmbCondicionIva);
+            missing.append("- Condicion IVA\n");
+            valid = false;
+        }
+
+        if (!"Consumidor Final".equals(condIva)) {
+            String tipoDoc = cmbTipoDoc.getSelectedItem() != null ? cmbTipoDoc.getSelectedItem().toString() : "";
+            if (tipoDoc.isEmpty()) {
+                applyErrorBorder(cmbTipoDoc);
+                missing.append("- Tipo de Documento\n");
+                valid = false;
+            }
+            if (cmbNroDoc.getEditorText().trim().isEmpty()) {
+                applyErrorBorder(cmbNroDoc);
+                missing.append("- Nro. Documento\n");
+                valid = false;
+            }
+            if (cmbRazonSocial.getEditorText().trim().isEmpty()) {
+                applyErrorBorder(cmbRazonSocial);
+                missing.append("- Razon Social\n");
+                valid = false;
+            }
+            if (txtDomicilio.getText().trim().isEmpty()) {
+                applyFieldErrorBorder(txtDomicilio);
+                missing.append("- Domicilio\n");
+                valid = false;
+            }
+        }
+
+        if (!valid) {
+            JOptionPane.showMessageDialog(this,
+                "Complete los siguientes campos del receptor:\n" + missing.toString(),
+                "Datos del Receptor", JOptionPane.WARNING_MESSAGE);
+        }
+
+        return valid;
+    }
+
+    public boolean validarCamposObligatorios() {
+        saveComboBorder();
+        clearAllErrorBorders();
+
+        StringBuilder missing = new StringBuilder();
+        boolean valid = true;
+
+        if (cmbPuntoVenta.getSelectedItem() == null || cmbPuntoVenta.getSelectedItem().toString().isEmpty()) {
+            applyErrorBorder(cmbPuntoVenta);
+            missing.append("- Punto de Venta\n");
+            valid = false;
+        }
+        if (cmbTipoComprobante.getSelectedItem() == null || cmbTipoComprobante.getSelectedItem().toString().isEmpty()) {
+            applyErrorBorder(cmbTipoComprobante);
+            missing.append("- Tipo de Comprobante\n");
+            valid = false;
+        }
+        if (cmbConcepto.getSelectedItem() == null || cmbConcepto.getSelectedItem().toString().isEmpty()) {
+            applyErrorBorder(cmbConcepto);
+            missing.append("- Concepto\n");
+            valid = false;
+        }
+
+        if (!valid) {
+            JOptionPane.showMessageDialog(this,
+                "Complete los siguientes campos obligatorios:\n" + missing.toString(),
+                "Campos obligatorios", JOptionPane.WARNING_MESSAGE);
+        }
+
+        return valid;
     }
 
     public VentanaFacturacion() {
@@ -425,6 +583,21 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelPrincipalWrapper.add(statusBar, BorderLayout.SOUTH);
 
         getContentPane().add(panelPrincipalWrapper);
+
+        // Inline validation — clear error border when user selects a value
+        java.awt.event.ActionListener clearValidationOnSelect = new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                JComboBox<?> src = (JComboBox<?>) e.getSource();
+                if (src.getSelectedItem() != null && !src.getSelectedItem().toString().isEmpty()) {
+                    clearComboErrorBorder(src);
+                }
+            }
+        };
+        cmbPuntoVenta.addActionListener(clearValidationOnSelect);
+        cmbTipoComprobante.addActionListener(clearValidationOnSelect);
+        cmbConcepto.addActionListener(clearValidationOnSelect);
+
         applyTheme(currentTheme);
     }
 
@@ -632,6 +805,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         cmbNroDoc = new AutoCompleteComboBox();
         cmbNroDoc.setData(Arrays.asList(""));
         installComboUI(cmbNroDoc);
+        cmbNroDoc.refreshListeners();
         cmbNroDoc.setFont(FUENTE_INPUT_BOLD);
         cmbNroDoc.setPreferredSize(new Dimension(140, 24));
         themeComboEditor(cmbNroDoc, currentTheme);
@@ -649,6 +823,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         cmbRazonSocial = new AutoCompleteComboBox();
         cmbRazonSocial.setData(Arrays.asList(""));
         installComboUI(cmbRazonSocial);
+        cmbRazonSocial.refreshListeners();
         cmbRazonSocial.setFont(FUENTE_INPUT_BOLD);
         cmbRazonSocial.setPreferredSize(new Dimension(150, 24));
         themeComboEditor(cmbRazonSocial, currentTheme);
@@ -885,12 +1060,10 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
         // FIX: live-theme — inputs y controles (field references, siempre funcionan)
         if (cmbPuntoVenta != null) {
-            installComboUI(cmbPuntoVenta);
             cmbPuntoVenta.setBackground(getFieldBg(cmbPuntoVenta.isEnabled()));
             cmbPuntoVenta.setForeground(cmbPuntoVenta.isEnabled() ? t.textPrimary : getDisabledFg());
         }
         if (cmbTipoComprobante != null) {
-            installComboUI(cmbTipoComprobante);
             cmbTipoComprobante.setBackground(getFieldBg(cmbTipoComprobante.isEnabled()));
             cmbTipoComprobante.setForeground(cmbTipoComprobante.isEnabled() ? t.textPrimary : getDisabledFg());
         }
@@ -899,32 +1072,28 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         if (datePeriodoHasta != null) { themeDateField(datePeriodoHasta, t); }
         if (datePeriodoVto != null) { themeDateField(datePeriodoVto, t); }
         if (cmbConcepto != null) {
-            installComboUI(cmbConcepto);
             cmbConcepto.setBackground(getFieldBg(cmbConcepto.isEnabled()));
             cmbConcepto.setForeground(cmbConcepto.isEnabled() ? t.textPrimary : getDisabledFg());
         }
+        clearAllErrorBorders();
         if (txtActividades != null) { txtActividades.setBackground(getFieldBg(txtActividades.isEnabled())); txtActividades.setForeground(t.textPrimary); txtActividades.setDisabledTextColor(getDisabledFg()); txtActividades.setCaretColor(t.textPrimary); }
         if (txtEmisorRazonSocial != null) { txtEmisorRazonSocial.setBackground(getFieldBg(txtEmisorRazonSocial.isEnabled())); txtEmisorRazonSocial.setForeground(t.textPrimary); txtEmisorRazonSocial.setDisabledTextColor(getDisabledFg()); txtEmisorRazonSocial.setCaretColor(t.textPrimary); }
         if (txtEmisorCuit != null) { txtEmisorCuit.setBackground(getFieldBg(txtEmisorCuit.isEnabled())); txtEmisorCuit.setForeground(t.textPrimary); txtEmisorCuit.setDisabledTextColor(getDisabledFg()); txtEmisorCuit.setCaretColor(t.textPrimary); }
         if (txtEmisorCondicionIva != null) { txtEmisorCondicionIva.setBackground(getFieldBg(txtEmisorCondicionIva.isEnabled())); txtEmisorCondicionIva.setForeground(t.textPrimary); txtEmisorCondicionIva.setDisabledTextColor(getDisabledFg()); txtEmisorCondicionIva.setCaretColor(t.textPrimary); }
         if (cmbCondicionIva != null) {
-            installComboUI(cmbCondicionIva);
             cmbCondicionIva.setBackground(getFieldBg(cmbCondicionIva.isEnabled()));
             cmbCondicionIva.setForeground(cmbCondicionIva.isEnabled() ? t.textPrimary : getDisabledFg());
         }
         if (cmbTipoDoc != null) {
-            installComboUI(cmbTipoDoc);
             cmbTipoDoc.setBackground(getFieldBg(cmbTipoDoc.isEnabled()));
             cmbTipoDoc.setForeground(cmbTipoDoc.isEnabled() ? t.textPrimary : getDisabledFg());
         }
         if (cmbRazonSocial != null) {
-            installComboUI(cmbRazonSocial);
             cmbRazonSocial.setBackground(getFieldBg(cmbRazonSocial.isEnabled()));
             cmbRazonSocial.setForeground(cmbRazonSocial.isEnabled() ? t.textPrimary : getDisabledFg());
             themeComboEditor(cmbRazonSocial, t);
         }
         if (cmbNroDoc != null) {
-            installComboUI(cmbNroDoc);
             cmbNroDoc.setBackground(getFieldBg(cmbNroDoc.isEnabled()));
             cmbNroDoc.setForeground(cmbNroDoc.isEnabled() ? t.textPrimary : getDisabledFg());
             themeComboEditor(cmbNroDoc, t);
@@ -961,7 +1130,6 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         if (txtImporteTotal != null) { txtImporteTotal.setBackground(getFieldBg(txtImporteTotal.isEnabled())); txtImporteTotal.setForeground(t.brandDark); txtImporteTotal.setDisabledTextColor(getDisabledFg()); txtImporteTotal.setCaretColor(t.brandDark); }
         if (txtOtrosImpuestos != null) { txtOtrosImpuestos.setBackground(getFieldBg(txtOtrosImpuestos.isEnabled())); txtOtrosImpuestos.setForeground(t.textPrimary); txtOtrosImpuestos.setDisabledTextColor(getDisabledFg()); txtOtrosImpuestos.setCaretColor(t.textPrimary); }
         if (cmbAlicuotaIva != null) {
-            installComboUI(cmbAlicuotaIva);
             cmbAlicuotaIva.setBackground(getFieldBg(cmbAlicuotaIva.isEnabled()));
             cmbAlicuotaIva.setForeground(cmbAlicuotaIva.isEnabled() ? t.textPrimary : getDisabledFg());
         }
@@ -1197,10 +1365,10 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         }
         // re-apply field background colors
         Color bg = getFieldBg(enabled);
-        if (cmbCondicionIva != null) { cmbCondicionIva.setBackground(bg); installComboUI(cmbCondicionIva); }
-        if (cmbTipoDoc != null) { cmbTipoDoc.setBackground(bg); installComboUI(cmbTipoDoc); }
-        if (cmbNroDoc != null) { cmbNroDoc.setBackground(bg); installComboUI(cmbNroDoc); themeComboEditor(cmbNroDoc, currentTheme); }
-        if (cmbRazonSocial != null) { cmbRazonSocial.setBackground(bg); installComboUI(cmbRazonSocial); themeComboEditor(cmbRazonSocial, currentTheme); }
+        if (cmbCondicionIva != null) { cmbCondicionIva.setBackground(bg); }
+        if (cmbTipoDoc != null) { cmbTipoDoc.setBackground(bg); }
+        if (cmbNroDoc != null) { cmbNroDoc.setBackground(bg); themeComboEditor(cmbNroDoc, currentTheme); }
+        if (cmbRazonSocial != null) { cmbRazonSocial.setBackground(bg); themeComboEditor(cmbRazonSocial, currentTheme); }
         if (txtDomicilio != null) { txtDomicilio.setBackground(bg); txtDomicilio.setForeground(enabled ? currentTheme.textPrimary : getDisabledFg()); }
         if (txtEmail != null) { txtEmail.setBackground(bg); txtEmail.setForeground(enabled ? currentTheme.textPrimary : getDisabledFg()); }
         if (txtComprobanteAsoc != null) { txtComprobanteAsoc.setBackground(bg); txtComprobanteAsoc.setForeground(enabled ? currentTheme.textPrimary : getDisabledFg()); }

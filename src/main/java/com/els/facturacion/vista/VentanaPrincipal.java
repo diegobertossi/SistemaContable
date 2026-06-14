@@ -314,16 +314,10 @@ public class VentanaPrincipal extends JFrame {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                setBackground(getFieldBg(cmbUbicacion.isEnabled()));
-                setForeground(cmbUbicacion.isEnabled() ? currentTheme.textPrimary : getDisabledFg());
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbUbicacion.isEnabled()));
+                setForeground(isSelected ? list.getSelectionForeground() : (cmbUbicacion.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
                 setFont(cmbUbicacion.getFont());
                 return this;
-            }
-            @Override
-            public void paintComponent(Graphics g) {
-                setBackground(getFieldBg(cmbUbicacion.isEnabled()));
-                setForeground(cmbUbicacion.isEnabled() ? currentTheme.textPrimary : getDisabledFg());
-                super.paintComponent(g);
             }
         });
         panelDeControl.add(cmbUbicacion);

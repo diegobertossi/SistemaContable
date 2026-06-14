@@ -47,16 +47,14 @@ public class VentanaImportarRemito extends JDialog {
     private DefaultTableModel modeloTablaRemitos;
     private JTable tablaItems;
     private DefaultTableModel modeloTablaItems;
-    private JLabel lblCliente;
-    private JButton btnImportar;
+    private JButton btnSeleccionar;
     private JButton btnCancelar;
     private JPanel panel;
     private JPanel panelSuperior;
+    private JLabel lblTituloSuperior;
     private JPanel panelInferior;
     private JScrollPane scrollRemitos;
     private JScrollPane scrollItems;
-    private JLabel lblBase;
-    private JButton btnRefrescar;
     private JPanel statusBar;
     private JLabel lblStatus;
 
@@ -72,7 +70,7 @@ public class VentanaImportarRemito extends JDialog {
     private boolean cargandoDatos = false;
 
     public VentanaImportarRemito(JFrame parent) {
-        super(parent, "Importar Remito desde ReparSoft", true);
+        super(parent, "Seleccion de Remitos para facturar", true);
         this.controlador = new ControladorReparsoft();
         initComponents();
         applyTheme(currentTheme);
@@ -82,7 +80,7 @@ public class VentanaImportarRemito extends JDialog {
     }
 
     private void initComponents() {
-        setSize(800, 600);
+        setSize(850, 500);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
@@ -96,26 +94,13 @@ public class VentanaImportarRemito extends JDialog {
         panel.setBackground(currentTheme.bgBase);
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        panelSuperior = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        panelSuperior = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
         panelSuperior.setBackground(currentTheme.bgSurface);
-        lblBase = new JLabel("Base: " + UbicacionSistema.getNombreDbReparsoft());
-        lblBase.setFont(FUENTE_LABEL);
-        lblBase.setForeground(currentTheme.textPrimary);
-        panelSuperior.add(lblBase);
-
-        btnRefrescar = new JButton("Refrescar");
-        btnRefrescar.setFont(FUENTE_BOTON);
-        btnRefrescar.setForeground(currentTheme.textPrimary);
-        btnRefrescar.setBackground(currentTheme.btnBg);
-        btnRefrescar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnRefrescar.setFocusPainted(false);
-        btnRefrescar.addActionListener(e -> cargarRemitos());
-        panelSuperior.add(btnRefrescar);
-
-        lblCliente = new JLabel("Seleccione un remito");
-        lblCliente.setFont(FUENTE_LABEL);
-        lblCliente.setForeground(currentTheme.textPrimary);
-        panelSuperior.add(lblCliente);
+        panelSuperior.setBorder(BorderFactory.createEmptyBorder(6, 0, 12, 0));
+        lblTituloSuperior = new JLabel("SELECCIONAR EL CLIENTE PARA VER LOS REMITOS DEL MISMO", SwingConstants.CENTER);
+        lblTituloSuperior.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblTituloSuperior.setForeground(currentTheme.textPrimary);
+        panelSuperior.add(lblTituloSuperior);
 
         // ── Filter panel ───────────────────────────────────────────
         lblFiltroCliente = new JLabel("CLIENTE:");
@@ -140,6 +125,9 @@ public class VentanaImportarRemito extends JDialog {
 
         panelFiltro = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
         panelFiltro.setBackground(currentTheme.bgSurface);
+        panelFiltro.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(currentTheme.borderLight, 1),
+            BorderFactory.createEmptyBorder(3, 6, 3, 6)));
         panelFiltro.add(lblFiltroCliente);
         panelFiltro.add(cmbFiltroCliente);
         panelFiltro.add(Box.createRigidArea(new Dimension(15, 0)));
@@ -234,14 +222,14 @@ public class VentanaImportarRemito extends JDialog {
         panelInferior = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
         panelInferior.setBackground(currentTheme.bgSurface);
 
-        btnImportar = new JButton("IMPORTAR REMITO");
-        btnImportar.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btnImportar.setForeground(currentTheme.textPrimary);
-        btnImportar.setBackground(currentTheme.btnBg);
-        btnImportar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnImportar.setFocusPainted(false);
-        btnImportar.addActionListener(e -> importarRemito());
-        panelInferior.add(btnImportar);
+        btnSeleccionar = new JButton("SELECCIONAR");
+        btnSeleccionar.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnSeleccionar.setForeground(currentTheme.textPrimary);
+        btnSeleccionar.setBackground(currentTheme.btnBg);
+        btnSeleccionar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnSeleccionar.setFocusPainted(false);
+        btnSeleccionar.addActionListener(e -> importarRemito());
+        panelInferior.add(btnSeleccionar);
 
         btnCancelar = new JButton("Cancelar");
         btnCancelar.setFont(FUENTE_BOTON);
@@ -276,7 +264,6 @@ public class VentanaImportarRemito extends JDialog {
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         modeloTablaRemitos.setRowCount(0);
         modeloTablaItems.setRowCount(0);
-        lblCliente.setText("Cargando...");
 
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
             @Override
@@ -377,7 +364,6 @@ public class VentanaImportarRemito extends JDialog {
         modeloTablaRemitos.setRowCount(0);
         modeloTablaItems.setRowCount(0);
         remitoSeleccionado = null;
-        lblCliente.setText("");
         if (allRemitosCache == null || allRemitosCache.isEmpty()) return;
         
         String filtroCli = getComboText(cmbFiltroCliente);
@@ -406,7 +392,6 @@ public class VentanaImportarRemito extends JDialog {
         }
         tablaRemitos.getTableHeader().repaint();
         tablaRemitos.repaint();
-        lblCliente.setText(modeloTablaRemitos.getRowCount() + " remitos cargados");
     }
 
     private void mostrarDetalleRemito() {
@@ -433,7 +418,6 @@ public class VentanaImportarRemito extends JDialog {
             }
         }
 
-        lblCliente.setText(remitoSeleccionado != null ? remitoSeleccionado.getClienteDisplay() : "Seleccione un remito");
     }
 
     private RemitoReparsoftItem getItemAtRow(int row) {
@@ -531,7 +515,13 @@ public class VentanaImportarRemito extends JDialog {
         getContentPane().setBackground(t.bgBase);
         if (panel != null) panel.setBackground(t.bgBase);
         if (panelSuperior != null) panelSuperior.setBackground(t.bgSurface);
-        if (panelFiltro != null) panelFiltro.setBackground(t.bgSurface);
+        if (lblTituloSuperior != null) lblTituloSuperior.setForeground(t.textPrimary);
+        if (panelFiltro != null) {
+            panelFiltro.setBackground(t.bgSurface);
+            panelFiltro.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(t.borderLight, 1),
+                BorderFactory.createEmptyBorder(3, 6, 3, 6)));
+        }
         if (lblFiltroCliente != null) lblFiltroCliente.setForeground(t.textPrimary);
         if (cmbFiltroCliente != null) {
             cmbFiltroCliente.setBackground(getFieldBg(cmbFiltroCliente.isEnabled()));
@@ -545,19 +535,13 @@ public class VentanaImportarRemito extends JDialog {
             themeComboEditor(cmbFiltroSucursal, t);
         }
         if (panelInferior != null) panelInferior.setBackground(t.bgSurface);
-        if (lblBase != null) lblBase.setForeground(t.textPrimary);
-        if (lblCliente != null) lblCliente.setForeground(t.textPrimary);
-        if (btnRefrescar != null) {
-            btnRefrescar.setForeground(t.textPrimary);
-            btnRefrescar.setBackground(t.btnBg);
-        }
         if (btnCancelar != null) {
             btnCancelar.setForeground(t.textPrimary);
             btnCancelar.setBackground(t.btnBg);
         }
-        if (btnImportar != null) {
-            btnImportar.setBackground(t.btnBg);
-            btnImportar.setForeground(t.textPrimary);
+        if (btnSeleccionar != null) {
+            btnSeleccionar.setBackground(t.btnBg);
+            btnSeleccionar.setForeground(t.textPrimary);
         }
         if (tablaRemitos != null) {
             java.util.Set<Integer> boldRemitos = new java.util.HashSet<>();

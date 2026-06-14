@@ -87,6 +87,45 @@ public class RemitoReparsoftLecturaDAO {
         return lista;
     }
 
+    public List<Map<String, Object>> listarTodosLosEquiposParaRemito(String baseDatos) {
+        List<Map<String, Object>> lista = new ArrayList<>();
+        String sql = "SELECT r.ELS, e.Nombre AS equipo_nombre, e.Marca, e.Modelo, "
+                   + "e.NumeroDeSerie, e.Aviso, r.EstadoTecnico, r.EstadoComercial, "
+                   + "c.nombre AS cliente_nombre, c.idCliente, "
+                   + "s.NombreSucursal AS sucursal_nombre, s.IdSucursal "
+                   + "FROM " + baseDatos + ".reparaciones r "
+                   + "JOIN " + baseDatos + ".equipos e ON r.idEquipo = e.IdEquipo "
+                   + "JOIN " + baseDatos + ".cliente c ON e.idCliente = c.idCliente "
+                   + "LEFT JOIN " + baseDatos + ".sucursal s ON e.idSucursal = s.IdSucursal "
+                   + "WHERE LOWER(r.EstadoFisico) != 'enviado' "
+                   + "AND (r.RemitoGenerado IS NULL OR r.RemitoGenerado != 1) "
+                   + "ORDER BY r.ELS DESC";
+        Connection conn = ConexionReparsoft.getInstancia().getConexion(baseDatos);
+        if (conn == null) return lista;
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("els", rs.getInt("ELS"));
+                item.put("equipo", rs.getString("equipo_nombre") != null ? rs.getString("equipo_nombre").trim() : "");
+                item.put("marca", rs.getString("Marca") != null ? rs.getString("Marca").trim() : "");
+                item.put("modelo", rs.getString("Modelo") != null ? rs.getString("Modelo").trim() : "");
+                item.put("serie", rs.getString("NumeroDeSerie") != null ? rs.getString("NumeroDeSerie").trim() : "");
+                item.put("aviso", rs.getString("Aviso") != null ? rs.getString("Aviso").trim() : "");
+                item.put("estadoTec", rs.getString("EstadoTecnico") != null ? rs.getString("EstadoTecnico").trim() : "");
+                item.put("estadoCom", rs.getString("EstadoComercial") != null ? rs.getString("EstadoComercial").trim() : "");
+                item.put("cliente", rs.getString("cliente_nombre") != null ? rs.getString("cliente_nombre").trim() : "");
+                item.put("idCliente", rs.getInt("idCliente"));
+                item.put("sucursal", rs.getString("sucursal_nombre") != null ? rs.getString("sucursal_nombre").trim() : "");
+                item.put("idSucursal", rs.getObject("IdSucursal") != null ? rs.getInt("IdSucursal") : -1);
+                lista.add(item);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error listando todos los equipos para remito desde " + baseDatos + ": " + e.getMessage());
+        }
+        return lista;
+    }
+
     public List<String> listarUbicaciones(String baseDatos) {
         List<String> lista = new ArrayList<>();
         String sql = "SELECT Codigo, Ubicacion FROM " + baseDatos + ".UbicacionRemitos ORDER BY Codigo";

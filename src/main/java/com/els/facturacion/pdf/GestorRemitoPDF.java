@@ -14,7 +14,6 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,15 +26,31 @@ public class GestorRemitoPDF {
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final List<String> PREIMPRESO_PREFIXES = Arrays.asList("0002", "0005", "0006", "0007");
 
+    private static final Map<String, String> UBICACION_LABEL = new HashMap<>();
+    static {
+        UBICACION_LABEL.put("0002", "MDP");
+        UBICACION_LABEL.put("0005", "CABA");
+        UBICACION_LABEL.put("0006", "BRC");
+        UBICACION_LABEL.put("0007", "MDP Avellaneda");
+        UBICACION_LABEL.put("1000", "COMUN CABA");
+        UBICACION_LABEL.put("2000", "COMUN MDP");
+        UBICACION_LABEL.put("3000", "COMUN BRC");
+    }
+
     public String generarPDFRemito(RemitoDTO remito, String codigoUbicacion, int cantBultos) {
         try {
             String templateName = determinarTemplate(codigoUbicacion);
             String outputDir = determinarDirectorioSalida(templateName);
             Files.createDirectories(Paths.get(outputDir));
 
-            String fechaStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
             String nroClean = remito.getNumeroRemito().replaceAll("[^0-9-]", "");
-            String filename = "Remito-" + nroClean + "-" + fechaStr + ".pdf";
+            String[] nroParts = nroClean.split("-");
+            String nroSecuencia = nroParts.length > 1 ? nroParts[nroParts.length - 1] : nroClean;
+            String ubicacionLabel = UBICACION_LABEL.getOrDefault(codigoUbicacion != null ? codigoUbicacion.trim() : "", "DESCONOCIDO");
+            String clienteClean = remito.getRazonSocialReceptor() != null
+                ? remito.getRazonSocialReceptor().replaceAll("[\\\\/:*?\"<>|]", "").replaceAll("\\s+", "_").trim()
+                : "SIN_CLIENTE";
+            String filename = nroSecuencia + "-" + ubicacionLabel + " _" + clienteClean + ".pdf";
             String outputPath = outputDir + File.separator + filename;
 
             Map<String, Object> params = new HashMap<>();

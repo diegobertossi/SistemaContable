@@ -137,6 +137,95 @@ Formato JSON encodeado en Base64:
 - `reporte_caja_mensual.jrxml`
 - `reporte_gastos_anual.jrxml`
 
+### Patrón Filtro Cliente (AutoCompleteComboBox + filtro en tiempo real)
+
+Usar `AutoCompleteComboBox` para filtro de cliente con dropdown que filtra mientras se escribe, y tabla que se actualiza en vivo.
+
+**Componentes:**
+| Clase | Rol |
+|---|---|
+| `AutoCompleteComboBox` | Combo editable con filtrado de dropdown (80ms debounce), preselección del primer match, navegación por flechas sin ActionEvent, popup programático |
+| `addLiveFilter()` | DocumentListener sobre el editor que dispara filtro de tabla **inmediatamente** (sin debounce) en cada tecla |
+| `getComboText()` | Helper que retorna el texto del editor si el selected item es `"--Todos--"`, o el selected item en caso contrario |
+| `onFilterTextChanged()` | Guard `if (loadingData/cargandoDatos) return;` llama al filtro de tabla |
+| `setData()` | Reemplaza `removeAllItems()` + loop `addItem()` |
+
+**Comportamiento:**
+1. Usuario escribe → `addLiveFilter` dispara filtro de tabla **inmediatamente** con el texto del editor
+2. 80ms después → `AutoCompleteComboBox.doFilter()` filtra el dropdown, preselecciona el primer match, y al resetear el editor texto dispara de nuevo `addLiveFilter` → tabla se refina al cliente preseleccionado
+3. Click en dropdown → `ActionListener` → confirma la selección
+
+**Reglas de uso:**
+1. NO llamar `installComboUI()` al AutoCompleteComboBox (reemplaza el editor y mata los DocumentListeners internos y externos). Solo llamar `themeComboEditor(combo, theme)`.
+2. Llamar `addLiveFilter(combo)` DESPUÉS de `themeComboEditor`.
+3. `getComboText()` debe retornar el editor text cuando `"--Todos--"` está seleccionado, para que el filtro funcione antes de que `doFilter()` preseleccione un match.
+4. Usar `setData(List)` en vez de `removeAllItems()` + `addItem()`.
+5. `--Todos--` como primer item; en el filtro verificar `!"--Todos--".equals(filtro)`.
+
+**Métodos helper a copiar en cada ventana:**
+```java
+private String getComboText(JComboBox<String> combo) {
+    Object sel = combo.getSelectedItem();
+    String editorText = ((JTextField) combo.getEditor().getEditorComponent()).getText();
+    if (sel != null) {
+        String s = sel.toString();
+        if ("--Todos--".equals(s)) return editorText;
+        if (s != null && !s.trim().isEmpty()) return s.trim();
+    }
+    return editorText;
+}
+
+private void addLiveFilter(JComboBox<?> combo) {
+    Component editorComp = combo.getEditor().getEditorComponent();
+    if (editorComp instanceof JTextField) {
+        ((JTextField) editorComp).getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) { onFilterTextChanged(); }
+            public void removeUpdate(DocumentEvent e) { onFilterTextChanged(); }
+            public void changedUpdate(DocumentEvent e) { onFilterTextChanged(); }
+        });
+    }
+}
+
+private void onFilterTextChanged() {
+    if (cargandoDatos) return;
+    aplicarFiltro();
+}
+```
+
+**Ejemplo completo:**
+```java
+// initComponents:
+cmbCliente = new AutoCompleteComboBox();
+cmbCliente.setFont(FUENTE_INPUT_BOLD);
+cmbCliente.setPreferredSize(new Dimension(160, 22));
+themeComboEditor(cmbCliente, currentTheme);
+addLiveFilter(cmbCliente);
+cmbCliente.addActionListener(e -> {
+    if (!loadingData && data != null) aplicarFiltro();
+});
+// renderer opcional (DefaultListCellRenderer)
+
+// Carga de datos (reemplaza removeAllItems+addItem):
+cmbCliente.setData(listaItems);
+cmbCliente.setSelectedItem("--Todos--");
+
+// applyTheme:
+if (cmbCliente != null) {
+    cmbCliente.setBackground(getFieldBg(cmbCliente.isEnabled()));
+    cmbCliente.setForeground(cmbCliente.isEnabled() ? t.textPrimary : getDisabledFg());
+    themeComboEditor(cmbCliente, t);
+}
+```
+
+### Formato de nombre de archivo PDF para Remitos
+El nombre del PDF sigue el formato: `{numero}-{UBICACION} _{CLIENTE}.pdf`
+- `numero`: número de remito limpio (solo dígitos y guiones)
+- `UBICACION`: mapeo del código de ubicación a su nombre:
+  - PreImpreso: `0002→MDP`, `0005→CABA`, `0006→BRC`, `0007→MDP Avellaneda`
+  - Común: `1000→COMUN CABA`, `2000→COMUN MDP`, `3000→COMUN BRC`
+- `CLIENTE`: razón social del receptor, sanitizada (sin caracteres inválidos para文件名, espacios reemplazados por `_`)
+Ejemplo: `0002-00000001-MDP _EMPRESA_XYZ_SA.pdf`
+
 ### Orden XSD en JRXML
 El XSD de JasperReports exige orden estricto dentro de `<jasperReport>`:
 `property* → propertyExpression* → import* → template* → reportFont* → style* → subDataset* → scriptlet* → **parameter*** → queryString? → **field*** → sortField* → variable* → filterExpression? → group* → background? → title? → pageHeader? → columnHeader? → detail? → columnFooter? → pageFooter? → lastPageFooter? → summary? → noData?`
