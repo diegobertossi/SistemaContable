@@ -130,6 +130,15 @@ Formato JSON encodeado en Base64:
 - `.jasper` = binario compilado → usar `JasperFillManager.fillReport(inputStream, params, dataSource)` o `JRLoader.loadObject(inputStream)`. **NO** usar `JasperCompileManager.compileReport()` (espera `.jrxml` XML y falla con "Byte no válido 1 de la secuencia UTF-8").
 - `.jrxml` = XML fuente → usar `JasperCompileManager.compileReport(inputStream)`.
 
+### Recompilación automática de .jrxml
+**Siempre** que se modifique un `.jrxml`, se debe recompilar automáticamente a `.jasper` usando `JasperCompileManager.compileReportToFile(jrxmlPath, jasperPath)`. El `.jasper` debe sobrescribirse en el mismo directorio que el `.jrxml`.
+
+Si el JDK no está disponible (solo JRE), usar el compilador ECJ de JasperReports seteando la propiedad:
+```
+-Djasper.reports.compiler.class=net.sf.jasperreports.engine.design.JRJdtCompiler
+```
+El ECJ (ecj.jar) ya está en las dependencias de Maven en `org.eclipse.jdt.ecj`.
+
 ### Nombres de Reportes
 - `factura_a.jrxml`
 - `factura_c.jrxml`

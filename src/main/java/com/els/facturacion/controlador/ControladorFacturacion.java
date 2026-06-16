@@ -10,7 +10,7 @@ import com.els.facturacion.modelo.ItemFacturaDTO;
 import com.els.facturacion.modelo.RemitoReparsoftDTO;
 import com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem;
 import com.els.facturacion.modelo.RespuestaCAE;
-import com.els.facturacion.pdf.GestorPDF;
+import com.els.facturacion.pdf.GestorFacturaPDF;
 import com.els.facturacion.vista.VentanaFacturacion;
 import com.els.facturacion.vista.VentanaClientes;
 import com.els.facturacion.vista.VentanaImportarRemito;
@@ -30,9 +30,20 @@ import java.util.List;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
+import javax.swing.SwingWorker;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import javax.swing.table.DefaultTableModel;
+
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+
+import net.sf.jasperreports.engine.JRDataSource;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
+import net.sf.jasperreports.view.JasperViewer;
 
 public class ControladorFacturacion {
 
@@ -85,6 +96,7 @@ public class ControladorFacturacion {
         // Emission
         view.getBtnEmitir().addActionListener(e -> btnEmitirAction());
         view.getBtnLimpiar().addActionListener(e -> limpiarTodo());
+        view.getBtnVisualizarFactura().addActionListener(e -> visualizarFacturaAction());
         view.getBtnImportarRemito().addActionListener(e -> {
             if (!view.validarCamposObligatorios()) return;
             importarRemitoReparsoft();
@@ -318,8 +330,7 @@ public class ControladorFacturacion {
                     + (item.getEquipoNombre() != null ? item.getEquipoNombre() : "Sin equipo") + " "
                     + (item.getMarca() != null ? item.getMarca() : "") + " "
                     + (item.getModelo() != null ? item.getModelo() : "")
-                    + " s/n: " + (item.getNumeroSerie() != null ? item.getNumeroSerie() : "")
-                    + " ELS: " + item.getEls();
+                    + " s/n: " + (item.getNumeroSerie() != null ? item.getNumeroSerie() : "");
                 BigDecimal precio = item.getPrecioPeso() != null ? item.getPrecioPeso() : BigDecimal.ZERO;
                 String precioStr = precio.compareTo(BigDecimal.ZERO) > 0
                     ? DF.format(precio)
@@ -368,8 +379,7 @@ public class ControladorFacturacion {
                 + (item.getEquipoNombre() != null ? item.getEquipoNombre() : "Sin equipo") + " "
                 + (item.getMarca() != null ? item.getMarca() : "") + " "
                 + (item.getModelo() != null ? item.getModelo() : "")
-                + " s/n: " + (item.getNumeroSerie() != null ? item.getNumeroSerie() : "")
-                + " ELS: " + item.getEls();
+                + " s/n: " + (item.getNumeroSerie() != null ? item.getNumeroSerie() : "");
             BigDecimal precio = item.getPrecioPeso() != null ? item.getPrecioPeso() : BigDecimal.ZERO;
             String precioStr = precio.compareTo(BigDecimal.ZERO) > 0
                 ? DF.format(precio)
@@ -503,6 +513,102 @@ public class ControladorFacturacion {
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(view, "Error inesperado: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
+        }
+    }
+
+    private void visualizarFacturaAction() {
+        try {
+            CuitConfigDTO cuit = obtenerCuitSeleccionado();
+            if (cuit == null) {
+                JOptionPane.showMessageDialog(view, "Configure un CUIT emisor en Herramientas > Configurar Certificados", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            ComprobanteDTO comprobante = new ComprobanteDTO();
+            comprobante.setTipoComprobante(obtenerTipoCodigo());
+            comprobante.setPuntoVenta(Integer.parseInt((String) view.getCmbPuntoVenta().getSelectedItem()));
+            comprobante.setCuitReceptor(obtenerDocReceptor());
+            comprobante.setRazonSocialRec(view.getCmbRazonSocial().getEditorText().trim());
+            comprobante.setFechaEmision(parseFechaChooser(view.getDateFecha()));
+            comprobante.setPeriodoDesde(parseFechaChooser(view.getDatePeriodoDesde()));
+            comprobante.setPeriodoHasta(parseFechaChooser(view.getDatePeriodoHasta()));
+            comprobante.setPeriodoVto(parseFechaChooser(view.getDatePeriodoVto()));
+            comprobante.setCondicionIvaReceptor((String) view.getCmbCondicionIva().getSelectedItem());
+            comprobante.setDomicilioReceptor(view.getTxtDomicilio().getText().trim());
+            comprobante.setCondicionesVenta(obtenerCondicionesVenta());
+            comprobante.setDescripcion(obtenerDescripcionItems());
+            try {
+                comprobante.setImporteNeto(parseBigDecimal(view.getTxtImporteNeto().getText().replace("$", "").trim()));
+                comprobante.setImporteIva(parseBigDecimal(view.getTxtImporteIva().getText().replace("$", "").trim()));
+                comprobante.setImporteTotal(parseBigDecimal(view.getTxtImporteTotal().getText().replace("$", "").trim()));
+            } catch (Exception e) {
+            }
+            List<ItemFacturaDTO> items = obtenerItems();
+
+            java.text.DecimalFormat df = new java.text.DecimalFormat("#,##0.00");
+            Map<String, Object> params = new HashMap<>();
+            params.put("EMISOR_RAZON_SOCIAL", cuit.getRazonSocial());
+            params.put("EMISOR_DOMICILIO", "");
+            params.put("EMISOR_CUIT", cuit.getCuit());
+            params.put("EMISOR_ING_BRUTOS", "");
+            params.put("EMISOR_INICIO_ACT", "");
+            params.put("EMISOR_CONDICION_IVA", cuit.getCondicionIva());
+            params.put("PUNTO_VENTA", String.format("%03d", cuit.getPuntoVenta()));
+            params.put("COMP_NRO", String.format("%08d", comprobante.getNumero()));
+            params.put("FECHA_EMISION", comprobante.getFechaEmision().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+            params.put("PERIODO_DESDE", comprobante.getPeriodoDesde() != null ? comprobante.getPeriodoDesde().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "");
+            params.put("PERIODO_HASTA", comprobante.getPeriodoHasta() != null ? comprobante.getPeriodoHasta().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "");
+            params.put("FECHA_VTO_PAGO", comprobante.getPeriodoVto() != null ? comprobante.getPeriodoVto().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "");
+
+            params.put("CLIENTE_CUIT", comprobante.getCuitReceptor());
+            params.put("CLIENTE_RAZON_SOCIAL", comprobante.getRazonSocialRec());
+            params.put("CLIENTE_CONDICION_IVA", comprobante.getCondicionIvaReceptor() != null ? comprobante.getCondicionIvaReceptor() : "");
+            params.put("CLIENTE_DOMICILIO", comprobante.getDomicilioReceptor() != null ? comprobante.getDomicilioReceptor() : "");
+            params.put("CLIENTE_CONDICION_VENTA", comprobante.getCondicionesVenta() != null ? comprobante.getCondicionesVenta() : "");
+
+            params.put("SUBTOTAL", comprobante.getImporteNeto() != null ? df.format(comprobante.getImporteNeto().setScale(2, RoundingMode.HALF_UP)) : "0,00");
+            params.put("OTROS_TRIBUTOS", comprobante.getOtrosImpuestos() != null ? df.format(comprobante.getOtrosImpuestos().setScale(2, RoundingMode.HALF_UP)) : "0,00");
+            params.put("IMPORTE_TOTAL", comprobante.getImporteTotal() != null ? df.format(comprobante.getImporteTotal().setScale(2, RoundingMode.HALF_UP)) : "0,00");
+
+            params.put("CAE_NRO", comprobante.getCae() != null ? comprobante.getCae() : "");
+            params.put("CAE_VENCIMIENTO", "");
+            params.put("QR_IMAGE_PATH", "");
+            params.put("COPIA_LABEL", "ORIGINAL");
+
+            new SwingWorker<JasperPrint, Void>() {
+                @Override
+                protected JasperPrint doInBackground() throws Exception {
+                    InputStream jasperStream = getClass().getClassLoader()
+                        .getResourceAsStream("reportes/factura.jasper");
+                    if (jasperStream == null) {
+                        throw new Exception("No se encontro reportes/factura.jasper");
+                    }
+                    JRDataSource dataSource = (items != null && !items.isEmpty())
+                        ? new JRBeanCollectionDataSource(items)
+                        : new JRBeanCollectionDataSource(java.util.Collections.singletonList(
+                            new ItemFacturaDTO("", comprobante.getDescripcion() != null ? comprobante.getDescripcion() : "",
+                                BigDecimal.ONE, "Unidad", comprobante.getImporteNeto() != null ? comprobante.getImporteNeto() : BigDecimal.ZERO, BigDecimal.ZERO)));
+                    return JasperFillManager.fillReport(jasperStream, params, dataSource);
+                }
+                @Override
+                protected void done() {
+                    try {
+                        JasperPrint jp = get();
+                        JasperViewer viewer = new JasperViewer(jp, false);
+                        viewer.setVisible(true);
+                        javax.swing.SwingUtilities.invokeLater(() -> {
+                            viewer.toFront();
+                            viewer.repaint();
+                            viewer.requestFocus();
+                        });
+                    } catch (Exception e) {
+                        JOptionPane.showMessageDialog(view, "Error al generar la vista previa: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }.execute();
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(view, "Error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -838,7 +944,7 @@ public class ControladorFacturacion {
                         guardarItemsFactura(id, items);
                     }
 
-                    String rutaPDF = new GestorPDF().generarFactura(comprobante, cuit, items);
+                    String rutaPDF = new GestorFacturaPDF().generarFactura(comprobante, cuit, items);
                     if (rutaPDF != null) {
                         comprobante.setRutaPdf(rutaPDF);
                         comprobanteDAO.actualizar(comprobante);
@@ -950,7 +1056,7 @@ public class ControladorFacturacion {
     public String regenerarPDF(ComprobanteDTO comprobante, List<ItemFacturaDTO> items) {
         CuitConfigDTO cuit = cuitDAO.buscarPorCuit(comprobante.getCuitEmisor());
         if (cuit == null) return null;
-        String rutaPDF = new GestorPDF().generarFactura(comprobante, cuit, items);
+        String rutaPDF = new GestorFacturaPDF().generarFactura(comprobante, cuit, items);
         if (rutaPDF != null) {
             comprobante.setRutaPdf(rutaPDF);
             comprobanteDAO.actualizar(comprobante);

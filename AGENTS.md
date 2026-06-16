@@ -76,3 +76,16 @@ Si se agrega un JComboBox a cualquier ventana del proyecto:
 
 ## Skill de referencia completa
 Para el patrón completo de estilizado de VentanaClientes, VentanaFacturacion y VentanaComprobantes (constantes, helpers, CustomComboUI, themeDateField, themeComboEditor, paneles, problemas conocidos), cargar el skill `swing-estilo-ventanas`.
+
+# PDF Generation — GestorFacturaPDF
+
+`GestorFacturaPDF.java` genera PDFs de facturas usando JasperReports.
+
+## Patrón usado (como GestorRemitoPDF)
+
+- Template: `reportes/factura.jasper` (compilado, no .jrxml)
+- Carga via `getClass().getClassLoader().getResourceAsStream("reportes/factura.jasper")`
+- `JasperFillManager.fillReport(inputStream, params, dataSource)` — sin compilar
+- `JRBeanCollectionDataSource(items)` para el detalle
+- Export via `JRPdfExporter` con `JRExporterParameter.JASPER_PRINT` y `JRExporterParameter.OUTPUT_STREAM`
+- Directorio según `UbicacionSistema.getUbicacion()` (mismo patrón que `GestorRemitoPDF`)

@@ -2,7 +2,7 @@ package com.els.facturacion.email;
 
 import com.els.facturacion.dao.CuitDAO;
 import com.els.facturacion.modelo.ComprobanteDTO;
-import com.els.facturacion.pdf.GestorPDF;
+import com.els.facturacion.pdf.GestorFacturaPDF;
 
 import javax.activation.DataHandler;
 import javax.activation.DataSource;

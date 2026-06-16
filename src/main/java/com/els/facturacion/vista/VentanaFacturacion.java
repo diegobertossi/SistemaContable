@@ -47,8 +47,27 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
+import javax.swing.SwingWorker;
 import java.awt.Graphics;
 import java.awt.Rectangle;
+import java.io.InputStream;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import net.sf.jasperreports.engine.JRDataSource;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
+import net.sf.jasperreports.view.JasperViewer;
+
+import com.els.facturacion.modelo.ComprobanteDTO;
+import com.els.facturacion.modelo.CuitConfigDTO;
+import com.els.facturacion.modelo.ItemFacturaDTO;
+import com.els.facturacion.util.UbicacionSistema;
 
 public class VentanaFacturacion extends javax.swing.JFrame {
 
@@ -111,6 +130,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private JButton btnAgregarItem;
     private JButton btnEmitir;
     private JButton btnLimpiar;
+    private JButton btnVisualizarFactura;
 
     // Navigation
     private JCheckBox chkModoPrueba;
@@ -549,6 +569,14 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         btnLimpiar.setFocusPainted(false);
         btnLimpiar.setMargin(new Insets(6, 14, 6, 14));
 
+        btnVisualizarFactura = new JButton("VISUALIZAR FACTURA");
+        btnVisualizarFactura.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnVisualizarFactura.setForeground(currentTheme.textPrimary);
+        btnVisualizarFactura.setBackground(currentTheme.btnBg);
+        btnVisualizarFactura.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnVisualizarFactura.setFocusPainted(false);
+        btnVisualizarFactura.setMargin(new Insets(6, 14, 6, 14));
+
         panelAnterior = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
         panelAnterior.setBackground(currentTheme.bgBase);
         panelAnterior.add(btnAnterior);
@@ -557,6 +585,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelEmitir.setBackground(currentTheme.bgBase);
         panelEmitir.add(btnEmitir);
         panelEmitir.add(btnLimpiar);
+        panelEmitir.add(btnVisualizarFactura);
 
         panelSur.add(panelAnterior, new GridBagConstraints(0, 1, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, panelIns, 0, 0));
         panelSur.add(panelEmitir, new GridBagConstraints(1, 1, 1, 1, 1, 0, GridBagConstraints.EAST, GridBagConstraints.HORIZONTAL, panelIns, 0, 0));
@@ -1140,6 +1169,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             btnEmitir.setForeground(Color.WHITE);
         }
         if (btnLimpiar != null) { btnLimpiar.setBackground(t.btnBg); btnLimpiar.setForeground(t.textPrimary); }
+        if (btnVisualizarFactura != null) { btnVisualizarFactura.setBackground(t.btnBg); btnVisualizarFactura.setForeground(t.textPrimary); }
         if (chkModoPrueba != null) { chkModoPrueba.setBackground(t.bgBase); chkModoPrueba.setForeground(t.danger); }
         if (btnSiguiente != null) { btnSiguiente.setBackground(t.btnBg); btnSiguiente.setForeground(t.textPrimary); }
         if (panelTituloDatos != null) panelTituloDatos.setBackground(t.bgSurface);
@@ -1378,6 +1408,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     public JComboBox<String> getCmbAlicuotaIva() { return cmbAlicuotaIva; }
     public JButton getBtnEmitir() { return btnEmitir; }
     public JButton getBtnLimpiar() { return btnLimpiar; }
+    public JButton getBtnVisualizarFactura() { return btnVisualizarFactura; }
 
     // ===================== SETTERS / MUTATORS =====================
 

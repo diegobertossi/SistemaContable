@@ -3,26 +3,23 @@ package com.els.facturacion.pdf;
 import com.els.facturacion.modelo.ComprobanteDTO;
 import com.els.facturacion.modelo.CuitConfigDTO;
 import com.els.facturacion.modelo.ItemFacturaDTO;
+import com.els.facturacion.util.UbicacionSistema;
 import net.sf.jasperreports.engine.JRDataSource;
-import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
-import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import net.sf.jasperreports.engine.export.JRPdfExporter;
-import net.sf.jasperreports.engine.JRExporterParameter;
 import org.json.simple.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -30,11 +27,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class GestorPDF {
+public class GestorFacturaPDF {
 
     private static final DateTimeFormatter FECHA_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter FECHA_DISPLAY = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-    private static final String DIRECTORIO_FACTURAS = "F:\\Trabajo\\Monotributo\\Facturas";
 
     private static final Map<Integer, String> TIPO_FILENAME = new HashMap<>();
     private static final Map<Integer, String> TIPO_TITULO = new HashMap<>();
@@ -79,17 +75,15 @@ public class GestorPDF {
 
     public String generarFactura(ComprobanteDTO comprobante, CuitConfigDTO emitidor, List<ItemFacturaDTO> items) {
         try {
-            Files.createDirectories(Paths.get(DIRECTORIO_FACTURAS));
-
+            String directorio = getDirectorioFacturas();
+            Files.createDirectories(Paths.get(directorio));
             String cuit = emitidor.getCuit();
             String pv = String.format("%03d", emitidor.getPuntoVenta());
             String tipo = TIPO_FILENAME.getOrDefault(comprobante.getTipoComprobante(), "00001");
             String numero = String.format("%08d", comprobante.getNumero());
             String nombreArchivo = cuit + "_" + pv + "_" + tipo + "_" + numero + ".pdf";
-            String rutaSalida = DIRECTORIO_FACTURAS + File.separator + nombreArchivo;
-
-            String ruta = generarFacturaA4(comprobante, emitidor, rutaSalida, items);
-            return ruta;
+            String rutaSalida = directorio + File.separator + nombreArchivo;
+            return generarFacturaA4(comprobante, emitidor, rutaSalida, items);
         } catch (Exception e) {
             System.err.println("Error generando PDF: " + e.getMessage());
             e.printStackTrace();
@@ -117,49 +111,40 @@ public class GestorPDF {
 
     public String generarFacturaA4(ComprobanteDTO comprobante, CuitConfigDTO emitidor, String rutaSalida, List<ItemFacturaDTO> items) {
         try {
-            String titulo = TIPO_TITULO.getOrDefault(comprobante.getTipoComprobante(), "FACTURA");
-            String letra = LETRA.getOrDefault(comprobante.getTipoComprobante(), "A");
-            String tipoStr = titulo + " (Tipo " + comprobante.getTipoComprobante() + ")";
-
             Map<String, Object> parametros = new HashMap<>();
-            parametros.put("RAZON_SOCIAL_EMISOR", emitidor.getRazonSocial());
-            parametros.put("CUIT_EMISOR", emitidor.getCuit());
-            parametros.put("CONDICION_IVA_EMISOR", emitidor.getCondicionIva());
-            parametros.put("DOMICILIO_EMISOR", "");
+            parametros.put("EMISOR_RAZON_SOCIAL", emitidor.getRazonSocial());
+            parametros.put("EMISOR_DOMICILIO", "");
+            parametros.put("EMISOR_CUIT", emitidor.getCuit());
+            parametros.put("EMISOR_ING_BRUTOS", "");
+            parametros.put("EMISOR_INICIO_ACT", "");
+            parametros.put("EMISOR_CONDICION_IVA", emitidor.getCondicionIva());
             parametros.put("PUNTO_VENTA", String.format("%03d", emitidor.getPuntoVenta()));
-            parametros.put("TIPO_COMPROBANTE", tipoStr);
-            parametros.put("NUMERO_COMPROBANTE", String.format("%08d", comprobante.getNumero()));
+            parametros.put("COMP_NRO", String.format("%08d", comprobante.getNumero()));
             parametros.put("FECHA_EMISION", comprobante.getFechaEmision().format(FECHA_DISPLAY));
-            parametros.put("CONCEPTO", comprobante.getConcepto() != null ? comprobante.getConcepto() : "");
             parametros.put("PERIODO_DESDE", comprobante.getPeriodoDesde() != null ? comprobante.getPeriodoDesde().format(FECHA_DISPLAY) : "");
             parametros.put("PERIODO_HASTA", comprobante.getPeriodoHasta() != null ? comprobante.getPeriodoHasta().format(FECHA_DISPLAY) : "");
-            parametros.put("PERIODO_VTO", comprobante.getPeriodoVto() != null ? comprobante.getPeriodoVto().format(FECHA_DISPLAY) : "");
+            parametros.put("FECHA_VTO_PAGO", comprobante.getPeriodoVto() != null ? comprobante.getPeriodoVto().format(FECHA_DISPLAY) : "");
 
-            parametros.put("CUIT_RECEPTOR", comprobante.getCuitReceptor());
-            parametros.put("RAZON_SOCIAL_RECEPTOR", comprobante.getRazonSocialRec());
-            parametros.put("CONDICION_IVA_RECEPTOR", comprobante.getCondicionIvaReceptor() != null ? comprobante.getCondicionIvaReceptor() : "");
-            parametros.put("DOMICILIO_RECEPTOR", comprobante.getDomicilioReceptor() != null ? comprobante.getDomicilioReceptor() : "");
+            parametros.put("CLIENTE_CUIT", comprobante.getCuitReceptor());
+            parametros.put("CLIENTE_RAZON_SOCIAL", comprobante.getRazonSocialRec());
+            parametros.put("CLIENTE_CONDICION_IVA", comprobante.getCondicionIvaReceptor() != null ? comprobante.getCondicionIvaReceptor() : "");
+            parametros.put("CLIENTE_DOMICILIO", comprobante.getDomicilioReceptor() != null ? comprobante.getDomicilioReceptor() : "");
+            parametros.put("CLIENTE_CONDICION_VENTA", comprobante.getCondicionesVenta() != null ? comprobante.getCondicionesVenta() : "");
 
-            parametros.put("IMPORTE_NETO", comprobante.getImporteNeto().setScale(2, RoundingMode.HALF_UP));
-            parametros.put("IMPORTE_IVA", comprobante.getImporteIva() != null ? comprobante.getImporteIva().setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
-            parametros.put("IMPORTE_TOTAL", comprobante.getImporteTotal().setScale(2, RoundingMode.HALF_UP));
-            parametros.put("TOTAL_LETRAS", totalEnLetras(comprobante.getImporteTotal()));
+            parametros.put("SUBTOTAL", formatImporte(comprobante.getImporteNeto()));
+            parametros.put("OTROS_TRIBUTOS", comprobante.getOtrosImpuestos() != null ? formatImporte(comprobante.getOtrosImpuestos()) : "0,00");
+            parametros.put("IMPORTE_TOTAL", formatImporte(comprobante.getImporteTotal()));
 
-            parametros.put("CAE", comprobante.getCae());
-            parametros.put("VENCIMIENTO_CAE", comprobante.getVencimientoCae().format(FECHA_DISPLAY));
+            parametros.put("CAE_NRO", comprobante.getCae() != null ? comprobante.getCae() : "");
+            parametros.put("CAE_VENCIMIENTO", comprobante.getVencimientoCae() != null ? comprobante.getVencimientoCae().format(FECHA_DISPLAY) : "");
+            parametros.put("QR_IMAGE_PATH", "");
+            parametros.put("COPIA_LABEL", "ORIGINAL");
 
-            String qrARCA = generarQR_ARCA(comprobante, emitidor);
-            parametros.put("QR_URL", "https://www.afip.gob.ar/fe/qr/?p=" + qrARCA);
-
-            JasperReport jasperReport;
-            InputStream jrxmlStream = getClass().getClassLoader().getResourceAsStream("reportes/factura_a.jrxml");
-            if (jrxmlStream == null) {
-                jrxmlStream = new FileInputStream("src/main/resources/reportes/factura_a.jrxml");
-            }
-            try {
-                jasperReport = JasperCompileManager.compileReport(jrxmlStream);
-            } finally {
-                jrxmlStream.close();
+            InputStream jasperStream = getClass().getClassLoader()
+                .getResourceAsStream("reportes/factura.jasper");
+            if (jasperStream == null) {
+                System.err.println("No se encontro reportes/factura.jasper");
+                return null;
             }
 
             JRDataSource dataSource = (items != null && !items.isEmpty())
@@ -168,15 +153,15 @@ public class GestorPDF {
                     new ItemFacturaDTO("", comprobante.getDescripcion() != null ? comprobante.getDescripcion() : "",
                         BigDecimal.ONE, "Unidad", comprobante.getImporteNeto(), comprobante.getImporteNeto())));
 
-            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parametros, dataSource);
+            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperStream, parametros, dataSource);
 
             if (rutaSalida != null && !rutaSalida.isEmpty()) {
-                FileOutputStream fos = new FileOutputStream(rutaSalida);
-                JRPdfExporter exporter = new JRPdfExporter();
-                exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
-                exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, fos);
-                exporter.exportReport();
-                fos.close();
+                try (FileOutputStream fos = new FileOutputStream(rutaSalida)) {
+                    JRPdfExporter exporter = new JRPdfExporter();
+                    exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
+                    exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, fos);
+                    exporter.exportReport();
+                }
                 System.out.println("PDF generado: " + rutaSalida);
                 return rutaSalida;
             }
@@ -193,6 +178,14 @@ public class GestorPDF {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public byte[] generarPDFBytes(ComprobanteDTO comprobante, CuitConfigDTO emitidor) {
+        String base64 = generarFacturaA4(comprobante, emitidor, null, null);
+        if (base64 != null) {
+            return Base64.getDecoder().decode(base64);
+        }
+        return null;
     }
 
     @SuppressWarnings("unchecked")
@@ -219,52 +212,6 @@ public class GestorPDF {
             System.err.println("Error generando QR: " + e.getMessage());
             return "";
         }
-    }
-
-    private String generarPDFDirecto(ComprobanteDTO comprobante, CuitConfigDTO emitidor, String rutaSalida) {
-        String titulo = TIPO_TITULO.getOrDefault(comprobante.getTipoComprobante(), "FACTURA");
-        StringBuilder sb = new StringBuilder();
-        sb.append("========================================\n");
-        sb.append("           ").append(titulo).append("\n");
-        sb.append("========================================\n");
-        sb.append("Razon Social: ").append(emitidor.getRazonSocial()).append("\n");
-        sb.append("CUIT: ").append(emitidor.getCuit()).append("\n");
-        sb.append("Condicion IVA: ").append(emitidor.getCondicionIva()).append("\n");
-        sb.append("Punto de Venta: ").append(emitidor.getPuntoVenta()).append("\n");
-        sb.append("Comprobante Nro: ").append(String.format("%08d", comprobante.getNumero())).append("\n");
-        sb.append("Fecha: ").append(comprobante.getFechaEmision().format(FECHA_DISPLAY)).append("\n");
-        sb.append("----------------------------------------\n");
-        sb.append("Receptor:\n");
-        sb.append("CUIT: ").append(comprobante.getCuitReceptor()).append("\n");
-        sb.append("Razon Social: ").append(comprobante.getRazonSocialRec()).append("\n");
-        sb.append("----------------------------------------\n");
-        sb.append("Importe Neto: $").append(comprobante.getImporteNeto()).append("\n");
-        if (comprobante.getImporteIva() != null) {
-            sb.append("IVA: $").append(comprobante.getImporteIva()).append("\n");
-        }
-        sb.append("TOTAL: $").append(comprobante.getImporteTotal()).append("\n");
-        sb.append("----------------------------------------\n");
-        sb.append("CAE: ").append(comprobante.getCae()).append("\n");
-        sb.append("Vencimiento: ").append(comprobante.getVencimientoCae().format(FECHA_DISPLAY)).append("\n");
-        sb.append("========================================\n");
-
-        try {
-            if (rutaSalida != null) {
-                Files.write(Paths.get(rutaSalida), sb.toString().getBytes());
-                return rutaSalida;
-            }
-        } catch (Exception e) {
-            System.err.println("Error guardando PDF texto: " + e.getMessage());
-        }
-        return null;
-    }
-
-    public byte[] generarPDFBytes(ComprobanteDTO comprobante, CuitConfigDTO emitidor) {
-        String base64 = generarFacturaA4(comprobante, emitidor, null, null);
-        if (base64 != null) {
-            return Base64.getDecoder().decode(base64);
-        }
-        return null;
     }
 
     private String totalEnLetras(BigDecimal monto) {
@@ -324,5 +271,18 @@ public class GestorPDF {
             sb.append(unidades[(int)n]);
         }
         return sb.toString().trim();
+    }
+
+    private static String formatImporte(BigDecimal valor) {
+        if (valor == null) return "0,00";
+        java.text.DecimalFormat df = new java.text.DecimalFormat("#,##0.00");
+        return df.format(valor.setScale(2, RoundingMode.HALF_UP));
+    }
+
+    private static String getDirectorioFacturas() {
+        if ("BARILOCHE".equals(UbicacionSistema.getUbicacion())) {
+            return "F:\\els\\Bariloche\\Administracion\\Sistema\\Facturas PDF";
+        }
+        return "F:\\els\\Administracion\\Sistema\\Facturas PDF";
     }
 }

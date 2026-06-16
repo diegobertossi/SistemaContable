@@ -11,6 +11,8 @@ public class ItemFacturaDTO {
     private String unidadMedida;
     private BigDecimal precioUnitario;
     private BigDecimal subtotal;
+    private BigDecimal porcentajeBonif;
+    private BigDecimal importeBonif;
     private BigDecimal alicuotaIva;
     private Integer elsReferencia;
     private Integer orden;
@@ -51,6 +53,10 @@ public class ItemFacturaDTO {
     public void setPrecioUnitario(BigDecimal precioUnitario) { this.precioUnitario = precioUnitario; }
     public BigDecimal getSubtotal() { return subtotal; }
     public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
+    public BigDecimal getPorcentajeBonif() { return porcentajeBonif; }
+    public void setPorcentajeBonif(BigDecimal porcentajeBonif) { this.porcentajeBonif = porcentajeBonif; }
+    public BigDecimal getImporteBonif() { return importeBonif; }
+    public void setImporteBonif(BigDecimal importeBonif) { this.importeBonif = importeBonif; }
     public BigDecimal getAlicuotaIva() { return alicuotaIva; }
     public void setAlicuotaIva(BigDecimal alicuotaIva) { this.alicuotaIva = alicuotaIva; }
     public Integer getElsReferencia() { return elsReferencia; }
