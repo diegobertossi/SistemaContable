@@ -1,5 +1,6 @@
--- Script de creación de base de datos facturacion_db
+-- Script de instalación de base de datos facturacion_db
 -- FacturaSoft v1.0
+-- Uso: mysql -u root -p < schema.sql
 
 CREATE DATABASE IF NOT EXISTS facturacion_db
 CHARACTER SET utf8mb4
@@ -31,6 +32,9 @@ CREATE TABLE IF NOT EXISTS cuit_certificados (
     punto_venta INT NOT NULL,
     ruta_certificado VARCHAR(500),
     password_cert VARCHAR(200),
+    domicilio VARCHAR(200),
+    ingresos_brutos VARCHAR(50),
+    fecha_inicio_actividades DATE,
     activo BOOLEAN DEFAULT TRUE,
     INDEX idx_cuit (cuit),
     INDEX idx_activo (activo)
@@ -100,6 +104,7 @@ CREATE TABLE IF NOT EXISTS clientes (
     origen VARCHAR(20) DEFAULT 'manual',
     els_referencia INT,
     activo BOOLEAN DEFAULT TRUE,
+    tipo_persona VARCHAR(20) DEFAULT 'empresa',
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uk_documento (tipo_documento, nro_documento),
     INDEX idx_razon_social (razon_social),
@@ -138,13 +143,15 @@ CREATE TABLE IF NOT EXISTS remitos (
     razon_social_receptor VARCHAR(200),
     domicilio_receptor VARCHAR(200),
     comprobante_id INT,
+    reparsoft_remito_id INT,
     estado VARCHAR(30) DEFAULT 'pendiente',
     observaciones TEXT,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_emisor (cuit_emisor),
     INDEX idx_receptor (cuit_receptor),
     INDEX idx_estado (estado),
-    INDEX idx_comprobante (comprobante_id)
+    INDEX idx_comprobante (comprobante_id),
+    INDEX idx_reparsoft_id (reparsoft_remito_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tabla: remito_items
@@ -253,49 +260,13 @@ INSERT INTO configuraciones (clave, valor, descripcion) VALUES
     ('iva.alicuota.3', '27.00', 'Alicuota IVA 27%')
 ON DUPLICATE KEY UPDATE valor = valor;
 
--- Migración automática: agrega columnas faltantes sin romper si ya existen
-SET @db = (SELECT DATABASE());
--- concepto
-SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN concepto VARCHAR(50) AFTER descripcion','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='concepto'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
--- periodo_desde
-SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN periodo_desde DATE AFTER concepto','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='periodo_desde'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
--- periodo_hasta
-SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN periodo_hasta DATE AFTER periodo_desde','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='periodo_hasta'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
--- periodo_vto
-SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN periodo_vto DATE AFTER periodo_hasta','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='periodo_vto'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
--- condicion_iva_receptor
-SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN condicion_iva_receptor VARCHAR(60) AFTER periodo_vto','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='condicion_iva_receptor'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
--- tipo_documento
-SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN tipo_documento VARCHAR(10) AFTER condicion_iva_receptor','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='tipo_documento'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
--- nro_documento
-SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN nro_documento VARCHAR(50) AFTER tipo_documento','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='nro_documento'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
--- domicilio_receptor
-SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN domicilio_receptor VARCHAR(200) AFTER nro_documento','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='domicilio_receptor'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
--- email_receptor
-SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN email_receptor VARCHAR(500) AFTER domicilio_receptor','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='email_receptor'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
--- condiciones_venta
-SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN condiciones_venta VARCHAR(200) AFTER email_receptor','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='condiciones_venta'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
--- comprobante_asociado
-SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE comprobantes ADD COLUMN comprobante_asociado VARCHAR(50) AFTER condiciones_venta','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='comprobante_asociado'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
--- estado_pago
-SET @sql = (SELECT IF(COUNT(*)=0,"ALTER TABLE comprobantes ADD COLUMN estado_pago VARCHAR(30) DEFAULT 'pendiente' AFTER comprobante_asociado",'SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='estado_pago'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
--- otros_impuestos
-SET @sql = (SELECT IF(COUNT(*)=0,"ALTER TABLE comprobantes ADD COLUMN otros_impuestos DECIMAL(12,2) DEFAULT 0.00 AFTER estado_pago",'SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='otros_impuestos'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
-
--- Migración: agregar columna reparsoft_remito_id si no existe
-SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE remitos ADD COLUMN reparsoft_remito_id INT DEFAULT NULL AFTER comprobante_id','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='remitos' AND COLUMN_NAME='reparsoft_remito_id'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
-SET @sql = (SELECT IF(COUNT(*)=0,'ALTER TABLE remitos ADD INDEX idx_reparsoft_id (reparsoft_remito_id)','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='remitos' AND COLUMN_NAME='reparsoft_remito_id'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
-
--- Migración: asegurar tamaño suficiente en columnas para datos largos
-SET @sql = (SELECT IF(COUNT(*)>0,'ALTER TABLE clientes MODIFY COLUMN email VARCHAR(500)','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='clientes' AND COLUMN_NAME='email' AND CHARACTER_MAXIMUM_LENGTH < 500); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
-SET @sql = (SELECT IF(COUNT(*)>0,'ALTER TABLE clientes MODIFY COLUMN nro_documento VARCHAR(50)','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='clientes' AND COLUMN_NAME='nro_documento' AND CHARACTER_MAXIMUM_LENGTH < 50); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
-SET @sql = (SELECT IF(COUNT(*)>0,'ALTER TABLE comprobantes MODIFY COLUMN nro_documento VARCHAR(50)','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='nro_documento' AND CHARACTER_MAXIMUM_LENGTH < 50); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
-SET @sql = (SELECT IF(COUNT(*)>0,'ALTER TABLE comprobantes MODIFY COLUMN email_receptor VARCHAR(500)','SELECT 1') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='comprobantes' AND COLUMN_NAME='email_receptor' AND CHARACTER_MAXIMUM_LENGTH < 500); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
-
 -- Insertar emisores de prueba
-INSERT INTO cuit_certificados (cuit, razon_social, condicion_iva, punto_venta, ruta_certificado, password_cert, activo) VALUES
-    ('30678901234', 'FACTURASOFT TEST S.A.', 'RI', 1, 'src/main/resources/certificados/Certificado.p12', '123456', TRUE),
-    ('27123456789', 'FACTURASOFT MONOTRIBUTO', 'Monotributista', 2, 'src/main/resources/certificados/Certificado.p12', '123456', FALSE)
+INSERT INTO cuit_certificados (cuit, razon_social, condicion_iva, punto_venta,
+    ruta_certificado, password_cert, domicilio, ingresos_brutos, fecha_inicio_actividades, activo) VALUES
+    ('30678901234', 'FACTURASOFT TEST S.A.', 'IVA Responsable Inscripto', 1,
+     'src/main/resources/certificados/Certificado.p12', '123456', '', '', NULL, TRUE),
+    ('27123456789', 'FACTURASOFT MONOTRIBUTO', 'Responsable Monotributo', 2,
+     'src/main/resources/certificados/Certificado.p12', '123456', '', '', NULL, FALSE)
 ON DUPLICATE KEY UPDATE razon_social = VALUES(razon_social), condicion_iva = VALUES(condicion_iva),
     punto_venta = VALUES(punto_venta), ruta_certificado = VALUES(ruta_certificado),
     password_cert = VALUES(password_cert), activo = VALUES(activo);

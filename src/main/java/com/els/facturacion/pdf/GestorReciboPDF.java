@@ -19,6 +19,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
@@ -71,14 +72,30 @@ public class GestorReciboPDF {
                                      String rutaSalida) {
         try {
             Map<String, Object> parametros = new HashMap<>();
-            parametros.put("RECIBO_NUMERO", recibo.getNumeroRecibo());
+            parametros.put("EMISOR_RAZON_SOCIAL", emisor.getRazonSocial());
+            parametros.put("EMISOR_DOMICILIO", emisor.getDomicilio() != null ? emisor.getDomicilio() : "");
+            parametros.put("EMISOR_CUIT", emisor.getCuit());
+            parametros.put("EMISOR_ING_BRUTOS", emisor.getIngresosBrutos() != null ? emisor.getIngresosBrutos() : "");
+            parametros.put("EMISOR_INICIO_ACT", emisor.getFechaInicioActividades() != null ? emisor.getFechaInicioActividades() : "");
+            parametros.put("EMISOR_CONDICION_IVA", emisor.getCondicionIva());
+            parametros.put("PUNTO_VENTA", emisor.getPuntoVenta() != null ? emisor.getPuntoVenta().toString() : "");
+            parametros.put("COMP_NRO", recibo.getNumeroRecibo());
             parametros.put("FECHA_EMISION", recibo.getFechaCobro() != null
                 ? recibo.getFechaCobro().format(FECHA_DISPLAY) : "");
-            parametros.put("EMISOR_CUIT", emisor.getCuit());
-            parametros.put("EMISOR_RAZON_SOCIAL", emisor.getRazonSocial());
-            parametros.put("EMISOR_CONDICION_IVA", emisor.getCondicionIva());
-            parametros.put("PAGADOR_CUIT", recibo.getCuitCliente() != null ? recibo.getCuitCliente() : "");
-            parametros.put("PAGADOR_RAZON_SOCIAL", recibo.getRazonSocialCliente() != null ? recibo.getRazonSocialCliente() : "");
+            parametros.put("PERIODO_DESDE", "");
+            parametros.put("PERIODO_HASTA", "");
+            parametros.put("FECHA_VTO_PAGO", "");
+            parametros.put("CLIENTE_RAZON_SOCIAL", recibo.getRazonSocialCliente() != null ? recibo.getRazonSocialCliente() : "");
+            parametros.put("CLIENTE_CUIT", recibo.getCuitCliente() != null ? recibo.getCuitCliente() : "");
+            parametros.put("CLIENTE_DOMICILIO", "");
+            parametros.put("CLIENTE_CONDICION_IVA", "");
+            parametros.put("CLIENTE_CONDICION_VENTA", "");
+            String totalStr = recibo.getMontoTotal() != null
+                ? new DecimalFormat("#,##0.00").format(recibo.getMontoTotal().setScale(2, RoundingMode.HALF_UP)) : "0,00";
+            parametros.put("SUBTOTAL", totalStr);
+            parametros.put("OTROS_TRIBUTOS", "0,00");
+            parametros.put("IMPORTE_TOTAL", totalStr);
+            parametros.put("RECIBO_NUMERO", recibo.getNumeroRecibo());
             parametros.put("MONTO_TOTAL", recibo.getMontoTotal() != null
                 ? recibo.getMontoTotal().setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO);
             parametros.put("MONTO_LETRAS", totalEnLetras(recibo.getMontoTotal() != null ? recibo.getMontoTotal() : BigDecimal.ZERO));
@@ -123,10 +140,7 @@ public class GestorReciboPDF {
         StringBuilder sb = new StringBuilder();
         for (ReciboPagoDTO fp : formasPago) {
             if (sb.length() > 0) sb.append("\n");
-            String monto = fp.getMonto() != null
-                ? String.format("%,.2f", fp.getMonto().setScale(2, RoundingMode.HALF_UP))
-                : "0,00";
-            sb.append(fp.getFormaPago()).append(": $ ").append(monto);
+            sb.append(fp.getFormaPago());
         }
         return sb.toString();
     }

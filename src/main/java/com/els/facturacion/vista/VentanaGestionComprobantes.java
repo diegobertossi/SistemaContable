@@ -11,6 +11,7 @@ public class VentanaGestionComprobantes extends JFrame {
 
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
     private JTabbedPane tabbedPane;
+    private VentanaComprobantes comprobantesView;
 
     public VentanaGestionComprobantes() {
         initComponents();
@@ -40,10 +41,16 @@ public class VentanaGestionComprobantes extends JFrame {
         tabbedPane.addTab("Facturaci\u00f3n", factContent);
 
         // Tab Comprobantes
-        VentanaComprobantes comprobantesView = new VentanaComprobantes();
+        comprobantesView = new VentanaComprobantes();
         Container compContent = comprobantesView.getContentPane();
         comprobantesView.remove(compContent);
         tabbedPane.addTab("Comprobantes", compContent);
+
+        tabbedPane.addChangeListener(e -> {
+            if (tabbedPane.getSelectedComponent() == compContent) {
+                comprobantesView.cargarComprobantes();
+            }
+        });
 
         add(tabbedPane, BorderLayout.CENTER);
     }

@@ -1,7 +1,9 @@
 package com.els.facturacion.arca;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -11,19 +13,33 @@ import java.security.PrivateKey;
 import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
+
+import org.bouncycastle.cms.CMSProcessableByteArray;
+import org.bouncycastle.cms.CMSSignedData;
+import org.bouncycastle.cms.CMSSignedDataGenerator;
+import org.bouncycastle.cms.CMSTypedData;
+import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaCertStore;
+import org.bouncycastle.util.Store;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class ServicioWSAA {
 
-    private static final String WSAA_URL_HOMO = "https://wswsaa.afip.gov.ar/WSAA/LoginCMS";
-    private static final String WSAA_URL_PROD = "https://wsaa.afip.gov.ar/WSAA/LoginCMS";
+    private static final String WSAA_URL_HOMO =
+        "https://wsaahomo.afip.gov.ar/ws/services/LoginCms";
+    private static final String WSAA_URL_PROD =
+        "https://wsaa.afip.gov.ar/ws/services/LoginCms";
 
     private TokenCache tokenCache;
     private String entorno;
+    private X509Certificate cert;
 
     public ServicioWSAA() {
         this.tokenCache = TokenCache.getInstancia();
         this.entorno = "homo";
+
         if (Security.getProvider("BC") == null) {
             Security.addProvider(new BouncyCastleProvider());
         }
@@ -38,116 +54,155 @@ public class ServicioWSAA {
     }
 
     public String obtenerToken(String cuit, String rutaP12, String passwordP12) throws Exception {
+
         if (tokenCache.tieneTokenValido(cuit)) {
-            System.out.println("✓ Token válido en caché para CUIT: " + cuit);
             return tokenCache.getToken();
         }
 
         if (tokenCache.cargarDeBD(cuit)) {
-            System.out.println("✓ Token válido cargado desde BD para CUIT: " + cuit);
             return tokenCache.getToken();
         }
 
-        System.out.println("Solicitando nuevo token para CUIT: " + cuit);
         return solicitarNuevoToken(cuit, rutaP12, passwordP12);
     }
 
-    private String solicitarNuevoToken(String cuid, String rutaP12, String passwordP12) throws Exception {
-        KeyStore keyStore = KeyStore.getInstance("PKCS12");
-        InputStream is = new ByteArrayInputStream(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(rutaP12)));
-        keyStore.load(is, passwordP12.toCharArray());
-        is.close();
+    private String solicitarNuevoToken(String cuit, String rutaP12, String passwordP12) throws Exception {
 
-        String alias = keyStore.aliases().nextElement();
-        X509Certificate cert = (X509Certificate) keyStore.getCertificate(alias);
-        PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, passwordP12.toCharArray());
-
-        String sourceId = cert.getSubjectX500Principal().getName();
-        String credentials = sourceId;
-
-        String loginTicketRequest = tokenCache.generarLoginTicketRequest(credentials);
-        String loginTicketRequestBase64 = Base64.getEncoder().encodeToString(
-                loginTicketRequest.getBytes(StandardCharsets.UTF_8));
-
-        String cmsFirmado = firmarCMS(loginTicketRequestBase64, privateKey);
-
-        String loginTicketResponse = enviarWSAA(cmsFirmado);
-
-        String token = extraerToken(loginTicketResponse);
-        String sign = credentials;
-
-        if (token != null) {
-            java.time.LocalDateTime expiracion = java.time.LocalDateTime.now().plusHours(12);
-            tokenCache.guardarToken(token, sign, expiracion, cuid);
-            System.out.println("✓ Token almacenado en caché");
-            return token;
+        KeyStore ks = KeyStore.getInstance("PKCS12");
+        try (InputStream is = new ByteArrayInputStream(
+                java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(rutaP12)))) {
+            ks.load(is, passwordP12.toCharArray());
         }
 
-        throw new Exception("No se pudo obtener token de WSAA: " + loginTicketResponse);
+        String alias = ks.aliases().nextElement();
+
+        this.cert = (X509Certificate) ks.getCertificate(alias);
+        PrivateKey privateKey = (PrivateKey) ks.getKey(alias, passwordP12.toCharArray());
+
+        String source = cert.getSubjectX500Principal().getName();
+        String destination = "homo".equals(entorno) ? "CN=wsaahomo, O=AFIP, C=AR, SERIALNUMBER=CUIT 33693450239"
+                                                     : "CN=wsaa, O=AFIP, C=AR";
+
+        String tra = tokenCache.generarLoginTicketRequest(source, destination, "wsfe");
+        System.out.println("=== TRA ===");
+        System.out.println(tra);
+        System.out.println("=== END TRA ===");
+
+        String cms = firmarCMS(tra, privateKey);
+
+        String response = enviarWSAA(cms);
+
+        String innerXml = extraerTag(response, "loginCmsReturn");
+        if (innerXml == null) {
+            throw new Exception("WSAA no devolvió loginCmsReturn: " + response);
+        }
+        innerXml = innerXml.replace("&lt;", "<").replace("&gt;", ">")
+                           .replace("&quot;", "\"").replace("&apos;", "'")
+                           .replace("&amp;", "&");
+
+        String token = extraerTag(innerXml, "token");
+        String sign  = extraerTag(innerXml, "sign");
+
+        if (token == null) {
+            throw new Exception("WSAA no devolvió token: " + innerXml);
+        }
+
+        java.time.LocalDateTime exp =
+            java.time.LocalDateTime.now().plusHours(12);
+
+        tokenCache.guardarToken(token, sign, exp, cuit);
+
+        return token;
     }
 
-    private String firmarCMS(String datos, PrivateKey privateKey) throws Exception {
-        try {
-            Class<?> jcaSignerClass = Class.forName("org.bouncycastle.cms.jcajce.JcaSignerInfoGeneratorBuilder");
-            Class<?> jcaDigestClass = Class.forName("org.bouncycastle.cms.jcajce.JcaDigestCalculatorProviderBuilder");
-            Class<?> jcaContentClass = Class.forName("org.bouncycastle.operator.jcajce.JcaContentSignerBuilder");
+    private String firmarCMS(String tra, PrivateKey pk) throws Exception {
 
-            Object digestBuilder = jcaDigestClass.getConstructor().newInstance();
-            Object digestProvider = digestBuilder.getClass().getMethod("build").invoke(null);
+        JcaDigestCalculatorProviderBuilder digest =
+            new JcaDigestCalculatorProviderBuilder().setProvider("BC");
 
-            Object contentSignerBuilder = jcaContentClass.getConstructor(String.class).newInstance("SHA1withRSA");
-            contentSignerBuilder.getClass().getMethod("setProvider", String.class).invoke(contentSignerBuilder, "BC");
-            Object contentSigner = contentSignerBuilder.getClass().getMethod("build", PrivateKey.class).invoke(contentSignerBuilder, privateKey);
+        JcaContentSignerBuilder signer =
+            new JcaContentSignerBuilder("SHA256withRSA").setProvider("BC");
 
-            Object signerInfoBuilder = jcaSignerClass.getConstructor(digestProvider.getClass()).newInstance(digestProvider);
-            Object signerInfoGenerator = signerInfoBuilder.getClass().getMethod("build", contentSigner.getClass()).invoke(signerInfoBuilder, contentSigner);
+        java.util.List<X509Certificate> list = new java.util.ArrayList<>();
+        list.add(cert);
 
-            Class<?> generatorClass = Class.forName("org.bouncycastle.cms.CMSSignedDataGenerator");
-            Object generator = generatorClass.getConstructor().newInstance();
-            generatorClass.getMethod("addSignerInfoGenerator", Class.forName("org.bouncycastle.cms.SignerInfoGenerator")).invoke(generator, signerInfoGenerator);
+        Store<X509CertificateHolder> store = new JcaCertStore(list);
 
-            Class<?> cmsProcessableClass = Class.forName("org.bouncycastle.cms.CMSProcessableByteArray");
-            Object cmsProcessable = cmsProcessableClass.getConstructor(byte[].class).newInstance(datos.getBytes(StandardCharsets.UTF_8));
+        CMSSignedDataGenerator gen = new CMSSignedDataGenerator();
 
-            Object signedData = generatorClass.getMethod("generate", cmsProcessableClass, boolean.class).invoke(generator, cmsProcessable, true);
+        gen.addSignerInfoGenerator(
+            new org.bouncycastle.cms.jcajce.JcaSignerInfoGeneratorBuilder(digest.build())
+                .build(signer.build(pk), cert)
+        );
 
-            byte[] encoded = (byte[]) signedData.getClass().getMethod("getEncoded").invoke(signedData);
-            return Base64.getEncoder().encodeToString(encoded);
-        } catch (ClassNotFoundException e) {
-            System.err.println("Advertencia: BouncyCastle jcajce no disponible, usando método alternativo");
-            return Base64.getEncoder().encodeToString(datos.getBytes(StandardCharsets.UTF_8));
+        gen.addCertificates(store);
+
+        byte[] data = tra.getBytes(StandardCharsets.UTF_8);
+
+        CMSTypedData cmsData = new CMSProcessableByteArray(data);
+        CMSSignedData signed = gen.generate(cmsData, true);
+
+        byte[] encoded = signed.getEncoded();
+
+        // DEBUG: verify CMS signer info and signature locally
+        CMSSignedData parsed = new CMSSignedData(encoded);
+        org.bouncycastle.util.Store stores = parsed.getCertificates();
+        java.util.Collection<?> certs = stores.getMatches(null);
+        System.out.println("CMS certs count: " + certs.size());
+        for (org.bouncycastle.cms.SignerInformation si : parsed.getSignerInfos().getSigners()) {
+            System.out.println("CMS signer digestAlg: " + si.getDigestAlgorithmID().getAlgorithm().getId());
+            System.out.println("CMS signer encAlg: " + si.getEncryptionAlgOID());
+            byte[] recoveredContent = (byte[]) parsed.getSignedContent().getContent();
+            System.out.println("CMS content length: " + recoveredContent.length + " bytes");
+            String recoveredStr = new String(recoveredContent, StandardCharsets.UTF_8);
+            System.out.println("CMS content matches TRA: " + tra.equals(recoveredStr));
+            // Verify signature
+            X509CertificateHolder holder = (X509CertificateHolder) certs.iterator().next();
+            org.bouncycastle.cms.SignerInformationVerifier verifier =
+                new org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder()
+                    .setProvider("BC").build(holder);
+            boolean verified = si.verify(verifier);
+            System.out.println("CMS signature VERIFIED: " + verified);
         }
+
+        return Base64.getEncoder().encodeToString(encoded);
     }
 
     private String enviarWSAA(String cmsFirmado) throws Exception {
-        String xmlRequest = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-                + "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" "
-                + "xmlns:wsaa=\"http://wsaa.arba.gob.ar\">"
-                + "<soapenv:Header/>"
-                + "<soapenv:Body>"
-                + "<wsaa:loginCMS>"
-                + "<in0>" + cmsFirmado + "</in0>"
-                + "</wsaa:loginCMS>"
-                + "</soapenv:Body>"
-                + "</soapenv:Envelope>";
+
+        String xmlRequest =
+            "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" "
+          + "xmlns:wsaa=\"http://wsaa.view.sua.dvadac.desein.afip.gov\">"
+          + "<soapenv:Header/>"
+          + "<soapenv:Body>"
+          + "<wsaa:loginCms>"
+          + "<wsaa:in0>" + cmsFirmado + "</wsaa:in0>"
+          + "</wsaa:loginCms>"
+          + "</soapenv:Body>"
+          + "</soapenv:Envelope>";
 
         URL url = new URL(getUrlWSAA());
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
         conn.setRequestMethod("POST");
-        conn.setRequestProperty("Content-Type", "text/xml; charset=utf-8");
         conn.setDoOutput(true);
+
+        conn.setRequestProperty("Content-Type", "text/xml; charset=utf-8");
+        conn.setRequestProperty("SOAPAction", "");
 
         try (OutputStream os = conn.getOutputStream()) {
             os.write(xmlRequest.getBytes(StandardCharsets.UTF_8));
         }
 
         int responseCode = conn.getResponseCode();
+
+        BufferedReader reader;
         if (responseCode != 200) {
-            throw new Exception("Error en WSAA - Código: " + responseCode);
+            reader = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
+        } else {
+            reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
         }
 
-        java.io.BufferedReader reader = new java.io.BufferedReader(
-                new java.io.InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
         StringBuilder response = new StringBuilder();
         String line;
         while ((line = reader.readLine()) != null) {
@@ -155,16 +210,36 @@ public class ServicioWSAA {
         }
         reader.close();
 
+        if (responseCode != 200) {
+            throw new Exception("WSAA error " + responseCode + ": " + response);
+        }
+
         return response.toString();
     }
 
-    private String extraerToken(String xmlResponse) {
-        int start = xmlResponse.indexOf("<return>");
-        int end = xmlResponse.indexOf("</return>");
-        if (start != -1 && end != -1) {
-            return xmlResponse.substring(start + 8, end);
-        }
-        return null;
+    
+    private String escapeXml(String input) {
+        if (input == null) return null;
+
+        return input
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&apos;");
+    }
+    
+    private String extraerTag(String xml, String tag) {
+
+        String open = "<" + tag + ">";
+        String close = "</" + tag + ">";
+
+        int i = xml.indexOf(open);
+        int j = xml.indexOf(close);
+
+        if (i == -1 || j == -1) return null;
+
+        return xml.substring(i + open.length(), j);
     }
 
     public String getToken() {

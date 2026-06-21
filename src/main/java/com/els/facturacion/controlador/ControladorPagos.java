@@ -185,6 +185,7 @@ public class ControladorPagos {
         recibo.setFormasPago(formasPago);
 
         List<ReciboFacturaDTO> facturas = new ArrayList<>();
+        FacturaItemDAO itemDAO = new FacturaItemDAO();
         for (FacturaPagoDTO pago : pagos) {
             ComprobanteDTO c = comprobanteDAO.buscarPorId(pago.getComprobanteId());
             if (c != null) {
@@ -193,6 +194,17 @@ public class ControladorPagos {
                 rf.setMontoAplicado(pago.getMonto());
                 rf.setNumeroFactura(String.format("%04d-%08d", c.getPuntoVenta(), c.getNumero()));
                 rf.setTipoComprobanteStr(c.getTipoComprobanteStr());
+                List<ItemFacturaDTO> items = itemDAO.buscarPorComprobante(c.getId());
+                StringBuilder elsSb = new StringBuilder();
+                if (items != null) {
+                    for (ItemFacturaDTO item : items) {
+                        if (item.getCodigo() != null && !item.getCodigo().isEmpty()) {
+                            if (elsSb.length() > 0) elsSb.append(", ");
+                            elsSb.append(item.getCodigo());
+                        }
+                    }
+                }
+                rf.setElsAsociados(elsSb.toString());
                 facturas.add(rf);
             }
         }

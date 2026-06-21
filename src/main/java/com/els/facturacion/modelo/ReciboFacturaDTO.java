@@ -10,6 +10,7 @@ public class ReciboFacturaDTO {
     private BigDecimal totalPagado;
     private String numeroFactura;
     private String tipoComprobanteStr;
+    private String elsAsociados;
 
     public ReciboFacturaDTO() {}
 
@@ -27,4 +28,6 @@ public class ReciboFacturaDTO {
     public void setNumeroFactura(String numeroFactura) { this.numeroFactura = numeroFactura; }
     public String getTipoComprobanteStr() { return tipoComprobanteStr; }
     public void setTipoComprobanteStr(String tipoComprobanteStr) { this.tipoComprobanteStr = tipoComprobanteStr; }
+    public String getElsAsociados() { return elsAsociados; }
+    public void setElsAsociados(String elsAsociados) { this.elsAsociados = elsAsociados; }
 }

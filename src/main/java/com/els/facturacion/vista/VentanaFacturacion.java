@@ -102,6 +102,9 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private JTextField txtEmisorRazonSocial;
     private JTextField txtEmisorCuit;
     private JTextField txtEmisorCondicionIva;
+    private JTextField txtEmisorDomicilio;
+    private JTextField txtEmisorIngresosBrutos;
+    private JComponent dateEmisorInicioAct;
 
     // Receptor
     private JComboBox<String> cmbCondicionIva;
@@ -697,7 +700,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             new Font("Segoe UI", Font.BOLD, 11), currentTheme.textPrimary
         ));
         secEmision.setBackground(currentTheme.bgSurface);
-        Insets ins = new Insets(4, 8, 4, 8);
+        Insets ins = new Insets(2, 6, 2, 6);
 
         txtEmisorRazonSocial = new JTextField(25);
         txtEmisorRazonSocial.setEditable(false);
@@ -719,6 +722,24 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         txtEmisorCondicionIva.setPreferredSize(new Dimension(120, 24));
         txtEmisorCondicionIva.setDisabledTextColor(getDisabledFg());
         txtEmisorCondicionIva.setBackground(getFieldBg(false));
+
+        txtEmisorDomicilio = new JTextField(25);
+        txtEmisorDomicilio.setEditable(false);
+        txtEmisorDomicilio.setFont(FUENTE_INPUT_BOLD);
+        txtEmisorDomicilio.setPreferredSize(new Dimension(200, 24));
+        txtEmisorDomicilio.setDisabledTextColor(getDisabledFg());
+        txtEmisorDomicilio.setBackground(getFieldBg(false));
+
+        txtEmisorIngresosBrutos = new JTextField(15);
+        txtEmisorIngresosBrutos.setEditable(false);
+        txtEmisorIngresosBrutos.setFont(FUENTE_INPUT_BOLD);
+        txtEmisorIngresosBrutos.setPreferredSize(new Dimension(120, 24));
+        txtEmisorIngresosBrutos.setDisabledTextColor(getDisabledFg());
+        txtEmisorIngresosBrutos.setBackground(getFieldBg(false));
+
+        dateEmisorInicioAct = crearDateChooser();
+        setDateChooserEnabled(dateEmisorInicioAct, false);
+        themeDateField(dateEmisorInicioAct, currentTheme);
 
         dateFecha = crearDateChooser();
         themeDateField(dateFecha, currentTheme);
@@ -764,6 +785,16 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         secEmision.add(txtEmisorCondicionIva, new GridBagConstraints(3, row, 1, 1, 0.5, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
+        secEmision.add(new JLabel("Emisor Domicilio:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(txtEmisorDomicilio, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
+
+        row++;
+        secEmision.add(new JLabel("Ingresos Brutos:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(txtEmisorIngresosBrutos, new GridBagConstraints(1, row, 1, 1, 0.5, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
+        secEmision.add(new JLabel("Inicio Actividades:"), new GridBagConstraints(2, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secEmision.add(dateEmisorInicioAct, new GridBagConstraints(3, row, 1, 1, 0.5, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
+
+        row++;
         secEmision.add(new JLabel("Fecha del comprobante:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
         secEmision.add(dateFecha, new GridBagConstraints(1, row, 1, 1, 0.5, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
         secEmision.add(new JLabel("Concepto:"), new GridBagConstraints(2, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
@@ -797,8 +828,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
         cmbCondicionIva = new JComboBox<>(new String[]{
             "", "IVA Responsable Inscripto", "IVA Sujeto Exento", "Consumidor Final",
-            "Responsable Monotributo", "Proveedor del Exterior", "Cliente del Exterior",
-            "IVA Liberado - Ley 19.640", "Monotributista Social", "IVA No Alcanzado"
+            "Responsable Monotributo"
         });
         installComboUI(cmbCondicionIva);
         cmbCondicionIva.setFont(FUENTE_INPUT_BOLD);
@@ -1109,6 +1139,9 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         if (txtEmisorRazonSocial != null) { txtEmisorRazonSocial.setBackground(getFieldBg(txtEmisorRazonSocial.isEnabled())); txtEmisorRazonSocial.setForeground(t.textPrimary); txtEmisorRazonSocial.setDisabledTextColor(getDisabledFg()); txtEmisorRazonSocial.setCaretColor(t.textPrimary); }
         if (txtEmisorCuit != null) { txtEmisorCuit.setBackground(getFieldBg(txtEmisorCuit.isEnabled())); txtEmisorCuit.setForeground(t.textPrimary); txtEmisorCuit.setDisabledTextColor(getDisabledFg()); txtEmisorCuit.setCaretColor(t.textPrimary); }
         if (txtEmisorCondicionIva != null) { txtEmisorCondicionIva.setBackground(getFieldBg(txtEmisorCondicionIva.isEnabled())); txtEmisorCondicionIva.setForeground(t.textPrimary); txtEmisorCondicionIva.setDisabledTextColor(getDisabledFg()); txtEmisorCondicionIva.setCaretColor(t.textPrimary); }
+        if (txtEmisorDomicilio != null) { txtEmisorDomicilio.setBackground(getFieldBg(txtEmisorDomicilio.isEnabled())); txtEmisorDomicilio.setForeground(t.textPrimary); txtEmisorDomicilio.setDisabledTextColor(getDisabledFg()); txtEmisorDomicilio.setCaretColor(t.textPrimary); }
+        if (txtEmisorIngresosBrutos != null) { txtEmisorIngresosBrutos.setBackground(getFieldBg(txtEmisorIngresosBrutos.isEnabled())); txtEmisorIngresosBrutos.setForeground(t.textPrimary); txtEmisorIngresosBrutos.setDisabledTextColor(getDisabledFg()); txtEmisorIngresosBrutos.setCaretColor(t.textPrimary); }
+        if (dateEmisorInicioAct != null) { themeDateField(dateEmisorInicioAct, t); }
         if (cmbCondicionIva != null) {
             cmbCondicionIva.setBackground(getFieldBg(cmbCondicionIva.isEnabled()));
             cmbCondicionIva.setForeground(cmbCondicionIva.isEnabled() ? t.textPrimary : getDisabledFg());
@@ -1319,6 +1352,48 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         }
     }
 
+    private void setDateChooserDate(JComponent comp, String dateStr) {
+        try {
+            if (dateStr == null || dateStr.isEmpty()) {
+                if (!(comp instanceof JTextField)) {
+                    comp.getClass().getMethod("setDate", java.util.Date.class).invoke(comp, (java.util.Date) null);
+                } else {
+                    ((JTextField) comp).setText("");
+                }
+                return;
+            }
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            LocalDate ld = LocalDate.parse(dateStr, fmt);
+            java.util.Date date = java.util.Date.from(ld.atStartOfDay(ZoneId.systemDefault()).toInstant());
+            if (!(comp instanceof JTextField)) {
+                comp.getClass().getMethod("setDate", java.util.Date.class).invoke(comp, date);
+            } else {
+                ((JTextField) comp).setText(ld.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+            }
+        } catch (Exception e) {
+        }
+    }
+
+    private void setDateChooserEnabled(JComponent comp, boolean enabled) {
+        try {
+            if (!(comp instanceof JTextField)) {
+                comp.getClass().getMethod("setEnabled", boolean.class).invoke(comp, enabled);
+            }
+            for (java.awt.Component c : comp.getComponents()) {
+                if (c instanceof JTextField) {
+                    c.setEnabled(enabled);
+                    ((JTextField) c).setEditable(enabled);
+                    ((JTextField) c).setBackground(getFieldBg(enabled));
+                    ((JTextField) c).setDisabledTextColor(getDisabledFg());
+                }
+                if (c instanceof javax.swing.JButton) {
+                    c.setEnabled(enabled);
+                }
+            }
+        } catch (Exception e) {
+        }
+    }
+
     // ===================== GETTERS =====================
 
     public CardLayout getCardLayout() { return cardLayout; }
@@ -1417,16 +1492,21 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     public void setTipoDoc(String tipo) { cmbTipoDoc.setSelectedItem(tipo); }
     public void setCmbCondicionIva(String value) { cmbCondicionIva.setSelectedItem(value); }
 
-    public void actualizarEmisor(String razonSocial, String cuit, String condicionIva) {
+    public void actualizarEmisor(String razonSocial, String cuit, String condicionIva,
+                                 String domicilio, String ingresosBrutos, String fechaInicioAct) {
         txtEmisorRazonSocial.setText(razonSocial);
         txtEmisorCuit.setText(cuit);
         txtEmisorCondicionIva.setText(condicionIva);
+        txtEmisorDomicilio.setText(domicilio);
+        txtEmisorIngresosBrutos.setText(ingresosBrutos);
+        setDateChooserDate(dateEmisorInicioAct, fechaInicioAct);
     }
 
     public void actualizarTiposComprobante(String condicionIva) {
         cmbTipoComprobante.removeAllItems();
         cmbTipoComprobante.addItem("");
-        String letra = "RI".equals(condicionIva) ? " A" : " C";
+        boolean esRI = "IVA Responsable Inscripto".equals(condicionIva);
+        String letra = esRI ? " A" : " C";
         cmbTipoComprobante.addItem("Factura" + letra);
         cmbTipoComprobante.addItem("Nota de Debito" + letra);
         cmbTipoComprobante.addItem("Nota de Credito" + letra);
@@ -1434,7 +1514,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         cmbTipoComprobante.addItem("Factura de Credito Electronica MiPymes (FCE)" + letra.trim());
         cmbTipoComprobante.addItem("Nota de Debito Electronica MiPymes (FCE)" + letra.trim());
         cmbTipoComprobante.addItem("Nota de Credito Electronica MiPymes (FCE)" + letra.trim());
-        if ("RI".equals(condicionIva)) {
+        if (esRI) {
             String letraB = " B";
             cmbTipoComprobante.addItem("Factura" + letraB);
             cmbTipoComprobante.addItem("Nota de Debito" + letraB);
@@ -1449,6 +1529,9 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     public JTextField getTxtEmisorRazonSocial() { return txtEmisorRazonSocial; }
     public JTextField getTxtEmisorCuit() { return txtEmisorCuit; }
     public JTextField getTxtEmisorCondicionIva() { return txtEmisorCondicionIva; }
+    public JTextField getTxtEmisorDomicilio() { return txtEmisorDomicilio; }
+    public JTextField getTxtEmisorIngresosBrutos() { return txtEmisorIngresosBrutos; }
+    public JComponent getDateEmisorInicioAct() { return dateEmisorInicioAct; }
 
     public static void main(String[] args) {
         try {

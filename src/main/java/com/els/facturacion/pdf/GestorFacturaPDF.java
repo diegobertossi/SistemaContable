@@ -4,6 +4,10 @@ import com.els.facturacion.modelo.ComprobanteDTO;
 import com.els.facturacion.modelo.CuitConfigDTO;
 import com.els.facturacion.modelo.ItemFacturaDTO;
 import com.els.facturacion.util.UbicacionSistema;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JasperFillManager;
@@ -113,10 +117,10 @@ public class GestorFacturaPDF {
         try {
             Map<String, Object> parametros = new HashMap<>();
             parametros.put("EMISOR_RAZON_SOCIAL", emitidor.getRazonSocial());
-            parametros.put("EMISOR_DOMICILIO", "");
+            parametros.put("EMISOR_DOMICILIO", emitidor.getDomicilio() != null ? emitidor.getDomicilio() : "");
             parametros.put("EMISOR_CUIT", emitidor.getCuit());
-            parametros.put("EMISOR_ING_BRUTOS", "");
-            parametros.put("EMISOR_INICIO_ACT", "");
+            parametros.put("EMISOR_ING_BRUTOS", emitidor.getIngresosBrutos() != null ? emitidor.getIngresosBrutos() : "");
+            parametros.put("EMISOR_INICIO_ACT", emitidor.getFechaInicioActividades() != null ? emitidor.getFechaInicioActividades() : "");
             parametros.put("EMISOR_CONDICION_IVA", emitidor.getCondicionIva());
             parametros.put("PUNTO_VENTA", String.format("%03d", emitidor.getPuntoVenta()));
             parametros.put("COMP_NRO", String.format("%08d", comprobante.getNumero()));
@@ -137,7 +141,8 @@ public class GestorFacturaPDF {
 
             parametros.put("CAE_NRO", comprobante.getCae() != null ? comprobante.getCae() : "");
             parametros.put("CAE_VENCIMIENTO", comprobante.getVencimientoCae() != null ? comprobante.getVencimientoCae().format(FECHA_DISPLAY) : "");
-            parametros.put("QR_IMAGE_PATH", "");
+            String qrPath = generarQR_ARCA(comprobante, emitidor);
+            parametros.put("QR_IMAGE_PATH", qrPath);
             parametros.put("COPIA_LABEL", "ORIGINAL");
 
             InputStream jasperStream = getClass().getClassLoader()
@@ -201,13 +206,26 @@ public class GestorFacturaPDF {
             qrJson.put("importe", comp.getImporteTotal().doubleValue());
             qrJson.put("moneda", "PES");
             qrJson.put("ctz", 1.0);
-            qrJson.put("tipoDocRec", 80);
-            qrJson.put("nroDocRec", Long.parseLong(comp.getCuitReceptor()));
+            int docTipoRec = "Consumidor Final".equals(comp.getCondicionIvaReceptor()) ? 99 : 80;
+            long docNroRec = docTipoRec == 99 ? 0 : Long.parseLong(comp.getCuitReceptor());
+            qrJson.put("tipoDocRec", docTipoRec);
+            qrJson.put("nroDocRec", docNroRec);
             qrJson.put("tipoCodAut", "E");
             qrJson.put("codAut", Long.parseLong(comp.getCae()));
 
             String jsonString = qrJson.toJSONString();
-            return Base64.getEncoder().encodeToString(jsonString.getBytes("UTF-8"));
+            String b64 = Base64.getUrlEncoder().withoutPadding().encodeToString(jsonString.getBytes("UTF-8"));
+            String qrUrl = "https://servicioscf.afip.gob.ar/publico/comprobantes/cae.aspx?p=" + b64;
+
+            QRCodeWriter writer = new QRCodeWriter();
+            BitMatrix matrix = writer.encode(qrUrl, BarcodeFormat.QR_CODE, 200, 200);
+            File tempFile = File.createTempFile("qr_arca_", ".png");
+            tempFile.deleteOnExit();
+            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+                MatrixToImageWriter.writeToStream(matrix, "PNG", fos);
+            }
+
+            return tempFile.getAbsolutePath();
         } catch (Exception e) {
             System.err.println("Error generando QR: " + e.getMessage());
             return "";

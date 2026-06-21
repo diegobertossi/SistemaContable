@@ -17,8 +17,9 @@ public class CuitDAO {
 
     public int insertar(CuitConfigDTO cuit) {
         String sql = "INSERT INTO cuit_certificados (cuit, razon_social, condicion_iva, "
-                + "punto_venta, ruta_certificado, password_cert, activo) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+                + "punto_venta, ruta_certificado, password_cert, activo, "
+                + "domicilio, ingresos_brutos, fecha_inicio_actividades) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement ps = getConn().prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, cuit.getCuit());
@@ -28,6 +29,9 @@ public class CuitDAO {
             ps.setString(5, cuit.getRutaCertificado());
             ps.setString(6, cuit.getPasswordCert());
             ps.setBoolean(7, cuit.getActivo() != null ? cuit.getActivo() : true);
+            ps.setString(8, cuit.getDomicilio());
+            ps.setString(9, cuit.getIngresosBrutos());
+            ps.setString(10, cuit.getFechaInicioActividades());
 
             int affected = ps.executeUpdate();
             if (affected > 0) {
@@ -44,7 +48,8 @@ public class CuitDAO {
 
     public boolean actualizar(CuitConfigDTO cuit) {
         String sql = "UPDATE cuit_certificados SET razon_social = ?, condicion_iva = ?, "
-                + "punto_venta = ?, ruta_certificado = ?, password_cert = ?, activo = ? "
+                + "punto_venta = ?, ruta_certificado = ?, password_cert = ?, activo = ?, "
+                + "domicilio = ?, ingresos_brutos = ?, fecha_inicio_actividades = ? "
                 + "WHERE id = ?";
 
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
@@ -54,7 +59,10 @@ public class CuitDAO {
             ps.setString(4, cuit.getRutaCertificado());
             ps.setString(5, cuit.getPasswordCert());
             ps.setBoolean(6, cuit.getActivo());
-            ps.setInt(7, cuit.getId());
+            ps.setString(7, cuit.getDomicilio());
+            ps.setString(8, cuit.getIngresosBrutos());
+            ps.setString(9, cuit.getFechaInicioActividades());
+            ps.setInt(10, cuit.getId());
 
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -172,6 +180,9 @@ public class CuitDAO {
         dto.setRutaCertificado(rs.getString("ruta_certificado"));
         dto.setPasswordCert(rs.getString("password_cert"));
         dto.setActivo(rs.getBoolean("activo"));
+        dto.setDomicilio(rs.getString("domicilio"));
+        dto.setIngresosBrutos(rs.getString("ingresos_brutos"));
+        dto.setFechaInicioActividades(rs.getString("fecha_inicio_actividades"));
         return dto;
     }
 }

@@ -155,10 +155,11 @@ public class ControladorFacturacion {
         List<CuitConfigDTO> activos = cuitDAO.listarActivos();
         if (!activos.isEmpty()) {
             CuitConfigDTO emisor = activos.get(0);
-            view.actualizarEmisor(emisor.getRazonSocial(), emisor.getCuit(), emisor.getCondicionIva());
+            view.actualizarEmisor(emisor.getRazonSocial(), emisor.getCuit(), emisor.getCondicionIva(),
+                emisor.getDomicilio(), emisor.getIngresosBrutos(), emisor.getFechaInicioActividades());
             view.actualizarTiposComprobante(emisor.getCondicionIva());
         } else {
-            view.actualizarEmisor("", "", "");
+            view.actualizarEmisor("", "", "", "", "", "");
         }
     }
 
@@ -453,6 +454,12 @@ public class ControladorFacturacion {
                 comprobante.setImporteTotal(parseBigDecimal(view.getTxtImporteTotal().getText().replace("$", "").trim()));
             } catch (Exception e) {
             }
+            String errorTipo = validarTipoComprobante(cuiSelected, comprobante);
+            if (errorTipo != null) {
+                JOptionPane.showMessageDialog(view, errorTipo, "Tipo de comprobante inválido", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
             RespuestaCAE respuesta = emitirFactura(comprobante, items);
 
             if (respuesta.isExitosa()) {
@@ -547,11 +554,17 @@ public class ControladorFacturacion {
 
             java.text.DecimalFormat df = new java.text.DecimalFormat("#,##0.00");
             Map<String, Object> params = new HashMap<>();
+            String errorTipo = validarTipoComprobante(cuit, comprobante);
+            if (errorTipo != null) {
+                JOptionPane.showMessageDialog(view, errorTipo, "Tipo de comprobante inválido", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
             params.put("EMISOR_RAZON_SOCIAL", cuit.getRazonSocial());
-            params.put("EMISOR_DOMICILIO", "");
+            params.put("EMISOR_DOMICILIO", cuit.getDomicilio() != null ? cuit.getDomicilio() : "");
             params.put("EMISOR_CUIT", cuit.getCuit());
-            params.put("EMISOR_ING_BRUTOS", "");
-            params.put("EMISOR_INICIO_ACT", "");
+            params.put("EMISOR_ING_BRUTOS", cuit.getIngresosBrutos() != null ? cuit.getIngresosBrutos() : "");
+            params.put("EMISOR_INICIO_ACT", cuit.getFechaInicioActividades() != null ? cuit.getFechaInicioActividades() : "");
             params.put("EMISOR_CONDICION_IVA", cuit.getCondicionIva());
             params.put("PUNTO_VENTA", String.format("%03d", cuit.getPuntoVenta()));
             params.put("COMP_NRO", String.format("%08d", comprobante.getNumero()));
@@ -618,8 +631,7 @@ public class ControladorFacturacion {
         String condIva = (String) view.getCmbCondicionIva().getSelectedItem();
         if (condIva == null || condIva.isEmpty()) {
             String[] options = {"", "IVA Responsable Inscripto", "IVA Sujeto Exento", "Consumidor Final",
-                "Responsable Monotributo", "Proveedor del Exterior", "Cliente del Exterior",
-                "IVA Liberado - Ley 19.640", "Monotributista Social", "IVA No Alcanzado"};
+                "Responsable Monotributo"};
             Object input = JOptionPane.showInputDialog(view,
                 "Seleccione la Condici\u00f3n IVA del receptor:", "Datos del Receptor",
                 JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
@@ -690,6 +702,33 @@ public class ControladorFacturacion {
         List<CuitConfigDTO> cuits = getCuitsActivos();
         if (cuits.isEmpty()) return null;
         return cuits.get(0);
+    }
+
+    private String validarTipoComprobante(CuitConfigDTO emisor, ComprobanteDTO comprobante) {
+        String condEmisor = emisor.getCondicionIva();
+        String condReceptor = comprobante.getCondicionIvaReceptor();
+        int tipo = comprobante.getTipoComprobante();
+        String tipoTexto = (String) view.getCmbTipoComprobante().getSelectedItem();
+        if (tipoTexto == null) tipoTexto = "desconocido";
+
+        if ("IVA Responsable Inscripto".equals(condEmisor)) {
+            boolean esTipoA = tipo >= 1 && tipo <= 4;
+            boolean esTipoB = tipo >= 6 && tipo <= 9;
+            boolean receptorEsRI = "IVA Responsable Inscripto".equals(condReceptor);
+
+            if (esTipoA && !receptorEsRI) {
+                return tipoTexto + " requiere un receptor Responsable Inscripto.\n"
+                    + "El receptor es \"" + condReceptor + "\".\n\n"
+                    + "Cambie a Factura B o seleccione un cliente Responsable Inscripto.";
+            }
+            if (esTipoB && receptorEsRI) {
+                return tipoTexto + " no puede emitirse a un Responsable Inscripto.\n"
+                    + "El receptor es \"" + condReceptor + "\".\n\n"
+                    + "Cambie a Factura A o seleccione un cliente Consumidor Final / Exento / Monotributo.";
+            }
+        }
+
+        return null;
     }
 
     private int obtenerTipoCodigo() {
@@ -894,12 +933,41 @@ public class ControladorFacturacion {
                 return error;
             }
 
-            long ultimoNumero = comprobanteDAO.getUltimoNumero(
-                comprobante.getCuitEmisor(),
-                comprobante.getPuntoVenta(),
-                comprobante.getTipoComprobante()
-            );
+            long ultimoNumero;
+            if (modoPrueba) {
+                ultimoNumero = comprobanteDAO.getUltimoNumero(
+                    comprobante.getCuitEmisor(),
+                    comprobante.getPuntoVenta(),
+                    comprobante.getTipoComprobante()
+                );
+            } else {
+                long desdeARCA = servicioWSFEv1.consultarUltimoAutorizado(
+                    comprobante.getCuitEmisor(),
+                    comprobante.getPuntoVenta(),
+                    comprobante.getTipoComprobante(),
+                    cuit.getRutaCertificado(),
+                    cuit.getPasswordCert()
+                );
+                if (desdeARCA > 0) {
+                    ultimoNumero = desdeARCA;
+                    System.out.println("Último autorizado desde ARCA: " + ultimoNumero);
+                } else {
+                    ultimoNumero = comprobanteDAO.getUltimoNumero(
+                        comprobante.getCuitEmisor(),
+                        comprobante.getPuntoVenta(),
+                        comprobante.getTipoComprobante()
+                    );
+                    System.out.println("FECompUltimoAutorizado no disponible, usando contador local: " + ultimoNumero);
+                }
+            }
             comprobante.setNumero(ultimoNumero + 1);
+            System.out.println("DEBUG emitirFactura: cuitEmisor=" + comprobante.getCuitEmisor()
+                + " ptoVta=" + comprobante.getPuntoVenta()
+                + " tipo=" + comprobante.getTipoComprobante()
+                + " ultimoAutorizado=" + ultimoNumero
+                + " numero=" + comprobante.getNumero()
+                + " fecha=" + comprobante.getFechaEmision()
+                + " modoPrueba=" + modoPrueba);
 
             if (comprobante.getFechaEmision() == null) {
                 comprobante.setFechaEmision(LocalDate.now());
@@ -913,7 +981,7 @@ public class ControladorFacturacion {
                 comprobante.setImporteTotal(total);
             }
 
-            RespuestaCAE respuesta;
+            RespuestaCAE respuesta = null;
             if (modoPrueba) {
                 respuesta = new RespuestaCAE(
                     String.format("%011d", comprobante.hashCode() % 100000000000L),
@@ -922,11 +990,18 @@ public class ControladorFacturacion {
                 );
                 respuesta.setMensaje("MODO PRUEBA - CAE ficticio generado");
             } else {
-                respuesta = servicioWSFEv1.emitirComprobante(
-                    comprobante,
-                    cuit.getRutaCertificado(),
-                    cuit.getPasswordCert()
-                );
+                int intentos = 0;
+                while (intentos < 100) {
+                    respuesta = servicioWSFEv1.emitirComprobante(
+                        comprobante,
+                        cuit.getRutaCertificado(),
+                        cuit.getPasswordCert()
+                    );
+                    if (respuesta.isExitosa() || !"10016".equals(respuesta.getCodigoError())) break;
+                    comprobante.setNumero(comprobante.getNumero() + 1);
+                    intentos++;
+                    System.out.println("10016 → reintento " + intentos + " con número: " + comprobante.getNumero());
+                }
             }
 
             if (respuesta.isExitosa()) {

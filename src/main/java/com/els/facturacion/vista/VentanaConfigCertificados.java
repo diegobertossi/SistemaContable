@@ -6,6 +6,7 @@ import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JList;
 import javax.swing.JFrame;
@@ -31,6 +32,13 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Rectangle;
+import java.io.FileInputStream;
+import java.security.KeyStore;
+import java.security.cert.X509Certificate;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 public class VentanaConfigCertificados extends JFrame {
@@ -57,6 +65,9 @@ public class VentanaConfigCertificados extends JFrame {
     private JTextField txtRazonSocial;
     private JComboBox<String> cmbCondicionIva;
     private JTextField txtPuntoVenta;
+    private JTextField txtDomicilio;
+    private JTextField txtIngresosBrutos;
+    private JComponent dateInicioActividades;
     private JTextField txtRutaCertificado;
     private JPasswordField txtPassword;
     private JButton btnSeleccionarArchivo;
@@ -72,6 +83,7 @@ public class VentanaConfigCertificados extends JFrame {
     private JButton btnModificar;
     private JButton btnEliminar;
     private JButton btnLimpiar;
+    private JLabel lblCertInfo;
     private JPanel southWrapper;
 
     public VentanaConfigCertificados() {
@@ -156,7 +168,7 @@ public class VentanaConfigCertificados extends JFrame {
         txtRazonSocial.setDisabledTextColor(getDisabledFg());
         txtRazonSocial.setCaretColor(currentTheme.textPrimary);
 
-        cmbCondicionIva = new JComboBox<>(new String[]{"RI", "Monotributista", "Exento", "Consumidor Final"});
+        cmbCondicionIva = new JComboBox<>(new String[]{"IVA Responsable Inscripto", "IVA Sujeto Exento", "Consumidor Final", "Responsable Monotributo"});
         cmbCondicionIva.setFont(FUENTE_INPUT_BOLD);
         cmbCondicionIva.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -181,6 +193,19 @@ public class VentanaConfigCertificados extends JFrame {
         txtPuntoVenta.setDisabledTextColor(getDisabledFg());
         txtPuntoVenta.setCaretColor(currentTheme.textPrimary);
 
+        txtDomicilio = new JTextField(25);
+        txtDomicilio.setFont(FUENTE_INPUT_BOLD);
+        txtDomicilio.setDisabledTextColor(getDisabledFg());
+        txtDomicilio.setCaretColor(currentTheme.textPrimary);
+
+        txtIngresosBrutos = new JTextField(15);
+        txtIngresosBrutos.setFont(FUENTE_INPUT_BOLD);
+        txtIngresosBrutos.setDisabledTextColor(getDisabledFg());
+        txtIngresosBrutos.setCaretColor(currentTheme.textPrimary);
+
+        dateInicioActividades = crearDateChooser();
+        themeDateField(dateInicioActividades, currentTheme);
+
         txtRutaCertificado = new JTextField(25);
         txtRutaCertificado.setFont(FUENTE_INPUT_BOLD);
         txtRutaCertificado.setDisabledTextColor(getDisabledFg());
@@ -191,6 +216,9 @@ public class VentanaConfigCertificados extends JFrame {
         txtPassword.setDisabledTextColor(getDisabledFg());
         txtPassword.setCaretColor(currentTheme.textPrimary);
 
+        lblCertInfo = new JLabel(" ");
+        lblCertInfo.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+
         btnSeleccionarArchivo = new JButton("SELECCIONAR");
         btnSeleccionarArchivo.setFont(FUENTE_BOTON);
         btnSeleccionarArchivo.setForeground(currentTheme.textPrimary);
@@ -199,101 +227,82 @@ public class VentanaConfigCertificados extends JFrame {
         btnSeleccionarArchivo.setFocusPainted(false);
 
         int row = 0;
+        Insets insL = new Insets(4, 5, 4, 2);
+        Insets insF = new Insets(4, 2, 4, 5);
 
-        GridBagConstraints gbc_lbl1 = new GridBagConstraints();
-        gbc_lbl1.insets = new Insets(5, 5, 5, 5);
-        gbc_lbl1.fill = GridBagConstraints.HORIZONTAL;
-        gbc_lbl1.gridx = 0; gbc_lbl1.gridy = row;
-        JLabel lbl1 = new JLabel("CUIT:");
-        lbl1.setFont(FUENTE_LABEL);
-        lbl1.setForeground(currentTheme.textPrimary);
-        panelFormulario.add(lbl1, gbc_lbl1);
-        GridBagConstraints gbc_txtCuit = new GridBagConstraints();
-        gbc_txtCuit.insets = new Insets(5, 5, 5, 5);
-        gbc_txtCuit.fill = GridBagConstraints.HORIZONTAL;
-        gbc_txtCuit.gridx = 1; gbc_txtCuit.gridy = row;
-        panelFormulario.add(txtCuit, gbc_txtCuit);
+        // Row 0: CUIT (col 0-1) + Condicion IVA (col 2-3)
+        JLabel lblCuit = new JLabel("CUIT:");
+        lblCuit.setFont(FUENTE_LABEL);
+        lblCuit.setForeground(currentTheme.textPrimary);
+        panelFormulario.add(lblCuit, new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insL, 0, 0));
+        panelFormulario.add(txtCuit, new GridBagConstraints(1, row, 1, 1, 0.3, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insF, 0, 0));
+        JLabel lblCond = new JLabel("Condicion IVA:");
+        lblCond.setFont(FUENTE_LABEL);
+        lblCond.setForeground(currentTheme.textPrimary);
+        panelFormulario.add(lblCond, new GridBagConstraints(2, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insL, 0, 0));
+        panelFormulario.add(cmbCondicionIva, new GridBagConstraints(3, row, 1, 1, 0.7, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insF, 0, 0));
 
+        // Row 1: Razon Social (full width)
         row++;
-        GridBagConstraints gbc_lbl2 = new GridBagConstraints();
-        gbc_lbl2.insets = new Insets(5, 5, 5, 5);
-        gbc_lbl2.fill = GridBagConstraints.HORIZONTAL;
-        gbc_lbl2.gridx = 0; gbc_lbl2.gridy = row;
-        JLabel lbl2 = new JLabel("Razon Social:");
-        lbl2.setFont(FUENTE_LABEL);
-        lbl2.setForeground(currentTheme.textPrimary);
-        panelFormulario.add(lbl2, gbc_lbl2);
-        GridBagConstraints gbc_txtRazonSocial = new GridBagConstraints();
-        gbc_txtRazonSocial.insets = new Insets(5, 5, 5, 5);
-        gbc_txtRazonSocial.fill = GridBagConstraints.HORIZONTAL;
-        gbc_txtRazonSocial.gridx = 1; gbc_txtRazonSocial.gridy = row;
-        gbc_txtRazonSocial.gridwidth = 2;
-        panelFormulario.add(txtRazonSocial, gbc_txtRazonSocial);
+        JLabel lblRs = new JLabel("Razon Social:");
+        lblRs.setFont(FUENTE_LABEL);
+        lblRs.setForeground(currentTheme.textPrimary);
+        panelFormulario.add(lblRs, new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insL, 0, 0));
+        panelFormulario.add(txtRazonSocial, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insF, 0, 0));
 
+        // Row 2: Punto Venta (col 0-1) + Ingresos Brutos (col 2-3)
         row++;
-        GridBagConstraints gbc_lbl3 = new GridBagConstraints();
-        gbc_lbl3.insets = new Insets(5, 5, 5, 5);
-        gbc_lbl3.fill = GridBagConstraints.HORIZONTAL;
-        gbc_lbl3.gridx = 0; gbc_lbl3.gridy = row;
-        JLabel lbl3 = new JLabel("Condicion IVA:");
-        lbl3.setFont(FUENTE_LABEL);
-        lbl3.setForeground(currentTheme.textPrimary);
-        panelFormulario.add(lbl3, gbc_lbl3);
-        GridBagConstraints gbc_cmbCondicionIva = new GridBagConstraints();
-        gbc_cmbCondicionIva.insets = new Insets(5, 5, 5, 5);
-        gbc_cmbCondicionIva.fill = GridBagConstraints.HORIZONTAL;
-        gbc_cmbCondicionIva.gridx = 1; gbc_cmbCondicionIva.gridy = row;
-        panelFormulario.add(cmbCondicionIva, gbc_cmbCondicionIva);
+        JLabel lblPv = new JLabel("Punto de Venta:");
+        lblPv.setFont(FUENTE_LABEL);
+        lblPv.setForeground(currentTheme.textPrimary);
+        panelFormulario.add(lblPv, new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insL, 0, 0));
+        panelFormulario.add(txtPuntoVenta, new GridBagConstraints(1, row, 1, 1, 0.3, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insF, 0, 0));
+        JLabel lblIb = new JLabel("Ingresos Brutos:");
+        lblIb.setFont(FUENTE_LABEL);
+        lblIb.setForeground(currentTheme.textPrimary);
+        panelFormulario.add(lblIb, new GridBagConstraints(2, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insL, 0, 0));
+        panelFormulario.add(txtIngresosBrutos, new GridBagConstraints(3, row, 1, 1, 0.7, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insF, 0, 0));
 
+        // Row 3: Domicilio Comercial (full width)
         row++;
-        GridBagConstraints gbc_lbl4 = new GridBagConstraints();
-        gbc_lbl4.insets = new Insets(5, 5, 5, 5);
-        gbc_lbl4.fill = GridBagConstraints.HORIZONTAL;
-        gbc_lbl4.gridx = 0; gbc_lbl4.gridy = row;
-        JLabel lbl4 = new JLabel("Punto de Venta:");
-        lbl4.setFont(FUENTE_LABEL);
-        lbl4.setForeground(currentTheme.textPrimary);
-        panelFormulario.add(lbl4, gbc_lbl4);
-        GridBagConstraints gbc_txtPuntoVenta = new GridBagConstraints();
-        gbc_txtPuntoVenta.insets = new Insets(5, 5, 5, 5);
-        gbc_txtPuntoVenta.fill = GridBagConstraints.HORIZONTAL;
-        gbc_txtPuntoVenta.gridx = 1; gbc_txtPuntoVenta.gridy = row;
-        panelFormulario.add(txtPuntoVenta, gbc_txtPuntoVenta);
+        JLabel lblDom = new JLabel("Domicilio Comercial:");
+        lblDom.setFont(FUENTE_LABEL);
+        lblDom.setForeground(currentTheme.textPrimary);
+        panelFormulario.add(lblDom, new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insL, 0, 0));
+        panelFormulario.add(txtDomicilio, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insF, 0, 0));
 
+        // Row 4: Fecha Inicio Actividades (col 0-1) + empty
         row++;
-        GridBagConstraints gbc_lbl5 = new GridBagConstraints();
-        gbc_lbl5.insets = new Insets(5, 5, 5, 5);
-        gbc_lbl5.fill = GridBagConstraints.HORIZONTAL;
-        gbc_lbl5.gridx = 0; gbc_lbl5.gridy = row;
-        JLabel lbl5 = new JLabel("Certificado .p12:");
-        lbl5.setFont(FUENTE_LABEL);
-        lbl5.setForeground(currentTheme.textPrimary);
-        panelFormulario.add(lbl5, gbc_lbl5);
-        GridBagConstraints gbc_txtRutaCertificado = new GridBagConstraints();
-        gbc_txtRutaCertificado.insets = new Insets(5, 5, 5, 5);
-        gbc_txtRutaCertificado.fill = GridBagConstraints.HORIZONTAL;
-        gbc_txtRutaCertificado.gridx = 1; gbc_txtRutaCertificado.gridy = row;
-        panelFormulario.add(txtRutaCertificado, gbc_txtRutaCertificado);
-        GridBagConstraints gbc_btnSeleccionarArchivo = new GridBagConstraints();
-        gbc_btnSeleccionarArchivo.insets = new Insets(5, 5, 5, 5);
-        gbc_btnSeleccionarArchivo.fill = GridBagConstraints.HORIZONTAL;
-        gbc_btnSeleccionarArchivo.gridx = 2; gbc_btnSeleccionarArchivo.gridy = row;
-        panelFormulario.add(btnSeleccionarArchivo, gbc_btnSeleccionarArchivo);
+        JLabel lblFia = new JLabel("Fecha Inicio Actividades:");
+        lblFia.setFont(FUENTE_LABEL);
+        lblFia.setForeground(currentTheme.textPrimary);
+        panelFormulario.add(lblFia, new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insL, 0, 0));
+        panelFormulario.add(dateInicioActividades, new GridBagConstraints(1, row, 1, 1, 0.5, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insF, 0, 0));
 
+        // Row 5: Certificado .p12 (col 0 + field + button)
         row++;
-        GridBagConstraints gbc_lbl6 = new GridBagConstraints();
-        gbc_lbl6.insets = new Insets(5, 5, 5, 5);
-        gbc_lbl6.fill = GridBagConstraints.HORIZONTAL;
-        gbc_lbl6.gridx = 0; gbc_lbl6.gridy = row;
-        JLabel lbl6 = new JLabel("Password:");
-        lbl6.setFont(FUENTE_LABEL);
-        lbl6.setForeground(currentTheme.textPrimary);
-        panelFormulario.add(lbl6, gbc_lbl6);
-        GridBagConstraints gbc_txtPassword = new GridBagConstraints();
-        gbc_txtPassword.insets = new Insets(5, 5, 5, 5);
-        gbc_txtPassword.fill = GridBagConstraints.HORIZONTAL;
-        gbc_txtPassword.gridx = 1; gbc_txtPassword.gridy = row;
-        panelFormulario.add(txtPassword, gbc_txtPassword);
+        JLabel lblCert = new JLabel("Certificado .p12:");
+        lblCert.setFont(FUENTE_LABEL);
+        lblCert.setForeground(currentTheme.textPrimary);
+        panelFormulario.add(lblCert, new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insL, 0, 0));
+        panelFormulario.add(txtRutaCertificado, new GridBagConstraints(1, row, 2, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insF, 0, 0));
+        panelFormulario.add(btnSeleccionarArchivo, new GridBagConstraints(3, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insF, 0, 0));
+
+        // Row 6: Password
+        row++;
+        JLabel lblPass = new JLabel("Password:");
+        lblPass.setFont(FUENTE_LABEL);
+        lblPass.setForeground(currentTheme.textPrimary);
+        panelFormulario.add(lblPass, new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insL, 0, 0));
+        panelFormulario.add(txtPassword, new GridBagConstraints(1, row, 1, 1, 0.5, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insF, 0, 0));
+
+        // Row 7: Cert info (full width)
+        row++;
+        JLabel lblInfoTit = new JLabel("Certificado:");
+        lblInfoTit.setFont(FUENTE_LABEL);
+        lblInfoTit.setForeground(currentTheme.textPrimary);
+        panelFormulario.add(lblInfoTit, new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insL, 0, 0));
+        panelFormulario.add(lblCertInfo, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, insF, 0, 0));
 
         panelBotones = new JPanel();
         panelBotones.setBackground(currentTheme.bgSurface);
@@ -429,9 +438,54 @@ public class VentanaConfigCertificados extends JFrame {
                 txtRazonSocial.setText(dto.getRazonSocial());
                 cmbCondicionIva.setSelectedItem(dto.getCondicionIva());
                 txtPuntoVenta.setText(String.valueOf(dto.getPuntoVenta()));
+                txtDomicilio.setText(dto.getDomicilio());
+                txtIngresosBrutos.setText(dto.getIngresosBrutos());
+                setDateChooserDate(dateInicioActividades, dto.getFechaInicioActividades());
                 txtRutaCertificado.setText(dto.getRutaCertificado());
                 txtPassword.setText(dto.getPasswordCert());
+                actualizarInfoCertificado(dto.getRutaCertificado(), dto.getPasswordCert());
             }
+        }
+    }
+
+    private void actualizarInfoCertificado(String rutaP12, String password) {
+        if (rutaP12 == null || rutaP12.isEmpty() || password == null || password.isEmpty()) {
+            lblCertInfo.setText(" ");
+            lblCertInfo.setForeground(currentTheme.textPrimary);
+            return;
+        }
+        try (FileInputStream fis = new FileInputStream(rutaP12)) {
+            KeyStore ks = KeyStore.getInstance("PKCS12");
+            ks.load(fis, password.toCharArray());
+            String alias = ks.aliases().nextElement();
+            X509Certificate cert = (X509Certificate) ks.getCertificate(alias);
+            LocalDate notBefore = cert.getNotBefore().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            LocalDate notAfter = cert.getNotAfter().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            LocalDate now = LocalDate.now();
+            long daysUntilExp = ChronoUnit.DAYS.between(now, notAfter);
+
+            String estado;
+            Color color;
+            if (now.isAfter(notAfter)) {
+                estado = "VENCIDO";
+                color = new Color(200, 40, 40);
+            } else if (daysUntilExp <= 30) {
+                estado = "PRÓXIMO A VENCER (" + daysUntilExp + " días)";
+                color = new Color(200, 150, 30);
+            } else {
+                estado = "VIGENTE";
+                color = new Color(30, 150, 30);
+            }
+
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            String info = String.format("%s — Válido: %s → %s — %s",
+                cert.getSubjectX500Principal().getName(),
+                notBefore.format(fmt), notAfter.format(fmt), estado);
+            lblCertInfo.setText(info);
+            lblCertInfo.setForeground(color);
+        } catch (Exception e) {
+            lblCertInfo.setText("No se pudo leer el certificado: " + e.getMessage());
+            lblCertInfo.setForeground(new Color(200, 40, 40));
         }
     }
 
@@ -445,7 +499,10 @@ public class VentanaConfigCertificados extends JFrame {
             (String) cmbCondicionIva.getSelectedItem(),
             Integer.parseInt(txtPuntoVenta.getText().trim()),
             txtRutaCertificado.getText().trim(),
-            new String(txtPassword.getPassword())
+            new String(txtPassword.getPassword()),
+            txtDomicilio.getText().trim(),
+            txtIngresosBrutos.getText().trim(),
+            getDateChooserText(dateInicioActividades)
         );
         dto.setActivo(!hayActivos);
 
@@ -476,6 +533,9 @@ public class VentanaConfigCertificados extends JFrame {
         dto.setRazonSocial(txtRazonSocial.getText().trim());
         dto.setCondicionIva((String) cmbCondicionIva.getSelectedItem());
         dto.setPuntoVenta(Integer.parseInt(txtPuntoVenta.getText().trim()));
+        dto.setDomicilio(txtDomicilio.getText().trim());
+        dto.setIngresosBrutos(txtIngresosBrutos.getText().trim());
+        dto.setFechaInicioActividades(getDateChooserText(dateInicioActividades));
         dto.setRutaCertificado(txtRutaCertificado.getText().trim());
         dto.setPasswordCert(new String(txtPassword.getPassword()));
 
@@ -517,6 +577,7 @@ public class VentanaConfigCertificados extends JFrame {
         fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             txtRutaCertificado.setText(fileChooser.getSelectedFile().getAbsolutePath());
+            actualizarInfoCertificado(txtRutaCertificado.getText(), new String(txtPassword.getPassword()));
         }
     }
 
@@ -545,9 +606,116 @@ public class VentanaConfigCertificados extends JFrame {
         txtRazonSocial.setText("");
         cmbCondicionIva.setSelectedIndex(0);
         txtPuntoVenta.setText("");
+        txtDomicilio.setText("");
+        txtIngresosBrutos.setText("");
+        setDateChooserDate(dateInicioActividades, null);
         txtRutaCertificado.setText("");
         txtPassword.setText("");
+        lblCertInfo.setText(" ");
+        lblCertInfo.setForeground(currentTheme.textPrimary);
         tabla.clearSelection();
+    }
+
+    private JComponent crearDateChooser() {
+        try {
+            Class<?> clazz = Class.forName("com.toedter.calendar.JDateChooser");
+            JComponent chooser = (JComponent) clazz.getDeclaredConstructor().newInstance();
+            clazz.getMethod("setDateFormatString", String.class).invoke(chooser, "dd/MM/yyyy");
+            clazz.getMethod("setDate", java.util.Date.class).invoke(chooser,
+                java.util.Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant()));
+            chooser.setPreferredSize(new Dimension(140, 24));
+            chooser.addPropertyChangeListener("date", e -> themeDateField(chooser, currentTheme));
+            installDateFocusListener(chooser);
+            return chooser;
+        } catch (Exception e) {
+            JTextField tf = new JTextField(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+            tf.setPreferredSize(new Dimension(140, 24));
+            tf.setEditable(false);
+            return tf;
+        }
+    }
+
+    private void themeDateField(JComponent comp, Theme t) {
+        if (comp instanceof JTextField) {
+            JTextField tf = (JTextField) comp;
+            tf.setBackground(getFieldBg(true));
+            tf.setForeground(t.textPrimary);
+            tf.setDisabledTextColor(getDisabledFg());
+            tf.setCaretColor(t.textPrimary);
+            tf.setFont(FUENTE_INPUT_BOLD);
+        } else {
+            for (java.awt.Component c : comp.getComponents()) {
+                if (c instanceof JTextField) {
+                    JTextField tf = (JTextField) c;
+                    tf.setBackground(getFieldBg(true));
+                    tf.setForeground(t.textPrimary);
+                    tf.setDisabledTextColor(getDisabledFg());
+                    tf.setCaretColor(t.textPrimary);
+                    tf.setFont(FUENTE_INPUT_BOLD);
+                }
+                if (c instanceof java.awt.Container) {
+                    themeDateField((JComponent) c, t);
+                }
+            }
+        }
+    }
+
+    private void installDateFocusListener(JComponent chooser) {
+        for (java.awt.Component c : chooser.getComponents()) {
+            if (c instanceof JTextField) {
+                JTextField tf = (JTextField) c;
+                tf.addFocusListener(new java.awt.event.FocusAdapter() {
+                    @Override
+                    public void focusLost(java.awt.event.FocusEvent e) {
+                        tf.setForeground(currentTheme.textPrimary);
+                    }
+                });
+                return;
+            }
+            if (c instanceof java.awt.Container) {
+                installDateFocusListener((JComponent) c);
+            }
+        }
+    }
+
+    private void setDateChooserDate(JComponent comp, String dateStr) {
+        try {
+            if (dateStr == null || dateStr.isEmpty()) {
+                if (!(comp instanceof JTextField)) {
+                    comp.getClass().getMethod("setDate", java.util.Date.class).invoke(comp, (java.util.Date) null);
+                } else {
+                    ((JTextField) comp).setText("");
+                }
+                return;
+            }
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            LocalDate ld = LocalDate.parse(dateStr, fmt);
+            java.util.Date date = java.util.Date.from(ld.atStartOfDay(ZoneId.systemDefault()).toInstant());
+            if (!(comp instanceof JTextField)) {
+                comp.getClass().getMethod("setDate", java.util.Date.class).invoke(comp, date);
+            } else {
+                ((JTextField) comp).setText(ld.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+            }
+        } catch (Exception e) {
+        }
+    }
+
+    private String getDateChooserText(JComponent comp) {
+        try {
+            if (!(comp instanceof JTextField)) {
+                java.util.Date date = (java.util.Date) comp.getClass().getMethod("getDate").invoke(comp);
+                if (date != null) {
+                    return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                }
+            } else {
+                String text = ((JTextField) comp).getText();
+                if (text != null && !text.isEmpty()) {
+                    return LocalDate.parse(text, DateTimeFormatter.ofPattern("dd/MM/yyyy")).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                }
+            }
+        } catch (Exception e) {
+        }
+        return "";
     }
 
     private void applyTheme(Theme t) {
@@ -591,6 +759,21 @@ public class VentanaConfigCertificados extends JFrame {
             txtPuntoVenta.setDisabledTextColor(getDisabledFg());
             txtPuntoVenta.setCaretColor(t.textPrimary);
         }
+        if (txtDomicilio != null) {
+            txtDomicilio.setBackground(getFieldBg(txtDomicilio.isEnabled()));
+            txtDomicilio.setForeground(t.textPrimary);
+            txtDomicilio.setDisabledTextColor(getDisabledFg());
+            txtDomicilio.setCaretColor(t.textPrimary);
+        }
+        if (txtIngresosBrutos != null) {
+            txtIngresosBrutos.setBackground(getFieldBg(txtIngresosBrutos.isEnabled()));
+            txtIngresosBrutos.setForeground(t.textPrimary);
+            txtIngresosBrutos.setDisabledTextColor(getDisabledFg());
+            txtIngresosBrutos.setCaretColor(t.textPrimary);
+        }
+        if (dateInicioActividades != null) {
+            themeDateField(dateInicioActividades, t);
+        }
         if (txtRutaCertificado != null) {
             txtRutaCertificado.setBackground(getFieldBg(txtRutaCertificado.isEnabled()));
             txtRutaCertificado.setForeground(t.textPrimary);
@@ -632,6 +815,18 @@ public class VentanaConfigCertificados extends JFrame {
             TablaRenderer.applyTo(tabla, t);
             if (tabla.getTableHeader() != null) {
                 Theme.styleTableHeader(tabla.getTableHeader(), t);
+            }
+        }
+        if (lblCertInfo != null) {
+            String txt = lblCertInfo.getText();
+            if (txt == null || txt.trim().isEmpty() || txt.equals(" ")) {
+                lblCertInfo.setForeground(t.textPrimary);
+            } else if (txt.contains("VIGENTE")) {
+                lblCertInfo.setForeground(new Color(30, 150, 30));
+            } else if (txt.contains("VENCIDO") && !txt.contains("PRÓXIMO")) {
+                lblCertInfo.setForeground(new Color(200, 40, 40));
+            } else if (txt.contains("PRÓXIMO")) {
+                lblCertInfo.setForeground(new Color(200, 150, 30));
             }
         }
         if (scrollTabla != null) {

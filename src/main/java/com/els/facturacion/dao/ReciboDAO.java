@@ -173,7 +173,8 @@ public class ReciboDAO {
     private List<ReciboFacturaDTO> buscarFacturas(int reciboId) {
         List<ReciboFacturaDTO> lista = new ArrayList<>();
         String sql = "SELECT rf.*, c.tipo_comprobante, c.punto_venta, c.numero, "
-                + "COALESCE((SELECT SUM(fp.monto) FROM factura_pagos fp WHERE fp.comprobante_id = rf.comprobante_id), 0) AS total_pagado "
+                + "COALESCE((SELECT SUM(fp.monto) FROM factura_pagos fp WHERE fp.comprobante_id = rf.comprobante_id), 0) AS total_pagado, "
+                + "COALESCE((SELECT GROUP_CONCAT(fi.codigo SEPARATOR ', ') FROM factura_items fi WHERE fi.comprobante_id = rf.comprobante_id AND fi.codigo IS NOT NULL AND fi.codigo != ''), '') AS els_asociados "
                 + "FROM recibo_facturas rf "
                 + "LEFT JOIN comprobantes c ON c.id = rf.comprobante_id "
                 + "WHERE rf.recibo_id = ?";
@@ -193,6 +194,7 @@ public class ReciboDAO {
                 if (tipo != null) {
                     f.setNumeroFactura(String.format("%04d-%08d", pv, num));
                 }
+                f.setElsAsociados(rs.getString("els_asociados"));
                 lista.add(f);
             }
         } catch (SQLException e) {

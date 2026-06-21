@@ -104,17 +104,47 @@ public class GestorReportes {
                 return null;
             }
 
+            com.els.facturacion.dao.CuitDAO cuitDAO = new com.els.facturacion.dao.CuitDAO();
+            List<com.els.facturacion.modelo.CuitConfigDTO> activos = cuitDAO.listarActivos();
+            if (activos.isEmpty()) {
+                System.err.println("No hay CUIT activo configurado para emitir el recibo");
+                return null;
+            }
+            com.els.facturacion.modelo.CuitConfigDTO emisor = activos.get(0);
+
             Map<String, Object> params = new HashMap<>();
-            params.put("NUMERO_RECIBO", recibo.getNumeroRecibo());
-            params.put("FECHA_COBRO", recibo.getFechaCobro().format(FMT));
-            params.put("CUIT_CLIENTE", recibo.getCuitCliente());
-            params.put("RAZON_SOCIAL_CLIENTE", recibo.getRazonSocialCliente());
-            params.put("MONTO_TOTAL", recibo.getMontoTotal());
-            params.put("OBSERVACIONES", recibo.getObservaciones());
+            params.put("EMISOR_RAZON_SOCIAL", emisor.getRazonSocial());
+            params.put("EMISOR_DOMICILIO", emisor.getDomicilio() != null ? emisor.getDomicilio() : "");
+            params.put("EMISOR_CUIT", emisor.getCuit());
+            params.put("EMISOR_ING_BRUTOS", emisor.getIngresosBrutos() != null ? emisor.getIngresosBrutos() : "");
+            params.put("EMISOR_INICIO_ACT", emisor.getFechaInicioActividades() != null ? emisor.getFechaInicioActividades() : "");
+            params.put("EMISOR_CONDICION_IVA", emisor.getCondicionIva());
+            params.put("PUNTO_VENTA", emisor.getPuntoVenta() != null ? emisor.getPuntoVenta().toString() : "");
+            params.put("COMP_NRO", recibo.getNumeroRecibo());
+            params.put("FECHA_EMISION", recibo.getFechaCobro() != null ? recibo.getFechaCobro().format(FMT) : "");
+            params.put("PERIODO_DESDE", "");
+            params.put("PERIODO_HASTA", "");
+            params.put("FECHA_VTO_PAGO", "");
+            params.put("CLIENTE_RAZON_SOCIAL", recibo.getRazonSocialCliente() != null ? recibo.getRazonSocialCliente() : "");
+            params.put("CLIENTE_CUIT", recibo.getCuitCliente() != null ? recibo.getCuitCliente() : "");
+            params.put("CLIENTE_DOMICILIO", "");
+            params.put("CLIENTE_CONDICION_IVA", "");
+            params.put("CLIENTE_CONDICION_VENTA", "");
+            String totalStr = recibo.getMontoTotal() != null
+                ? new java.text.DecimalFormat("#,##0.00").format(recibo.getMontoTotal().setScale(2, java.math.RoundingMode.HALF_UP)) : "0,00";
+            params.put("SUBTOTAL", totalStr);
+            params.put("OTROS_TRIBUTOS", "0,00");
+            params.put("IMPORTE_TOTAL", totalStr);
+            params.put("RECIBO_NUMERO", recibo.getNumeroRecibo());
+            params.put("MONTO_TOTAL", recibo.getMontoTotal() != null
+                ? recibo.getMontoTotal().setScale(2, java.math.RoundingMode.HALF_UP) : java.math.BigDecimal.ZERO);
+            params.put("MONTO_LETRAS", "");
+            params.put("FORMAS_PAGO_TEXTO", "");
+            params.put("OBSERVACIONES", recibo.getObservaciones() != null ? recibo.getObservaciones() : "");
 
             JasperReport jasperReport = JasperCompileManager.compileReport(jrxmlStream);
-            JRDataSource dataSource = recibo.getFormasPago() != null
-                ? new JRBeanCollectionDataSource(recibo.getFormasPago())
+            JRDataSource dataSource = recibo.getFacturas() != null
+                ? new JRBeanCollectionDataSource(recibo.getFacturas())
                 : new JRBeanCollectionDataSource(java.util.Collections.emptyList());
             JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, dataSource);
 

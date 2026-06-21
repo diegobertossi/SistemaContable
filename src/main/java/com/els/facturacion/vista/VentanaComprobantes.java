@@ -266,7 +266,7 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         add(statusBar, BorderLayout.SOUTH);
     }
 
-    private void cargarComprobantes() {
+    public void cargarComprobantes() {
         allComprobantes = controlador.listarComprobantes();
         if (allComprobantes == null) allComprobantes = new ArrayList<>();
 

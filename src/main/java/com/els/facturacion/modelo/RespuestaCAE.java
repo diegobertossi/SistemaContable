@@ -9,6 +9,7 @@ public class RespuestaCAE {
     private Long numeroComprobante;
     private String mensaje;
     private boolean exitosa;
+    private String codigoError;
 
     public RespuestaCAE() {
         this.exitosa = false;
@@ -64,5 +65,13 @@ public class RespuestaCAE {
     public void setError(String mensaje) {
         this.mensaje = mensaje;
         this.exitosa = false;
+    }
+
+    public String getCodigoError() {
+        return codigoError;
+    }
+
+    public void setCodigoError(String codigoError) {
+        this.codigoError = codigoError;
     }
 }

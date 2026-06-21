@@ -6,12 +6,24 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 public class TokenCache {
 
-    private static final String LOGIN_TICKET_REQUEST = "<loginTicketRequest><header><service>wsfe</service><generationTime>%s</generationTime><expirationTime>%s</expirationTime></header><credentials>%s</credentials></loginTicketRequest>";
+    private static final String LOGIN_TICKET_REQUEST = "<loginTicketRequest version=\"1.0\">"
+            + "<header>"
+            + "<source>%s</source>"
+            + "<destination>%s</destination>"
+            + "<uniqueId>%s</uniqueId>"
+            + "<generationTime>%s</generationTime>"
+            + "<expirationTime>%s</expirationTime>"
+            + "</header>"
+            + "<service>%s</service>"
+            + "</loginTicketRequest>";
     private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+    private static final DateTimeFormatter FORMATO_FECHA_ARCA = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
     private String token;
     private String sign;
@@ -93,7 +105,7 @@ public class TokenCache {
                 token = rs.getString("token");
                 sign = rs.getString("sign");
                 String expStr = rs.getString("expiracion");
-                expiracion = LocalDateTime.parse(expStr, FORMATO_FECHA);
+                expiracion = LocalDateTime.parse(expStr.replace(" ", "T"), FORMATO_FECHA);
                 ultimoCuit = cuit;
 
                 LocalDateTime ahora = LocalDateTime.now();
@@ -110,14 +122,20 @@ public class TokenCache {
         return false;
     }
 
-    public String generarLoginTicketRequest(String credentials) {
-        LocalDateTime ahora = LocalDateTime.now();
-        LocalDateTime generationTime = ahora.minusMinutes(5);
-        LocalDateTime expirationTime = ahora.plusHours(12);
+    public String generarLoginTicketRequest(String source, String destination, String service) {
+
+        int uniqueId = (int)(System.currentTimeMillis() % 1_000_000_000);
+
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        OffsetDateTime genTime = now.minusMinutes(5);
+        OffsetDateTime expTime = now.plusMinutes(10);
 
         return String.format(LOGIN_TICKET_REQUEST,
-                generationTime.format(FORMATO_FECHA),
-                expirationTime.format(FORMATO_FECHA),
-                credentials);
+                source,
+                destination,
+                uniqueId,
+                genTime.format(FORMATO_FECHA_ARCA),
+                expTime.format(FORMATO_FECHA_ARCA),
+                service);
     }
 }
