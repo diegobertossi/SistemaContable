@@ -83,6 +83,7 @@ public class VentanaConfigCertificados extends JFrame {
     private JButton btnModificar;
     private JButton btnEliminar;
     private JButton btnLimpiar;
+    private JButton btnBackup;
     private JLabel lblCertInfo;
     private JPanel southWrapper;
 
@@ -339,6 +340,14 @@ public class VentanaConfigCertificados extends JFrame {
         btnLimpiar.setFocusPainted(false);
         btnLimpiar.addActionListener(this::btnLimpiarAction);
 
+        btnBackup = new JButton("BACKUP");
+        btnBackup.setFont(FUENTE_BOTON);
+        btnBackup.setForeground(currentTheme.textPrimary);
+        btnBackup.setBackground(currentTheme.btnBg);
+        btnBackup.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnBackup.setFocusPainted(false);
+        btnBackup.addActionListener(e -> new VentanaBackup().setVisible(true));
+
         btnSeleccionarArchivo.addActionListener(this::btnSeleccionarAction);
         tabla.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
@@ -350,6 +359,7 @@ public class VentanaConfigCertificados extends JFrame {
         panelBotones.add(btnModificar);
         panelBotones.add(btnEliminar);
         panelBotones.add(btnLimpiar);
+        panelBotones.add(btnBackup);
 
         panelSur = new JPanel(new BorderLayout());
         panelSur.setBackground(currentTheme.bgSurface);
@@ -810,6 +820,10 @@ public class VentanaConfigCertificados extends JFrame {
         if (btnLimpiar != null) {
             btnLimpiar.setForeground(t.textPrimary);
             btnLimpiar.setBackground(t.btnBg);
+        }
+        if (btnBackup != null) {
+            btnBackup.setForeground(t.textPrimary);
+            btnBackup.setBackground(t.btnBg);
         }
         if (tabla != null) {
             TablaRenderer.applyTo(tabla, t);

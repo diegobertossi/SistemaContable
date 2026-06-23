@@ -12,6 +12,7 @@ public class VentanaGestionComprobantes extends JFrame {
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
     private JTabbedPane tabbedPane;
     private VentanaComprobantes comprobantesView;
+    private PanelEstadisticas panelEstadisticas;
 
     public VentanaGestionComprobantes() {
         initComponents();
@@ -46,9 +47,15 @@ public class VentanaGestionComprobantes extends JFrame {
         comprobantesView.remove(compContent);
         tabbedPane.addTab("Comprobantes", compContent);
 
+        // Tab Estadisticas
+        panelEstadisticas = new PanelEstadisticas();
+        tabbedPane.addTab("Estad\u00edsticas", panelEstadisticas);
+
         tabbedPane.addChangeListener(e -> {
             if (tabbedPane.getSelectedComponent() == compContent) {
                 comprobantesView.cargarComprobantes();
+            } else if (tabbedPane.getSelectedComponent() == panelEstadisticas) {
+                panelEstadisticas.cargarDatos();
             }
         });
 
@@ -63,6 +70,9 @@ public class VentanaGestionComprobantes extends JFrame {
         if (tabbedPane != null) {
             tabbedPane.setBackground(t.bgSurface);
             tabbedPane.setForeground(t.textPrimary);
+        }
+        if (panelEstadisticas != null) {
+            panelEstadisticas.applyTheme(t);
         }
     }
 }

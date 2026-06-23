@@ -54,7 +54,7 @@ public class TokenCache {
             return false;
         }
         LocalDateTime ahora = LocalDateTime.now();
-        return expiracion.isAfter(ahora.plusMinutes(10));
+        return expiracion.isAfter(ahora.plusMinutes(1));
     }
 
     public void guardarToken(String token, String sign, LocalDateTime expiracion, String cuit) {
@@ -109,7 +109,7 @@ public class TokenCache {
                 ultimoCuit = cuit;
 
                 LocalDateTime ahora = LocalDateTime.now();
-                if (expiracion.isAfter(ahora.plusMinutes(10))) {
+                if (expiracion.isAfter(ahora.plusMinutes(1))) {
                     System.out.println("✓ Token cargado desde BD válido hasta: " + expiracion);
                     return true;
                 } else {
