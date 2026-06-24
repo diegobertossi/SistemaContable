@@ -23,6 +23,7 @@ public class AutoCompleteComboBox extends JComboBox<String> {
     private KeyAdapter arrowKeyListener;
     private DocumentListener filterListener;
     private java.awt.event.ActionListener enterSelectListener;
+    private String filterText = "";
 
     public AutoCompleteComboBox() {
         super();
@@ -52,18 +53,24 @@ public class AutoCompleteComboBox extends JComboBox<String> {
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_DOWN) {
                     if (isPopupVisible()) {
-                        DefaultComboBoxModel<String> model = (DefaultComboBoxModel<String>) getModel();
-                        if (model.getSize() > 0) {
-                            int current = getSelectedIndex();
-                            int next = (e.getKeyCode() == KeyEvent.VK_DOWN)
-                                ? Math.min(current + 1, model.getSize() - 1)
-                                : Math.max(current - 1, 0);
-                            if (next != current) {
-                                navigating = true;
-                                setSelectedIndex(next);
-                                navigating = false;
-                            }
-                        }
+                        debounceTimer.stop();
+                        navigating = true;
+                    SwingUtilities.invokeLater(() -> navigating = false);
+                    }
+                } else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    if (isPopupVisible()) {
+                        debounceTimer.stop();
+                        setting = true;
+                        SwingUtilities.invokeLater(() -> setting = false);
+                    }
+                } else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    if (isPopupVisible()) {
+                        debounceTimer.stop();
+                        navigating = true;
+                        editor.setText(!filterText.isEmpty() ? filterText : "");
+                        navigating = false;
+                        filterText = "";
+                        hidePopup();
                         e.consume();
                     }
                 }
@@ -74,11 +81,11 @@ public class AutoCompleteComboBox extends JComboBox<String> {
         filterListener = new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                if (!setting) debounceTimer.restart();
+                if (!setting && !navigating) debounceTimer.restart();
             }
             @Override
             public void removeUpdate(DocumentEvent e) {
-                if (!setting) debounceTimer.restart();
+                if (!setting && !navigating) debounceTimer.restart();
             }
             @Override
             public void changedUpdate(DocumentEvent e) {
@@ -117,12 +124,15 @@ public class AutoCompleteComboBox extends JComboBox<String> {
         }
 
         if (model.getSize() > 0 && !textLower.isEmpty()) {
-            super.setSelectedIndex(0);
-            setting = true;
-            editor.setText(text);
+            filterText = text;
             programmaticPopup = true;
-            if (isShowing()) showPopup();
+            if (isShowing()) {
+                super.setSelectedItem(null);
+                showPopup();
+                editor.setText(text);
+            }
         } else {
+            filterText = "";
             super.setSelectedItem(null);
             setting = true;
             editor.setText(text);
@@ -147,6 +157,8 @@ public class AutoCompleteComboBox extends JComboBox<String> {
         }
         if (!visible) {
             programmaticPopup = false;
+            filterText = "";
+            debounceTimer.stop();
         }
         super.setPopupVisible(visible);
     }

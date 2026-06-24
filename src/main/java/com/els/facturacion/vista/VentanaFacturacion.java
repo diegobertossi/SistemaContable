@@ -82,6 +82,8 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private static final Color LIGHT_EDITABLE_BG = new Color(255, 253, 230);
     private static final Color DARK_READONLY_BG = new Color(28, 33, 55);
     private static final Color DARK_EDITABLE_BG = new Color(22, 27, 45);
+    private static final Color LIGHT_REQUIRED_BG = new Color(180, 235, 170);
+    private static final Color DARK_REQUIRED_BG = new Color(30, 68, 35);
 
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
@@ -179,6 +181,10 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         return currentTheme.bgBase.getRed() > 128
             ? (editing ? LIGHT_EDITABLE_BG : LIGHT_READONLY_BG)
             : (editing ? DARK_EDITABLE_BG : DARK_READONLY_BG);
+    }
+
+    private Color getFieldRequiredBg() {
+        return currentTheme.bgBase.getRed() > 128 ? LIGHT_REQUIRED_BG : DARK_REQUIRED_BG;
     }
 
     private Color getErrorColor() {
@@ -651,6 +657,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         secPuntoVenta.add(label, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
         cmbPuntoVenta = new JComboBox<>(new String[]{"", "00001"});
         installComboUI(cmbPuntoVenta);
+        cmbPuntoVenta.setBackground(getFieldRequiredBg());
         cmbPuntoVenta.setFont(FUENTE_INPUT_BOLD);
         cmbPuntoVenta.setPreferredSize(new Dimension(80, 24));
         cmbPuntoVenta.setPrototypeDisplayValue("00001");
@@ -658,7 +665,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             public Component getListCellRendererComponent(JList<?> list, Object value,
                   int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbPuntoVenta.isEnabled()));
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldRequiredBg());
                 setForeground(isSelected ? list.getSelectionForeground() :
                     (cmbPuntoVenta.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
                 return this;
@@ -674,6 +681,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             "Nota de Cr\u00e9dito Electr\u00f3nica MiPymes (FCE) C"
         });
         installComboUI(cmbTipoComprobante);
+        cmbTipoComprobante.setBackground(getFieldRequiredBg());
         cmbTipoComprobante.setFont(FUENTE_INPUT_BOLD);
         cmbTipoComprobante.setPreferredSize(new Dimension(240, 24));
         cmbTipoComprobante.setPrototypeDisplayValue("Factura de Cr\u00e9dito Electr\u00f3nica");
@@ -681,7 +689,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             public Component getListCellRendererComponent(JList<?> list, Object value,
                   int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbTipoComprobante.isEnabled()));
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldRequiredBg());
                 setForeground(isSelected ? list.getSelectionForeground() :
                     (cmbTipoComprobante.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
                 return this;
@@ -745,6 +753,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         themeDateField(dateFecha, currentTheme);
         cmbConcepto = new JComboBox<>(new String[]{"", "Productos", "Servicios", "Productos y Servicios"});
         installComboUI(cmbConcepto);
+        cmbConcepto.setBackground(getFieldRequiredBg());
         cmbConcepto.setFont(FUENTE_INPUT_BOLD);
         cmbConcepto.setPreferredSize(new Dimension(180, 24));
         cmbConcepto.setPrototypeDisplayValue("Productos");
@@ -752,7 +761,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             public Component getListCellRendererComponent(JList<?> list, Object value,
                   int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(cmbConcepto.isEnabled()));
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldRequiredBg());
                 setForeground(isSelected ? list.getSelectionForeground() :
                     (cmbConcepto.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
                 return this;
@@ -1119,20 +1128,23 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
         // FIX: live-theme — inputs y controles (field references, siempre funcionan)
         if (cmbPuntoVenta != null) {
-            cmbPuntoVenta.setBackground(getFieldBg(cmbPuntoVenta.isEnabled()));
+            cmbPuntoVenta.setBackground(getFieldRequiredBg());
             cmbPuntoVenta.setForeground(cmbPuntoVenta.isEnabled() ? t.textPrimary : getDisabledFg());
+            installComboUI(cmbPuntoVenta);
         }
         if (cmbTipoComprobante != null) {
-            cmbTipoComprobante.setBackground(getFieldBg(cmbTipoComprobante.isEnabled()));
+            cmbTipoComprobante.setBackground(getFieldRequiredBg());
             cmbTipoComprobante.setForeground(cmbTipoComprobante.isEnabled() ? t.textPrimary : getDisabledFg());
+            installComboUI(cmbTipoComprobante);
         }
         if (dateFecha != null) { themeDateField(dateFecha, t); }
         if (datePeriodoDesde != null) { themeDateField(datePeriodoDesde, t); }
         if (datePeriodoHasta != null) { themeDateField(datePeriodoHasta, t); }
         if (datePeriodoVto != null) { themeDateField(datePeriodoVto, t); }
         if (cmbConcepto != null) {
-            cmbConcepto.setBackground(getFieldBg(cmbConcepto.isEnabled()));
+            cmbConcepto.setBackground(getFieldRequiredBg());
             cmbConcepto.setForeground(cmbConcepto.isEnabled() ? t.textPrimary : getDisabledFg());
+            installComboUI(cmbConcepto);
         }
         clearAllErrorBorders();
         if (txtActividades != null) { txtActividades.setBackground(getFieldBg(txtActividades.isEnabled())); txtActividades.setForeground(t.textPrimary); txtActividades.setDisabledTextColor(getDisabledFg()); txtActividades.setCaretColor(t.textPrimary); }
@@ -1145,19 +1157,23 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         if (cmbCondicionIva != null) {
             cmbCondicionIva.setBackground(getFieldBg(cmbCondicionIva.isEnabled()));
             cmbCondicionIva.setForeground(cmbCondicionIva.isEnabled() ? t.textPrimary : getDisabledFg());
+            installComboUI(cmbCondicionIva);
         }
         if (cmbTipoDoc != null) {
             cmbTipoDoc.setBackground(getFieldBg(cmbTipoDoc.isEnabled()));
             cmbTipoDoc.setForeground(cmbTipoDoc.isEnabled() ? t.textPrimary : getDisabledFg());
+            installComboUI(cmbTipoDoc);
         }
         if (cmbRazonSocial != null) {
             cmbRazonSocial.setBackground(getFieldBg(cmbRazonSocial.isEnabled()));
             cmbRazonSocial.setForeground(cmbRazonSocial.isEnabled() ? t.textPrimary : getDisabledFg());
+            installComboUI(cmbRazonSocial);
             themeComboEditor(cmbRazonSocial, t);
         }
         if (cmbNroDoc != null) {
             cmbNroDoc.setBackground(getFieldBg(cmbNroDoc.isEnabled()));
             cmbNroDoc.setForeground(cmbNroDoc.isEnabled() ? t.textPrimary : getDisabledFg());
+            installComboUI(cmbNroDoc);
             themeComboEditor(cmbNroDoc, t);
         }
         if (txtDomicilio != null) { txtDomicilio.setBackground(getFieldBg(txtDomicilio.isEnabled())); txtDomicilio.setForeground(t.textPrimary); txtDomicilio.setDisabledTextColor(getDisabledFg()); txtDomicilio.setCaretColor(t.textPrimary); }
@@ -1194,6 +1210,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         if (cmbAlicuotaIva != null) {
             cmbAlicuotaIva.setBackground(getFieldBg(cmbAlicuotaIva.isEnabled()));
             cmbAlicuotaIva.setForeground(cmbAlicuotaIva.isEnabled() ? t.textPrimary : getDisabledFg());
+            installComboUI(cmbAlicuotaIva);
         }
         if (btnEliminarItem != null) { btnEliminarItem.setBackground(t.btnBg); btnEliminarItem.setForeground(t.textPrimary); }
         if (btnAgregarItem != null) { btnAgregarItem.setBackground(t.btnBg); btnAgregarItem.setForeground(t.textPrimary); }
@@ -1296,6 +1313,9 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
     private void installComboUI(JComboBox<?> combo) {
         combo.setUI(new CustomComboUI());
+        if (combo instanceof AutoCompleteComboBox) {
+            ((AutoCompleteComboBox) combo).refreshListeners();
+        }
     }
 
     private void themeDateField(JComponent comp, Theme t) {
