@@ -453,6 +453,7 @@ public class VentanaRemitos extends JFrame {
             sucursalNombre = "";
             idSucursalActual = -1;
             cmbSucursal.setData(new ArrayList<>());
+            cmbSucursal.setEditorText("");
             return;
         }
         clienteNombre = sel.trim();
@@ -462,12 +463,13 @@ public class VentanaRemitos extends JFrame {
         cargandoDatos = true;
         Map<Integer, String> sucursales = dao.listarSucursalesPorCliente(baseDatos, idClienteActual);
         List<String> nomSuc = new ArrayList<>(sucursales.values());
+        nomSuc.add(0, "");
         cmbSucursal.setData(nomSuc);
+        cmbSucursal.setSelectedItem("");
         cargandoDatos = false;
 
         idSucursalActual = -1;
         sucursalNombre = "";
-        cmbSucursal.setEditorText("");
     }
 
     private void onSucursalChanged() {
@@ -514,8 +516,10 @@ public class VentanaRemitos extends JFrame {
         if (!filtrarSucursal) {
             List<String> listaSuc = new ArrayList<>(sucursalesSet);
             java.util.Collections.sort(listaSuc);
+            listaSuc.add(0, "");
             cargandoDatos = true;
             cmbSucursal.setData(listaSuc);
+            cmbSucursal.setSelectedItem("");
             cargandoDatos = false;
         }
     }
@@ -977,7 +981,8 @@ public class VentanaRemitos extends JFrame {
 
         // Table
         if (tabla != null) {
-            TablaRenderer.applyTo(tabla, t);
+            TablaRenderer.applyTo(tabla, t, Collections.emptySet(), Collections.singleton(0),
+                Collections.singleton(0), t.bgSurface, t.bgElevated);
             if (tabla.getTableHeader() != null) {
                 Theme.styleTableHeader(tabla.getTableHeader(), t);
             }

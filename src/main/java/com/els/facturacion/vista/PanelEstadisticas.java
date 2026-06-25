@@ -70,6 +70,8 @@ public class PanelEstadisticas extends JPanel {
     private ControladorFacturacion controlador;
 
     // Panels
+    private JLabel lblTitulo;
+    private JPanel panelSuperior;
     private JPanel panelToggle;
     private JPanel panelContenido;
     private JPanel panelDetalle;
@@ -155,8 +157,18 @@ public class PanelEstadisticas extends JPanel {
     // ──────────────────────────────────────────────
 
     private void initComponents() {
-        setLayout(new BorderLayout(4, 4));
+        setLayout(new BorderLayout());
         setBackground(currentTheme.bgBase);
+
+        // ── Title ──
+        panelSuperior = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 6));
+        panelSuperior.setBackground(currentTheme.bgSurface);
+        panelSuperior.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
+        lblTitulo = new JLabel("ESTAD\u00cdSTICAS");
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblTitulo.setForeground(currentTheme.brand);
+        panelSuperior.add(lblTitulo);
+        add(panelSuperior, BorderLayout.NORTH);
 
         // ── Toggle buttons (DETALLE / TOTALES) ──
         btnDetalle = new JToggleButton("DETALLE", true);
@@ -216,8 +228,11 @@ public class PanelEstadisticas extends JPanel {
         panelContenido.add(panelDetalle, "detalle");
         panelContenido.add(panelTotalesView, "totales");
 
-        add(panelToggle, BorderLayout.NORTH);
-        add(panelContenido, BorderLayout.CENTER);
+        JPanel panelCentro = new JPanel(new BorderLayout());
+        panelCentro.setBackground(currentTheme.bgBase);
+        panelCentro.add(panelToggle, BorderLayout.NORTH);
+        panelCentro.add(panelContenido, BorderLayout.CENTER);
+        add(panelCentro, BorderLayout.CENTER);
     }
 
     // ──────────────────────────────────────────────
@@ -749,6 +764,12 @@ public class PanelEstadisticas extends JPanel {
         currentTheme = t;
 
         setBackground(t.bgBase);
+
+        if (panelSuperior != null) panelSuperior.setBackground(t.bgSurface);
+        if (lblTitulo != null) {
+            lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
+            lblTitulo.setForeground(t.brand);
+        }
 
         if (panelToggle != null) panelToggle.setBackground(t.bgSurface);
 

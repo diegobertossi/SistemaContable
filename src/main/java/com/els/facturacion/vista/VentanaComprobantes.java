@@ -2,6 +2,7 @@ package com.els.facturacion.vista;
 
 import com.els.facturacion.controlador.ControladorFacturacion;
 import com.els.facturacion.modelo.ComprobanteDTO;
+import com.els.facturacion.util.AutoCompleteComboBox;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -16,8 +17,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -69,14 +68,12 @@ public class VentanaComprobantes extends javax.swing.JFrame {
     private JPanel panelBotones;
     private JPanel panelCentro;
     private JLabel lblFiltroCliente;
-    private JComboBox<String> cmbFiltroCliente;
+    private AutoCompleteComboBox cmbFiltroCliente;
     private JPanel panelFiltroComprobantes;
-    private JTextField editorFiltroComprobantes;
 
     private List<ComprobanteDTO> allComprobantes;
     private List<String> allClientes;
     private List<Integer> listaIds;
-    private boolean actualizandoComboComprobantes;
 
     private Color getDisabledFg() {
         return currentTheme.bgBase.getRed() > 128 ? DISABLED_FG_LIGHT : DISABLED_FG_DARK;
@@ -162,11 +159,9 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         lblFiltroCliente.setFont(FUENTE_LABEL);
         lblFiltroCliente.setForeground(currentTheme.textPrimary);
 
-        cmbFiltroCliente = new JComboBox<>();
-        cmbFiltroCliente.setEditable(true);
+        cmbFiltroCliente = new AutoCompleteComboBox();
         cmbFiltroCliente.setFont(FUENTE_INPUT_BOLD);
         cmbFiltroCliente.setMaximumRowCount(12);
-        installComboUI(cmbFiltroCliente);
         cmbFiltroCliente.setRenderer(new DefaultListCellRenderer() {
             public Component getListCellRendererComponent(JList<?> list, Object value,
                   int index, boolean isSelected, boolean cellHasFocus) {
@@ -177,6 +172,11 @@ public class VentanaComprobantes extends javax.swing.JFrame {
                 return this;
             }
         });
+        installComboUI(cmbFiltroCliente);
+        themeComboEditor(cmbFiltroCliente, currentTheme);
+        ((JTextField) cmbFiltroCliente.getEditor().getEditorComponent()).setFont(FUENTE_INPUT);
+        cmbFiltroCliente.setOnFilter(() -> aplicarFiltro());
+        cmbFiltroCliente.addActionListener(e -> aplicarFiltro());
 
         panelFiltroComprobantes = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
         panelFiltroComprobantes.setBackground(currentTheme.bgSurface);
@@ -197,32 +197,11 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         tabla.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
         tabla.getTableHeader().setBackground(currentTheme.btnBg);
+        tabla.getTableHeader().setReorderingAllowed(false);
         tabla.setRowHeight(22);
         tabla.setShowGrid(true);
-        tabla.setAutoCreateRowSorter(true);
+        tabla.setAutoCreateRowSorter(false);
         tabla.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-
-        // --- DocumentListener + ActionListener on editable combo ---
-        editorFiltroComprobantes = (JTextField) cmbFiltroCliente.getEditor().getEditorComponent();
-        editorFiltroComprobantes.setFont(FUENTE_INPUT);
-        editorFiltroComprobantes.setDisabledTextColor(getDisabledFg());
-        editorFiltroComprobantes.setCaretColor(currentTheme.textPrimary);
-        themeComboEditor(cmbFiltroCliente, currentTheme);
-        editorFiltroComprobantes.getDocument().addDocumentListener(new DocumentListener() {
-            @Override public void insertUpdate(DocumentEvent e) { onFiltroCambiado(); }
-            @Override public void removeUpdate(DocumentEvent e) { onFiltroCambiado(); }
-            @Override public void changedUpdate(DocumentEvent e) { onFiltroCambiado(); }
-        });
-        cmbFiltroCliente.addActionListener(e -> {
-            if (actualizandoComboComprobantes) return;
-            Object sel = cmbFiltroCliente.getSelectedItem();
-            if (sel != null) {
-                String txt = sel.toString();
-                if (!txt.equals(editorFiltroComprobantes.getText())) {
-                    editorFiltroComprobantes.setText(txt);
-                }
-            }
-        });
 
         scrollPane = new JScrollPane(tabla);
 
@@ -271,6 +250,7 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         if (allComprobantes == null) allComprobantes = new ArrayList<>();
 
         allClientes = new ArrayList<>();
+        allClientes.add("--Todos--");
         for (ComprobanteDTO c : allComprobantes) {
             String cli = c.getRazonSocialRec();
             if (cli != null && !cli.isEmpty() && !allClientes.contains(cli)) {
@@ -278,8 +258,9 @@ public class VentanaComprobantes extends javax.swing.JFrame {
             }
         }
 
+        cmbFiltroCliente.setData(allClientes);
+        cmbFiltroCliente.setSelectedItem("--Todos--");
         aplicarFiltro();
-        actualizarSugerenciasCombo();
 
         tabla.clearSelection();
     }
@@ -315,53 +296,12 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         ajustarAnchoColumnas(tabla, 0, 4);
     }
 
-    private void onFiltroCambiado() {
-        if (actualizandoComboComprobantes) return;
-        aplicarFiltro();
-        javax.swing.SwingUtilities.invokeLater(() -> {
-            if (!actualizandoComboComprobantes) {
-                actualizarSugerenciasCombo();
-            }
-        });
-    }
-
     private String obtenerTextoFiltro() {
-        if (editorFiltroComprobantes != null) {
-            return editorFiltroComprobantes.getText().trim();
-        }
-        return "";
+        String text = cmbFiltroCliente.getEditorText().trim();
+        return "--Todos--".equals(text) ? "" : text;
     }
 
-    private void actualizarSugerenciasCombo() {
-        if (allClientes == null || editorFiltroComprobantes == null) return;
-        String texto = editorFiltroComprobantes.getText();
-        String textoLower = texto.toLowerCase();
 
-        actualizandoComboComprobantes = true;
-        try {
-            cmbFiltroCliente.hidePopup();
-            cmbFiltroCliente.removeAllItems();
-            cmbFiltroCliente.addItem("");
-            int agregados = 0;
-            for (String cli : allClientes) {
-                if (texto.isEmpty() || cli.toLowerCase().contains(textoLower)) {
-                    cmbFiltroCliente.addItem(cli);
-                    agregados++;
-                    if (agregados >= 15) break;
-                }
-            }
-            String textoActualEditor = editorFiltroComprobantes.getText();
-            if (!textoActualEditor.equals(texto)) {
-                editorFiltroComprobantes.setText(texto);
-            }
-            boolean tieneFoco = editorFiltroComprobantes.hasFocus();
-            if (tieneFoco && !texto.isEmpty()) {
-                cmbFiltroCliente.setPopupVisible(true);
-            }
-        } finally {
-            actualizandoComboComprobantes = false;
-        }
-    }
 
     private void btnVerPDFAction() {
         int viewRow = tabla.getSelectedRow();
@@ -443,12 +383,6 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         }
         if (panelCentro != null) panelCentro.setBackground(t.bgBase);
         if (panelBotones != null) panelBotones.setBackground(t.bgBase);
-        if (editorFiltroComprobantes != null) {
-            editorFiltroComprobantes.setForeground(t.textPrimary);
-            editorFiltroComprobantes.setBackground(getFieldBg(editorFiltroComprobantes.isEnabled()));
-            editorFiltroComprobantes.setDisabledTextColor(getDisabledFg());
-            editorFiltroComprobantes.setCaretColor(t.textPrimary);
-        }
         if (btnActualizar != null) { btnActualizar.setBackground(t.btnBg); btnActualizar.setForeground(t.textPrimary); }
         if (btnVerPDF != null) { btnVerPDF.setBackground(t.btnBg); btnVerPDF.setForeground(t.textPrimary); }
         if (scrollPane != null) scrollPane.getViewport().setBackground(t.bgBase);
@@ -504,6 +438,9 @@ public class VentanaComprobantes extends javax.swing.JFrame {
 
     private void installComboUI(JComboBox<?> combo) {
         combo.setUI(new CustomComboUI());
+        if (combo instanceof AutoCompleteComboBox) {
+            ((AutoCompleteComboBox) combo).refreshListeners();
+        }
     }
 
     private void themeComboEditor(JComboBox<?> combo, Theme t) {

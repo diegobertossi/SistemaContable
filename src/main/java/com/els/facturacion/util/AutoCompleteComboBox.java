@@ -175,6 +175,11 @@ public class AutoCompleteComboBox extends JComboBox<String> {
         for (String item : items) {
             model.addElement(item);
         }
+        if (items.isEmpty()) {
+            super.setSelectedItem(null);
+            JTextField editor = (JTextField) getEditor().getEditorComponent();
+            if (editor != null) editor.setText("");
+        }
         setting = false;
     }
 

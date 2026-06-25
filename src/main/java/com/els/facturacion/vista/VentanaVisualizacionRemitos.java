@@ -8,7 +8,6 @@ import com.els.facturacion.util.AutoCompleteComboBox;
 import com.els.facturacion.util.UbicacionSistema;
 
 import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -19,7 +18,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.plaf.basic.BasicComboBoxUI;
 import javax.swing.event.DocumentEvent;
@@ -44,6 +42,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.swing.border.MatteBorder;
 
 
 public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
@@ -106,6 +105,10 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
             baseDatos = UbicacionSistema.getNombreDbReparsoft();
             cargarRemitos();
         }
+        // El content pane se reparentea al tabbedPane de VentanaRemitos,
+        // lo que dispara addNotify y el LAF pisa fuente/color del lblTitulo.
+        // Re-aplicamos el theme luego de que la jerarquía se estabilice.
+        javax.swing.SwingUtilities.invokeLater(() -> applyTheme(currentTheme));
     }
 
     private void initComponents() {
@@ -117,18 +120,17 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(currentTheme.bgBase);
+        getContentPane().setLayout(new BorderLayout());
 
-        panelSuperior = new JPanel();
-        panelSuperior.setLayout(new BoxLayout(panelSuperior, BoxLayout.Y_AXIS));
+        // ── Panel superior (solo título) ──
+        panelSuperior = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 6));
         panelSuperior.setBackground(currentTheme.bgSurface);
-        panelSuperior.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
+        panelSuperior.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
 
-        lblTitulo = new JLabel("HISTORIAL DE REMITOS", SwingConstants.CENTER);
+        lblTitulo = new JLabel("HISTORIAL DE REMITOS");
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblTitulo.setForeground(currentTheme.brand);
-        lblTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
         panelSuperior.add(lblTitulo);
-        panelSuperior.add(javax.swing.Box.createRigidArea(new Dimension(0, 4)));
 
         // --- FILTER ---
         lblFiltroCliente = new JLabel("CLIENTE:");
@@ -156,11 +158,12 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
             }
         });
 
-        panelFiltro = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
+        FlowLayout fl_panelFiltro = new FlowLayout(FlowLayout.LEFT, 10, 7);
+        panelFiltro = new JPanel(fl_panelFiltro);
+        panelFiltro.setBorder(new MatteBorder(1, 1, 1, 1, (Color) new Color(169, 169, 169)));
         panelFiltro.setBackground(currentTheme.bgSurface);
         panelFiltro.add(lblFiltroCliente);
         panelFiltro.add(cmbFiltroCliente);
-        panelSuperior.add(panelFiltro);
 
         // --- TABLE ---
         modeloTabla = new DefaultTableModel(COLUMNAS, 0) {
@@ -203,13 +206,19 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
         panelBotones.add(btnActualizar);
         panelBotones.add(btnVerPDF);
 
-        panelCentro = new JPanel(new BorderLayout(0, 4));
-        panelCentro.setBackground(currentTheme.bgBase);
-        panelCentro.add(scrollPane, BorderLayout.CENTER);
-        panelCentro.add(panelBotones, BorderLayout.SOUTH);
-
-        add(panelSuperior, BorderLayout.NORTH);
-        add(panelCentro, BorderLayout.CENTER);
+        // ── Panel central (null layout como VentanaRemitos) ──
+        panelCentro = new JPanel();
+        panelCentro.setBackground(new Color(200, 212, 235));
+        panelCentro.setBorder(null);
+        panelCentro.setLayout(null);
+        panelFiltro.setBounds(10, 10, 988, 36);
+        scrollPane.setBounds(10, 56, 988, 434);
+        panelBotones.setBounds(10, 515, 1004, 40);
+        panelCentro.add(panelFiltro);
+        panelCentro.add(scrollPane);
+        panelCentro.add(panelBotones);
+        getContentPane().add(panelSuperior, BorderLayout.NORTH);
+        getContentPane().add(panelCentro, BorderLayout.CENTER);
 
         boolean barIsLight = currentTheme.bgBase.getRed() > 128;
         statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
@@ -218,7 +227,7 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
         lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         lblStatus.setForeground(barIsLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
         statusBar.add(lblStatus);
-        add(statusBar, BorderLayout.SOUTH);
+        getContentPane().add(statusBar, BorderLayout.SOUTH);
     }
 
     public void cargarRemitos() {
@@ -459,23 +468,30 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
         }
     }
 
+    private void themeLabels(java.awt.Container container, Theme t) {
+        for (java.awt.Component comp : container.getComponents()) {
+            if (comp instanceof JLabel) {
+                comp.setFont(FUENTE_LABEL);
+                comp.setForeground(t.textPrimary);
+            } else if (comp instanceof java.awt.Container) {
+                themeLabels((java.awt.Container) comp, t);
+            }
+        }
+    }
+
     public void applyTheme(Theme t) {
         currentTheme = t;
-        if (getContentPane() != null) getContentPane().setBackground(t.bgBase);
-        if (panelSuperior != null) panelSuperior.setBackground(t.bgSurface);
-        if (lblTitulo != null) lblTitulo.setForeground(t.brand);
-        if (panelFiltro != null) panelFiltro.setBackground(t.bgSurface);
-        if (lblFiltroCliente != null) lblFiltroCliente.setForeground(t.textPrimary);
-        if (cmbFiltroCliente != null) {
-            cmbFiltroCliente.setBackground(getFieldBg(cmbFiltroCliente.isEnabled()));
-            cmbFiltroCliente.setForeground(cmbFiltroCliente.isEnabled() ? t.textPrimary : getDisabledFg());
-            themeComboEditor(cmbFiltroCliente, t);
-        }
-        if (panelCentro != null) panelCentro.setBackground(t.bgBase);
-        if (panelBotones != null) panelBotones.setBackground(t.bgBase);
+        boolean isLight = t.bgBase.getRed() > 128;
+        Color bg = isLight ? new Color(200, 212, 235) : t.bgBase;
+        Color surface = isLight ? new Color(200, 212, 235) : t.bgSurface;
+        if (getContentPane() != null) getContentPane().setBackground(bg);
+        if (panelSuperior != null) panelSuperior.setBackground(surface);
+        if (panelCentro != null) panelCentro.setBackground(bg);
+        if (panelFiltro != null) panelFiltro.setBackground(surface);
+        if (panelBotones != null) panelBotones.setBackground(bg);
         if (btnActualizar != null) { btnActualizar.setBackground(t.btnBg); btnActualizar.setForeground(t.textPrimary); }
         if (btnVerPDF != null) { btnVerPDF.setBackground(t.btnBg); btnVerPDF.setForeground(t.textPrimary); }
-        if (scrollPane != null) scrollPane.getViewport().setBackground(t.bgBase);
+        if (scrollPane != null) scrollPane.getViewport().setBackground(bg);
         if (tabla != null) {
             boolean isDarkTheme = t.bgBase.getRed() < 50;
             Color evenBg = isDarkTheme ? new Color(30, 40, 62) : new Color(210, 222, 242);
@@ -483,16 +499,35 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
             Set<Integer> bold = new HashSet<>(Arrays.asList(0));
             Set<Integer> center = new HashSet<>(Arrays.asList(0, 2, 3, 4));
             TablaRenderer.applyTo(tabla, t, new HashSet<>(), bold, center, evenBg, oddBg);
+            // +1pt for N° REMITO column
+            javax.swing.table.TableCellRenderer base = tabla.getDefaultRenderer(Object.class);
+            tabla.getColumnModel().getColumn(0).setCellRenderer((javax.swing.table.TableCellRenderer)
+                (javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) -> {
+                    java.awt.Component c = base.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                    c.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                    ((javax.swing.JLabel) c).setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+                    return c;
+                });
             if (tabla.getTableHeader() != null) {
                 Theme.styleTableHeader(tabla.getTableHeader(), t);
             }
         }
+        // Apply theme to all labels, then restore special ones (como VentanaRemitos)
+        if (getContentPane() != null) themeLabels(getContentPane(), t);
+        if (lblTitulo != null) {
+            lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
+            lblTitulo.setForeground(t.brand);
+        }
+        if (lblFiltroCliente != null) lblFiltroCliente.setForeground(t.textPrimary);
+        if (cmbFiltroCliente != null) {
+            cmbFiltroCliente.setBackground(getFieldBg(cmbFiltroCliente.isEnabled()));
+            cmbFiltroCliente.setForeground(cmbFiltroCliente.isEnabled() ? t.textPrimary : getDisabledFg());
+            themeComboEditor(cmbFiltroCliente, t);
+        }
         if (statusBar != null) {
-            boolean isLight = t.bgBase.getRed() > 128;
-            statusBar.setBackground(isLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
+            statusBar.setBackground(bg);
         }
         if (lblStatus != null) {
-            boolean isLight = t.bgBase.getRed() > 128;
             lblStatus.setForeground(isLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
         }
     }

@@ -33,7 +33,7 @@ import java.time.format.DateTimeFormatter;
 public class VentanaBackup extends JFrame {
 
     private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
-    private static final Font FUENTE_TITULO = new Font("Segoe UI", Font.BOLD, 16);
+    private static final Font FUENTE_TITULO = new Font("Segoe UI", Font.BOLD, 18);
     private static final Font FUENTE_STATUS = new Font("Segoe UI", Font.PLAIN, 11);
 
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();

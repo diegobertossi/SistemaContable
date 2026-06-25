@@ -84,6 +84,8 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private static final Color DARK_EDITABLE_BG = new Color(22, 27, 45);
     private static final Color LIGHT_REQUIRED_BG = new Color(180, 235, 170);
     private static final Color DARK_REQUIRED_BG = new Color(30, 68, 35);
+    private static final Color LIGHT_REQUIRED_SELECTION_BG = new Color(130, 200, 120);
+    private static final Color DARK_REQUIRED_SELECTION_BG = new Color(18, 48, 22);
 
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
@@ -185,6 +187,10 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
     private Color getFieldRequiredBg() {
         return currentTheme.bgBase.getRed() > 128 ? LIGHT_REQUIRED_BG : DARK_REQUIRED_BG;
+    }
+
+    private Color getFieldRequiredSelectionBg() {
+        return currentTheme.bgBase.getRed() > 128 ? LIGHT_REQUIRED_SELECTION_BG : DARK_REQUIRED_SELECTION_BG;
     }
 
     private Color getErrorColor() {
@@ -665,7 +671,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             public Component getListCellRendererComponent(JList<?> list, Object value,
                   int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                setBackground(isSelected ? list.getSelectionBackground() : getFieldRequiredBg());
+                setBackground(isSelected ? getFieldRequiredSelectionBg() : getFieldRequiredBg());
                 setForeground(isSelected ? list.getSelectionForeground() :
                     (cmbPuntoVenta.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
                 return this;
@@ -689,7 +695,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             public Component getListCellRendererComponent(JList<?> list, Object value,
                   int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                setBackground(isSelected ? list.getSelectionBackground() : getFieldRequiredBg());
+                setBackground(isSelected ? getFieldRequiredSelectionBg() : getFieldRequiredBg());
                 setForeground(isSelected ? list.getSelectionForeground() :
                     (cmbTipoComprobante.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
                 return this;
@@ -761,7 +767,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             public Component getListCellRendererComponent(JList<?> list, Object value,
                   int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                setBackground(isSelected ? list.getSelectionBackground() : getFieldRequiredBg());
+                setBackground(isSelected ? getFieldRequiredSelectionBg() : getFieldRequiredBg());
                 setForeground(isSelected ? list.getSelectionForeground() :
                     (cmbConcepto.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
                 return this;
@@ -1300,13 +1306,8 @@ public class VentanaFacturacion extends javax.swing.JFrame {
                 c = renderer.getListCellRendererComponent(listBox, comboBox.getSelectedItem(), -1, false, false);
             }
             c.setFont(comboBox.getFont());
-            if (hasFocus && !isPopupVisible(comboBox)) {
-                c.setForeground(listBox.getSelectionForeground());
-                c.setBackground(listBox.getSelectionBackground());
-            } else {
-                c.setForeground(comboBox.getForeground());
-                c.setBackground(comboBox.getBackground());
-            }
+            c.setForeground(comboBox.getForeground());
+            c.setBackground(comboBox.getBackground());
             currentValuePane.paintComponent(g, c, comboBox, bounds.x, bounds.y, bounds.width, bounds.height);
         }
     }

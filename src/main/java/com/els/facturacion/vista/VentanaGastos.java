@@ -79,11 +79,11 @@ public class VentanaGastos extends javax.swing.JFrame {
         getContentPane().setBackground(currentTheme.bgBase);
 
         panelSuperior = new JPanel(new BorderLayout());
-        panelSuperior.setBackground(currentTheme.bgBase);
+        panelSuperior.setBackground(currentTheme.bgSurface);
 
         lblTitulo = new JLabel("REGISTRO DE GASTOS", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        lblTitulo.setForeground(currentTheme.textPrimary);
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblTitulo.setForeground(currentTheme.brand);
 
         lblTotal = new JLabel("Total: $0.00", SwingConstants.RIGHT);
         lblTotal.setFont(FUENTE_TITULO);

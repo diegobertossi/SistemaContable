@@ -85,15 +85,15 @@ public class VentanaCaja extends javax.swing.JFrame {
         getContentPane().setBackground(currentTheme.bgBase);
 
         JPanel panelSuperior = new JPanel(new BorderLayout());
-        panelSuperior.setBackground(currentTheme.bgBase);
+        panelSuperior.setBackground(currentTheme.bgSurface);
 
         JPanel panelTitulo = new JPanel(new BorderLayout());
-        panelTitulo.setBackground(currentTheme.bgBase);
+        panelTitulo.setBackground(currentTheme.bgSurface);
 
         JLabel lblTitulo = new JLabel("CONTROL DE CAJA", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        lblTitulo.setForeground(currentTheme.textPrimary);
-        lblTitulo.setBackground(currentTheme.bgBase);
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblTitulo.setForeground(currentTheme.brand);
+        lblTitulo.setBackground(currentTheme.bgSurface);
 
         lblSaldo = new JLabel("Saldo: $0.00", SwingConstants.RIGHT);
         lblSaldo.setFont(FUENTE_TITULO);
