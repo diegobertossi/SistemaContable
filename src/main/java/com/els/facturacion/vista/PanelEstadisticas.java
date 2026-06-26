@@ -47,7 +47,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public class PanelEstadisticas extends JPanel {
@@ -98,6 +97,10 @@ public class PanelEstadisticas extends JPanel {
     private JLabel lblMes;
     private JLabel lblDesde;
     private JLabel lblHasta;
+    private JLabel lblFiltroEstado;
+    private JComboBox<String> cmbFiltroEstado;
+    private JLabel lblFiltroAnioTotales;
+    private JComboBox<String> cmbFiltroAnioTotales;
 
     // Totals labels
     private JLabel lblTotalLabel;
@@ -386,6 +389,38 @@ public class PanelEstadisticas extends JPanel {
         gbcDateHasta.gridx = 4; gbcDateHasta.gridy = 1;
         panelFiltros.add(dateHasta, gbcDateHasta);
 
+        // ── Adicional filters (row 2) ──
+        lblFiltroEstado = new JLabel("ESTADO:");
+        lblFiltroEstado.setFont(FUENTE_LABEL);
+        lblFiltroEstado.setForeground(currentTheme.textPrimary);
+
+        cmbFiltroEstado = new JComboBox<>(new String[]{"--Todos--", "Pendiente", "Parcial", "Pagada"});
+        cmbFiltroEstado.setFont(FUENTE_INPUT_BOLD);
+        cmbFiltroEstado.setPreferredSize(new Dimension(110, 24));
+        installComboUI(cmbFiltroEstado);
+        cmbFiltroEstado.setRenderer(new DefaultListCellRenderer() {
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                  int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(true));
+                setForeground(isSelected ? list.getSelectionForeground() : currentTheme.textPrimary);
+                setFont(cmbFiltroEstado.getFont());
+                return this;
+            }
+        });
+
+        GridBagConstraints gbcLblEstado = new GridBagConstraints();
+        gbcLblEstado.fill = GridBagConstraints.HORIZONTAL;
+        gbcLblEstado.insets = new Insets(2, 4, 2, 4);
+        gbcLblEstado.gridx = 0; gbcLblEstado.gridy = 2;
+        panelFiltros.add(lblFiltroEstado, gbcLblEstado);
+
+        GridBagConstraints gbcCmbEstado = new GridBagConstraints();
+        gbcCmbEstado.fill = GridBagConstraints.HORIZONTAL;
+        gbcCmbEstado.insets = new Insets(2, 4, 2, 4);
+        gbcCmbEstado.gridx = 1; gbcCmbEstado.gridy = 2;
+        panelFiltros.add(cmbFiltroEstado, gbcCmbEstado);
+
         // Apply button
         JButton btnFiltrar = new JButton("FILTRAR");
         btnFiltrar.setFont(FUENTE_BOTON);
@@ -412,7 +447,7 @@ public class PanelEstadisticas extends JPanel {
     // ──────────────────────────────────────────────
 
     private void buildTable() {
-        String[] columnas = {"FECHA", "N\u00b0 FACTURA", "CLIENTE", "ELS", "BRUTO", "IVA", "NETO"};
+        String[] columnas = {"FECHA", "N\u00b0 FACTURA", "CLIENTE", "ELS", "BRUTO", "IVA", "NETO", "ESTADO"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -430,7 +465,7 @@ public class PanelEstadisticas extends JPanel {
         tablaDetalle.getTableHeader().setResizingAllowed(false);
         tablaDetalle.getTableHeader().setReorderingAllowed(false);
 
-        int[] widths = {90, 110, 200, 90, 100, 100, 100};
+        int[] widths = {90, 110, 200, 90, 100, 100, 100, 80};
         for (int i = 0; i < widths.length; i++) {
             tablaDetalle.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
         }
@@ -450,7 +485,39 @@ public class PanelEstadisticas extends JPanel {
         lblTituloTotales.setFont(new Font("Segoe UI", Font.BOLD, 16));
         lblTituloTotales.setForeground(currentTheme.brand);
 
-        String[] cols = {"PER\u00cdODO", "CANT.", "NETO", "IVA", "BRUTO"};
+        // ── Año filter ──
+        lblFiltroAnioTotales = new JLabel("AÑO:");
+        lblFiltroAnioTotales.setFont(FUENTE_LABEL);
+        lblFiltroAnioTotales.setForeground(currentTheme.textPrimary);
+
+        cmbFiltroAnioTotales = new JComboBox<>(new String[]{"2025", "2026", "2027", "2028", "2029", "2030"});
+        cmbFiltroAnioTotales.setFont(FUENTE_INPUT_BOLD);
+        cmbFiltroAnioTotales.setPreferredSize(new Dimension(90, 24));
+        cmbFiltroAnioTotales.setSelectedItem(String.valueOf(LocalDate.now().getYear()));
+        installComboUI(cmbFiltroAnioTotales);
+        cmbFiltroAnioTotales.setRenderer(new DefaultListCellRenderer() {
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                  int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(true));
+                setForeground(isSelected ? list.getSelectionForeground() : currentTheme.textPrimary);
+                setFont(cmbFiltroAnioTotales.getFont());
+                return this;
+            }
+        });
+        cmbFiltroAnioTotales.addActionListener(e -> cargarResumen());
+
+        JPanel panelTotalesFilter = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
+        panelTotalesFilter.setOpaque(false);
+        panelTotalesFilter.add(lblFiltroAnioTotales);
+        panelTotalesFilter.add(cmbFiltroAnioTotales);
+
+        JPanel panelTotalesNorth = new JPanel(new BorderLayout());
+        panelTotalesNorth.setOpaque(false);
+        panelTotalesNorth.add(lblTituloTotales, BorderLayout.NORTH);
+        panelTotalesNorth.add(panelTotalesFilter, BorderLayout.CENTER);
+
+        String[] cols = {"MES", "CANT.", "NETO", "IVA", "BRUTO"};
         modeloTotales = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -461,6 +528,7 @@ public class PanelEstadisticas extends JPanel {
         tablaTotales = new JTable(modeloTotales);
         tablaTotales.setFont(FUENTE_TABLA);
         tablaTotales.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 11));
+        tablaTotales.getTableHeader().setResizingAllowed(false);
         tablaTotales.setRowHeight(22);
         tablaTotales.setShowGrid(true);
         tablaTotales.setAutoCreateRowSorter(true);
@@ -468,7 +536,7 @@ public class PanelEstadisticas extends JPanel {
 
         scrollTotales = new JScrollPane(tablaTotales);
 
-        panelTotalesView.add(lblTituloTotales, BorderLayout.NORTH);
+        panelTotalesView.add(panelTotalesNorth, BorderLayout.NORTH);
         panelTotalesView.add(scrollTotales, BorderLayout.CENTER);
     }
 
@@ -637,11 +705,23 @@ public class PanelEstadisticas extends JPanel {
     private void poblarTablaDetalle() {
         modeloTabla.setRowCount(0);
 
+        String filtroEstado = (String) cmbFiltroEstado.getSelectedItem();
+        boolean filtrarEstado = filtroEstado != null && !"--Todos--".equals(filtroEstado);
+
         BigDecimal sumNeto = BigDecimal.ZERO;
         BigDecimal sumIva = BigDecimal.ZERO;
         BigDecimal sumBruto = BigDecimal.ZERO;
 
         for (ComprobanteDTO c : allComprobantes) {
+            String estado = c.getEstadoPago();
+            String estadoDisplay = "pendiente".equals(estado) ? "Pendiente"
+                : "pagada_parcial".equals(estado) ? "Parcial"
+                : "pagada_total".equals(estado) ? "Pagada" : (estado != null ? estado : "");
+
+            if (filtrarEstado && !filtroEstado.equals(estadoDisplay)) {
+                continue;
+            }
+
             String fecha = c.getFechaEmision() != null ? c.getFechaEmision().format(FMT) : "";
             String nroFactura = String.format("%04d-%08d",
                 c.getPuntoVenta() != null ? c.getPuntoVenta() : 0,
@@ -663,7 +743,7 @@ public class PanelEstadisticas extends JPanel {
 
             modeloTabla.addRow(new Object[]{
                 fecha, nroFactura, cliente, els,
-                fmt$(bruto), fmt$(iva), fmt$(neto)
+                fmt$(bruto), fmt$(iva), fmt$(neto), estadoDisplay
             });
         }
 
@@ -706,54 +786,46 @@ public class PanelEstadisticas extends JPanel {
         modeloTotales.setRowCount(0);
         if (allComprobantes.isEmpty()) return;
 
-        // Group by year-month
-        Map<String, ResumenMensual> grupos = new java.util.LinkedHashMap<>();
+        String anioSel = (String) cmbFiltroAnioTotales.getSelectedItem();
+        int anio = anioSel != null ? Integer.parseInt(anioSel) : LocalDate.now().getYear();
+
+        String[] meses = {"ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO",
+            "JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"};
+
+        BigDecimal[] sumNeto = new BigDecimal[12];
+        BigDecimal[] sumIva = new BigDecimal[12];
+        BigDecimal[] sumBruto = new BigDecimal[12];
+        int[] cant = new int[12];
+        for (int i = 0; i < 12; i++) {
+            sumNeto[i] = BigDecimal.ZERO;
+            sumIva[i] = BigDecimal.ZERO;
+            sumBruto[i] = BigDecimal.ZERO;
+        }
 
         for (ComprobanteDTO c : allComprobantes) {
             if (c.getFechaEmision() == null) continue;
-            String key = c.getFechaEmision().format(DateTimeFormatter.ofPattern("yyyy-MM"));
-            BigDecimal neto = c.getImporteNeto() != null ? c.getImporteNeto() : BigDecimal.ZERO;
-            BigDecimal iva = c.getImporteIva() != null ? c.getImporteIva() : BigDecimal.ZERO;
-            BigDecimal bruto = c.getImporteTotal() != null ? c.getImporteTotal() : BigDecimal.ZERO;
-
-            ResumenMensual r = grupos.get(key);
-            if (r == null) {
-                r = new ResumenMensual();
-                grupos.put(key, r);
-            }
-            r.cant++;
-            r.neto = r.neto.add(neto);
-            r.iva = r.iva.add(iva);
-            r.bruto = r.bruto.add(bruto);
+            if (c.getFechaEmision().getYear() != anio) continue;
+            int mes = c.getFechaEmision().getMonthValue() - 1;
+            cant[mes]++;
+            sumNeto[mes] = sumNeto[mes].add(c.getImporteNeto() != null ? c.getImporteNeto() : BigDecimal.ZERO);
+            sumIva[mes] = sumIva[mes].add(c.getImporteIva() != null ? c.getImporteIva() : BigDecimal.ZERO);
+            sumBruto[mes] = sumBruto[mes].add(c.getImporteTotal() != null ? c.getImporteTotal() : BigDecimal.ZERO);
         }
 
         BigDecimal totalNeto = BigDecimal.ZERO;
         BigDecimal totalIva = BigDecimal.ZERO;
         BigDecimal totalBruto = BigDecimal.ZERO;
 
-        for (Map.Entry<String, ResumenMensual> e : grupos.entrySet()) {
-            String[] parts = e.getKey().split("-");
-            int mesNum = Integer.parseInt(parts[1]);
-            String[] meses = {"ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO",
-                "JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"};
-            String periodo = meses[mesNum - 1] + " " + parts[0];
-            ResumenMensual r = e.getValue();
+        for (int i = 0; i < 12; i++) {
             modeloTotales.addRow(new Object[]{
-                periodo, r.cant, fmt$(r.neto), fmt$(r.iva), fmt$(r.bruto)
+                meses[i], cant[i], fmt$(sumNeto[i]), fmt$(sumIva[i]), fmt$(sumBruto[i])
             });
-            totalNeto = totalNeto.add(r.neto);
-            totalIva = totalIva.add(r.iva);
-            totalBruto = totalBruto.add(r.bruto);
+            totalNeto = totalNeto.add(sumNeto[i]);
+            totalIva = totalIva.add(sumIva[i]);
+            totalBruto = totalBruto.add(sumBruto[i]);
         }
 
         modeloTotales.addRow(new Object[]{"TOTAL", "", fmt$(totalNeto), fmt$(totalIva), fmt$(totalBruto)});
-    }
-
-    private static class ResumenMensual {
-        int cant;
-        BigDecimal neto = BigDecimal.ZERO;
-        BigDecimal iva = BigDecimal.ZERO;
-        BigDecimal bruto = BigDecimal.ZERO;
     }
 
     // ──────────────────────────────────────────────
@@ -805,6 +877,13 @@ public class PanelEstadisticas extends JPanel {
         if (dateDesde != null) themeDateField(dateDesde, t);
         if (dateHasta != null) themeDateField(dateHasta, t);
 
+        if (lblFiltroEstado != null) { lblFiltroEstado.setForeground(t.textPrimary); lblFiltroEstado.setFont(FUENTE_LABEL); }
+        if (cmbFiltroEstado != null) {
+            installComboUI(cmbFiltroEstado);
+            cmbFiltroEstado.setBackground(getFieldBg(true));
+            cmbFiltroEstado.setForeground(t.textPrimary);
+        }
+
         if (panelSubtotales != null) {
             panelSubtotales.setBackground(t.bgSurface);
             panelSubtotales.setBorder(BorderFactory.createCompoundBorder(
@@ -823,8 +902,25 @@ public class PanelEstadisticas extends JPanel {
             Color oddBg  = isDark ? new Color(45, 58, 80) : new Color(235, 242, 252);
             Set<Integer> currency = new HashSet<>(Arrays.asList(4, 5, 6));
             Set<Integer> bold     = new HashSet<>(Arrays.asList(0));
-            Set<Integer> center   = new HashSet<>(Arrays.asList(0, 1, 3, 4, 5, 6));
+            Set<Integer> center   = new HashSet<>(Arrays.asList(0, 1, 3, 4, 5, 6, 7));
             TablaRenderer.applyTo(tablaDetalle, t, currency, bold, center, evenBg, oddBg);
+            // Estado column color coding
+            boolean dark = t.bgBase.getRed() < 50;
+            Color pagadaBg   = dark ? new Color(30, 70, 40)   : new Color(220, 248, 220);
+            Color pendienteBg = dark ? new Color(70, 30, 30)   : new Color(255, 200, 200);
+            Color parcialBg   = dark ? new Color(75, 58, 25)   : new Color(255, 220, 165);
+            javax.swing.table.TableCellRenderer base = tablaDetalle.getDefaultRenderer(Object.class);
+            tablaDetalle.getColumnModel().getColumn(7).setCellRenderer(
+                (javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) -> {
+                    java.awt.Component c = base.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
+                    if (!isSelected && value != null) {
+                        String v = value.toString();
+                        if ("Pagada".equals(v))            c.setBackground(pagadaBg);
+                        else if ("Pendiente".equals(v))    c.setBackground(pendienteBg);
+                        else if ("Parcial".equals(v))      c.setBackground(parcialBg);
+                    }
+                    return c;
+                });
             if (tablaDetalle.getTableHeader() != null) {
                 Theme.styleTableHeader(tablaDetalle.getTableHeader(), t);
             }
@@ -832,15 +928,47 @@ public class PanelEstadisticas extends JPanel {
 
         if (panelTotalesView != null) panelTotalesView.setBackground(t.bgBase);
         if (lblTituloTotales != null) lblTituloTotales.setForeground(t.brand);
+        if (lblFiltroAnioTotales != null) { lblFiltroAnioTotales.setForeground(t.textPrimary); lblFiltroAnioTotales.setFont(FUENTE_LABEL); }
+        if (cmbFiltroAnioTotales != null) {
+            installComboUI(cmbFiltroAnioTotales);
+            cmbFiltroAnioTotales.setBackground(getFieldBg(true));
+            cmbFiltroAnioTotales.setForeground(t.textPrimary);
+        }
         if (scrollTotales != null) scrollTotales.getViewport().setBackground(t.bgBase);
         if (tablaTotales != null) {
             boolean isDark = t.bgBase.getRed() < 50;
             Color evenBg = isDark ? new Color(30, 40, 62) : new Color(210, 222, 242);
             Color oddBg  = isDark ? new Color(45, 58, 80) : new Color(235, 242, 252);
+            Color lastRowBg = isDark ? new Color(50, 70, 100) : new Color(170, 195, 230);
             Set<Integer> currency = new HashSet<>(Arrays.asList(2, 3, 4));
-            Set<Integer> bold     = new HashSet<>(Arrays.asList(0));
+            Set<Integer> bold     = new HashSet<>();
             Set<Integer> center   = new HashSet<>(Arrays.asList(0, 1, 2, 3, 4));
             TablaRenderer.applyTo(tablaTotales, t, currency, bold, center, evenBg, oddBg);
+            // Last row highlighting (TOTAL)
+            javax.swing.table.TableCellRenderer base = tablaTotales.getDefaultRenderer(Object.class);
+            for (int i = 0; i < tablaTotales.getColumnCount(); i++) {
+                final int col = i;
+                tablaTotales.getColumnModel().getColumn(col).setCellRenderer(
+                    (javax.swing.JTable table, Object value, boolean isSel, boolean hasFoc, int row, int c) -> {
+                        java.awt.Component comp = base.getTableCellRendererComponent(table, value, isSel, hasFoc, row, c);
+                        if (row == table.getRowCount() - 1) {
+                            comp.setFont(comp.getFont().deriveFont(java.awt.Font.BOLD));
+                            if (!isSel) {
+                                comp.setBackground(lastRowBg);
+                                if (comp instanceof javax.swing.JComponent) {
+                                    ((javax.swing.JComponent) comp).setBorder(
+                                        javax.swing.BorderFactory.createCompoundBorder(
+                                            javax.swing.BorderFactory.createMatteBorder(1, 0, 0, 0, t.brand),
+                                            javax.swing.BorderFactory.createEmptyBorder(1, 4, 1, 4)));
+                                }
+                            }
+                        } else if (comp instanceof javax.swing.JComponent) {
+                            ((javax.swing.JComponent) comp).setBorder(
+                                javax.swing.BorderFactory.createEmptyBorder(1, 4, 1, 4));
+                        }
+                        return comp;
+                    });
+            }
             if (tablaTotales.getTableHeader() != null) {
                 Theme.styleTableHeader(tablaTotales.getTableHeader(), t);
             }

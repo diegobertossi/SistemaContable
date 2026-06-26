@@ -69,6 +69,8 @@ public class VentanaComprobantes extends javax.swing.JFrame {
     private JPanel panelCentro;
     private JLabel lblFiltroCliente;
     private AutoCompleteComboBox cmbFiltroCliente;
+    private JLabel lblFiltroEstado;
+    private JComboBox<String> cmbFiltroEstado;
     private JPanel panelFiltroComprobantes;
 
     private List<ComprobanteDTO> allComprobantes;
@@ -178,10 +180,33 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         cmbFiltroCliente.setOnFilter(() -> aplicarFiltro());
         cmbFiltroCliente.addActionListener(e -> aplicarFiltro());
 
+        // --- Estado filter ---
+        lblFiltroEstado = new JLabel("ESTADO:");
+        lblFiltroEstado.setFont(FUENTE_LABEL);
+        lblFiltroEstado.setForeground(currentTheme.textPrimary);
+
+        cmbFiltroEstado = new JComboBox<>(new String[]{"--Todos--", "Pendiente", "Parcial", "Pagada"});
+        cmbFiltroEstado.setFont(FUENTE_INPUT_BOLD);
+        cmbFiltroEstado.setMaximumRowCount(12);
+        cmbFiltroEstado.setPreferredSize(new Dimension(110, 24));
+        installComboUI(cmbFiltroEstado);
+        cmbFiltroEstado.setRenderer(new DefaultListCellRenderer() {
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                  int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(isSelected ? list.getSelectionBackground() : getFieldBg(true));
+                setForeground(isSelected ? list.getSelectionForeground() : currentTheme.textPrimary);
+                return this;
+            }
+        });
+        cmbFiltroEstado.addActionListener(e -> aplicarFiltro());
+
         panelFiltroComprobantes = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
         panelFiltroComprobantes.setBackground(currentTheme.bgSurface);
         panelFiltroComprobantes.add(lblFiltroCliente);
         panelFiltroComprobantes.add(cmbFiltroCliente);
+        panelFiltroComprobantes.add(lblFiltroEstado);
+        panelFiltroComprobantes.add(cmbFiltroEstado);
         panelSuperior.add(panelFiltroComprobantes);
 
         // --- TABLE ---
@@ -260,6 +285,7 @@ public class VentanaComprobantes extends javax.swing.JFrame {
 
         cmbFiltroCliente.setData(allClientes);
         cmbFiltroCliente.setSelectedItem("--Todos--");
+        cmbFiltroEstado.setSelectedItem("--Todos--");
         aplicarFiltro();
 
         tabla.clearSelection();
@@ -273,10 +299,22 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         String filtro = obtenerTextoFiltro();
         String filtroLower = filtro.toLowerCase();
 
+        String filtroEstado = (String) cmbFiltroEstado.getSelectedItem();
+        boolean filtrarEstado = filtroEstado != null && !"--Todos--".equals(filtroEstado);
+
         for (ComprobanteDTO c : allComprobantes) {
             String cli = c.getRazonSocialRec() != null ? c.getRazonSocialRec() : "";
             if (!filtro.isEmpty() && !cli.toLowerCase().contains(filtroLower)) {
                 continue;
+            }
+            if (filtrarEstado) {
+                String est = c.getEstadoPago();
+                String estDisp = "pendiente".equals(est) ? "Pendiente"
+                    : "pagada_parcial".equals(est) ? "Parcial"
+                    : "pagada_total".equals(est) ? "Pagada" : est;
+                if (!filtroEstado.equals(estDisp)) {
+                    continue;
+                }
             }
             listaIds.add(c.getId());
             String estado = c.getEstadoPago();
@@ -381,6 +419,15 @@ public class VentanaComprobantes extends javax.swing.JFrame {
             cmbFiltroCliente.setForeground(cmbFiltroCliente.isEnabled() ? t.textPrimary : getDisabledFg());
             themeComboEditor(cmbFiltroCliente, t);
         }
+        if (lblFiltroEstado != null) {
+            lblFiltroEstado.setForeground(t.textPrimary);
+            lblFiltroEstado.setFont(FUENTE_LABEL);
+        }
+        if (cmbFiltroEstado != null) {
+            installComboUI(cmbFiltroEstado);
+            cmbFiltroEstado.setBackground(getFieldBg(true));
+            cmbFiltroEstado.setForeground(t.textPrimary);
+        }
         if (panelCentro != null) panelCentro.setBackground(t.bgBase);
         if (panelBotones != null) panelBotones.setBackground(t.bgBase);
         if (btnActualizar != null) { btnActualizar.setBackground(t.btnBg); btnActualizar.setForeground(t.textPrimary); }
@@ -394,6 +441,23 @@ public class VentanaComprobantes extends javax.swing.JFrame {
             Set<Integer> bold     = new HashSet<>(Arrays.asList(0));
             Set<Integer> center   = new HashSet<>(Arrays.asList(0, 1, 2, 3, 4, 5));
             TablaRenderer.applyTo(tabla, t, currency, bold, center, evenBg, oddBg);
+            // Estado column color coding
+            boolean dark = t.bgBase.getRed() < 50;
+            Color pagadaBg   = dark ? new Color(30, 70, 40)   : new Color(220, 248, 220);
+            Color pendienteBg = dark ? new Color(70, 30, 30)   : new Color(255, 200, 200);
+            Color parcialBg   = dark ? new Color(75, 58, 25)   : new Color(255, 220, 165);
+            javax.swing.table.TableCellRenderer base = tabla.getDefaultRenderer(Object.class);
+            tabla.getColumnModel().getColumn(5).setCellRenderer(
+                (javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) -> {
+                    java.awt.Component c = base.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
+                    if (!isSelected && value != null) {
+                        String v = value.toString();
+                        if ("Pagada".equals(v))            c.setBackground(pagadaBg);
+                        else if ("Pendiente".equals(v))    c.setBackground(pendienteBg);
+                        else if ("Parcial".equals(v))      c.setBackground(parcialBg);
+                    }
+                    return c;
+                });
             if (tabla.getTableHeader() != null) {
                 Theme.styleTableHeader(tabla.getTableHeader(), t);
             }
