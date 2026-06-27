@@ -86,6 +86,8 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private static final Color DARK_REQUIRED_BG = new Color(30, 70, 40);
     private static final Color LIGHT_REQUIRED_SELECTION_BG = new Color(170, 218, 170);
     private static final Color DARK_REQUIRED_SELECTION_BG = new Color(50, 100, 60);
+    private static final Color LIGHT_REQUIRED_HOVER_BG = new Color(200, 238, 200);
+    private static final Color DARK_REQUIRED_HOVER_BG = new Color(45, 100, 60);
 
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
@@ -186,6 +188,10 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
     private Color getFieldRequiredBg() {
         return currentTheme.bgBase.getRed() > 128 ? LIGHT_REQUIRED_BG : DARK_REQUIRED_BG;
+    }
+
+    private Color getFieldRequiredHoverBg() {
+        return currentTheme.bgBase.getRed() > 128 ? LIGHT_REQUIRED_HOVER_BG : DARK_REQUIRED_HOVER_BG;
     }
 
     private Color getFieldRequiredSelectionBg() {
@@ -378,7 +384,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         // ===================== DATOS CARD =====================
         datosWrapper = new JPanel();
         datosWrapper.setLayout(new BoxLayout(datosWrapper, BoxLayout.Y_AXIS));
-        datosWrapper.setBackground(currentTheme.bgSurface);
+        datosWrapper.setBackground(currentTheme.bgBase.getRed() > 128 ? new Color(200, 212, 235) : currentTheme.bgSurface);
 
         lblTituloDatos = new JLabel("GENERACIÓN DE COMPROBANTES", SwingConstants.CENTER);
         lblTituloDatos.setFont(new Font("Segoe UI", Font.BOLD, 18));
@@ -392,18 +398,18 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelTituloDatos.add(lblTituloDatos);
 
         centerCol = new JPanel(new GridBagLayout());
-        centerCol.setBorder(new CompoundBorder(new LineBorder(currentTheme.brand), new EmptyBorder(3, 10, 2, 10)));
+        centerCol.setBorder(new CompoundBorder(new LineBorder(currentTheme.brand), new EmptyBorder(4, 10, 4, 10)));
         centerCol.setBackground(currentTheme.bgSurface);
         centerCol.setAlignmentX(Component.CENTER_ALIGNMENT);
-        centerCol.setMaximumSize(new Dimension(900, 520));
+        centerCol.setMaximumSize(new Dimension(900, 550));
 
-        centerCol.add(crearSeccionPuntoVenta(), new GridBagConstraints(0, 0, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 0, 2, 0), 0, 0));
+        centerCol.add(crearSeccionPuntoVenta(), new GridBagConstraints(0, 0, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(1, 0, 2, 0), 0, 0));
         centerCol.add(crearSeccionEmision(), new GridBagConstraints(0, 1, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 0, 2, 0), 0, 0));
         JPanel receptorPanel = crearSeccionReceptor(); // creates panelBotonesReceptor as side effect
         if (panelBotonesReceptor != null) {
             centerCol.add(panelBotonesReceptor, new GridBagConstraints(0, 2, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(1, 0, 1, 0), 0, 0));
         }
-        centerCol.add(receptorPanel, new GridBagConstraints(0, 3, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 0, 2, 0), 0, 0));
+        centerCol.add(receptorPanel, new GridBagConstraints(0, 3, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 0, 1, 0), 0, 0));
 
         chkModoPrueba = new JCheckBox("MODO PRUEBA");
         chkModoPrueba.setOpaque(false);
@@ -418,13 +424,15 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         btnSiguiente.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnSiguiente.setFocusPainted(false);
         btnSiguiente.setMargin(new Insets(6, 14, 6, 14));
-        panelNav = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 3));
+        panelNav = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 3));
         panelNav.setBackground(currentTheme.bgSurface);
         panelNav.add(chkModoPrueba);
         panelNav.add(btnSiguiente);
-        centerCol.add(panelNav, new GridBagConstraints(0, 4, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 0, 0, 0), 0, 0));
+        centerCol.add(panelNav, new GridBagConstraints(0, 4, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(2, 0, 1, 0), 0, 0));
 
         datosWrapper.add(centerCol);
+        datosWrapper.add(Box.createVerticalStrut(6));
+        datosWrapper.add(Box.createVerticalGlue());
 
         datosCard = new JPanel(new BorderLayout());
         datosCard.setBackground(currentTheme.bgSurface);
@@ -449,7 +457,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         lblSubtituloOp.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         lblSubtituloOp.setAlignmentX(Component.CENTER_ALIGNMENT);
         panelSuperiorOp.add(lblSubtituloOp);
-        panelSuperiorOp.setBorder(BorderFactory.createEmptyBorder(3, 0, 6, 0));
+        panelSuperiorOp.setBorder(BorderFactory.createEmptyBorder(4, 0, 8, 0));
 
         String[] columnas = {"ELS", "PRODUCTO/SERVICIO", "CANTIDAD", "U. MEDIDA", "P. UNITARIO", "SUBTOTAL", "SEL"};
         modeloTablaItems = new DefaultTableModel(columnas, 0) {
@@ -504,17 +512,18 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
         panelSur = new JPanel(new GridBagLayout());
         panelSur.setBackground(currentTheme.bgBase);
-        Insets panelIns = new Insets(2, 5, 2, 5);
+        panelSur.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, currentTheme.borderLight));
+        Insets panelIns = new Insets(3, 6, 3, 6);
 
         // Row 0 - Items management + Totals
-        panelItems = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
+        panelItems = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
         panelItems.setBackground(currentTheme.bgBase);
         panelItems.add(new JLabel("IVA:"));
         panelItems.add(cmbAlicuotaIva);
         panelItems.add(btnAgregarItem);
         panelItems.add(btnEliminarItem);
 
-        panelTotales = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
+        panelTotales = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 2));
         panelTotales.setBackground(currentTheme.bgBase);
 
         lblTotal = new JLabel("$ 0,00");
@@ -595,7 +604,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelAnterior.setBackground(currentTheme.bgBase);
         panelAnterior.add(btnAnterior);
 
-        panelEmitir = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 4));
+        panelEmitir = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 4));
         panelEmitir.setBackground(currentTheme.bgBase);
         panelEmitir.add(btnEmitir);
         panelEmitir.add(btnLimpiar);
@@ -654,6 +663,16 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         cmbPuntoVenta = new JComboBox<>(new String[]{"", "00001"});
         installComboUI(cmbPuntoVenta);
         cmbPuntoVenta.setBackground(getFieldRequiredBg());
+        cmbPuntoVenta.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                cmbPuntoVenta.setBackground(getFieldRequiredHoverBg());
+            }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                cmbPuntoVenta.setBackground(getFieldRequiredBg());
+            }
+        });
         cmbPuntoVenta.setFont(FUENTE_INPUT_BOLD);
         cmbPuntoVenta.setPreferredSize(new Dimension(80, 24));
         cmbPuntoVenta.setPrototypeDisplayValue("00001");
@@ -678,6 +697,16 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         });
         installComboUI(cmbTipoComprobante);
         cmbTipoComprobante.setBackground(getFieldRequiredBg());
+        cmbTipoComprobante.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                cmbTipoComprobante.setBackground(getFieldRequiredHoverBg());
+            }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                cmbTipoComprobante.setBackground(getFieldRequiredBg());
+            }
+        });
         cmbTipoComprobante.setFont(FUENTE_INPUT_BOLD);
         cmbTipoComprobante.setPreferredSize(new Dimension(240, 24));
         cmbTipoComprobante.setPrototypeDisplayValue("Factura de Cr\u00e9dito Electr\u00f3nica");
@@ -750,6 +779,16 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         cmbConcepto = new JComboBox<>(new String[]{"", "Productos", "Servicios", "Productos y Servicios"});
         installComboUI(cmbConcepto);
         cmbConcepto.setBackground(getFieldRequiredBg());
+        cmbConcepto.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                cmbConcepto.setBackground(getFieldRequiredHoverBg());
+            }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                cmbConcepto.setBackground(getFieldRequiredBg());
+            }
+        });
         cmbConcepto.setFont(FUENTE_INPUT_BOLD);
         cmbConcepto.setPreferredSize(new Dimension(180, 24));
         cmbConcepto.setPrototypeDisplayValue("Productos");
@@ -829,7 +868,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             new Font("Segoe UI", Font.BOLD, 11), currentTheme.textPrimary
         ));
         secReceptor.setBackground(currentTheme.bgSurface);
-        Insets ins = new Insets(4, 8, 4, 8);
+        Insets ins = new Insets(3, 8, 4, 8);
 
         cmbCondicionIva = new JComboBox<>(new String[]{
             "", "IVA Responsable Inscripto", "IVA Sujeto Exento", "Consumidor Final",
@@ -915,21 +954,21 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         txtEmail.setCaretColor(currentTheme.textPrimary);
 
         int row = 0;
-        secReceptor.add(new JLabel("Condicion IVA:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(4, 8, 5, 8), 0, 0));
-        secReceptor.add(cmbCondicionIva, new GridBagConstraints(1, row, 2, 1, 0.5, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(4, 8, 5, 8), 0, 0));
-        secReceptor.add(new JLabel("Doc:"), new GridBagConstraints(3, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(4, 8, 5, 8), 0, 0));
-        secReceptor.add(cmbTipoDoc, new GridBagConstraints(4, row, 1, 1, 0.2, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(4, 8, 5, 8), 0, 0));
-        secReceptor.add(cmbNroDoc, new GridBagConstraints(5, row, 1, 1, 0.3, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(4, 8, 5, 8), 0, 0));
+        secReceptor.add(new JLabel("Condicion IVA:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secReceptor.add(cmbCondicionIva, new GridBagConstraints(1, row, 2, 1, 0.5, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
+        secReceptor.add(new JLabel("Doc:"), new GridBagConstraints(3, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secReceptor.add(cmbTipoDoc, new GridBagConstraints(4, row, 1, 1, 0.2, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
+        secReceptor.add(cmbNroDoc, new GridBagConstraints(5, row, 1, 1, 0.3, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
-        secReceptor.add(new JLabel("Razon Social:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(4, 8, 5, 8), 0, 0));
-        secReceptor.add(cmbRazonSocial, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(4, 8, 5, 8), 0, 0));
+        secReceptor.add(new JLabel("Razon Social:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secReceptor.add(cmbRazonSocial, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
-        secReceptor.add(new JLabel("Domicilio:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(4, 8, 5, 8), 0, 0));
-        secReceptor.add(txtDomicilio, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(4, 8, 5, 8), 0, 0));
-        secReceptor.add(new JLabel("Email:"), new GridBagConstraints(4, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(4, 8, 5, 8), 0, 0));
-        secReceptor.add(txtEmail, new GridBagConstraints(5, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(4, 8, 5, 8), 0, 0));
+        secReceptor.add(new JLabel("Domicilio:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secReceptor.add(txtDomicilio, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
+        secReceptor.add(new JLabel("Email:"), new GridBagConstraints(4, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secReceptor.add(txtEmail, new GridBagConstraints(5, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
         txtComprobanteAsoc = new JTextField(15);
@@ -938,11 +977,11 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         txtComprobanteAsoc.setBackground(getFieldBg(true));
         txtComprobanteAsoc.setDisabledTextColor(getDisabledFg());
         txtComprobanteAsoc.setCaretColor(currentTheme.textPrimary);
-        secReceptor.add(new JLabel("N° OC:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(4, 8, 5, 8), 0, 0));
-        secReceptor.add(txtComprobanteAsoc, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(4, 8, 5, 8), 0, 0));
+        secReceptor.add(new JLabel("N° OC:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secReceptor.add(txtComprobanteAsoc, new GridBagConstraints(1, row, 3, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
-        secReceptor.add(new JLabel("Cond. Venta:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, new Insets(4, 8, 5, 8), 0, 0));
+        secReceptor.add(new JLabel("Cond. Venta:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
 
         panelChecks = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         panelChecks.setBackground(currentTheme.bgSurface);
@@ -972,7 +1011,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelChecks.add(chkCheque);
         panelChecks.add(chkTransf);
         panelChecks.add(chkOtra);
-        secReceptor.add(panelChecks, new GridBagConstraints(1, row, 5, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(4, 8, 5, 8), 0, 0));
+        secReceptor.add(panelChecks, new GridBagConstraints(1, row, 5, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         // Disable all receptor fields by default
         setReceptorFieldsEnabled(false);
@@ -998,7 +1037,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         btnFacturarPorCliente.setFocusPainted(false);
         btnFacturarPorCliente.addActionListener(e -> setReceptorFieldsEnabled(true));
 
-        panelBotonesReceptor = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        panelBotonesReceptor = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 3));
         panelBotonesReceptor.setBackground(currentTheme.bgSurface);
         panelBotonesReceptor.add(btnImportarRemito);
         panelBotonesReceptor.add(btnVerEquipos);
@@ -1066,13 +1105,16 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         if (panelPrincipalWrapper != null) panelPrincipalWrapper.setBackground(t.bgSurface);
         if (panelPrincipal != null) panelPrincipal.setBackground(t.bgSurface);
         if (datosCard != null) datosCard.setBackground(t.bgSurface);
-        if (datosWrapper != null) datosWrapper.setBackground(t.bgSurface);
+        if (datosWrapper != null) datosWrapper.setBackground(t.bgBase.getRed() > 128 ? new Color(200, 212, 235) : t.bgSurface);
         if (panelOperacion != null) {
             panelOperacion.setBackground(t.bgSurface);
             panelOperacion.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         }
         if (panelSuperiorOp != null) panelSuperiorOp.setBackground(t.bgSurface);
-        if (panelSur != null) panelSur.setBackground(t.bgBase);
+        if (panelSur != null) {
+            panelSur.setBackground(t.bgBase);
+            panelSur.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, t.borderLight));
+        }
         if (panelItems != null) panelItems.setBackground(t.bgBase);
         if (panelTotales != null) panelTotales.setBackground(t.bgBase);
         if (panelEmitir != null) panelEmitir.setBackground(t.bgBase);
@@ -1083,7 +1125,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         if (lblSubtituloOp != null) actualizarSubtitulo();
         if (centerCol != null) {
             centerCol.setBackground(t.bgSurface);
-            centerCol.setBorder(new CompoundBorder(new LineBorder(t.brand), new EmptyBorder(10, 10, 10, 10)));
+            centerCol.setBorder(new CompoundBorder(new LineBorder(t.brand), new EmptyBorder(4, 10, 4, 10)));
         }
         if (panelNav != null) panelNav.setBackground(t.bgSurface);
         // Section panels con titled border

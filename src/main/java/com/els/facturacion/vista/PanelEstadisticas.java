@@ -6,6 +6,7 @@ import com.els.facturacion.modelo.ItemFacturaDTO;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
+import javax.swing.border.TitledBorder;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
@@ -58,6 +59,9 @@ public class PanelEstadisticas extends JPanel {
     private static final Font FUENTE_TABLA = new Font("Segoe UI", Font.PLAIN, 12);
     private static final Color DISABLED_FG_LIGHT = new Color(95, 97, 106);
     private static final Color DISABLED_FG_DARK = new Color(210, 207, 190);
+    private static final Color FIXED_BG = new Color(200, 212, 235);
+    private static final Color TOGGLE_BG = new Color(183, 196, 220);
+    private static final Color TOGGLE_BORDER = new Color(165, 180, 210);
     private static final Color LIGHT_READONLY_BG = new Color(236, 237, 241);
     private static final Color LIGHT_EDITABLE_BG = new Color(255, 253, 230);
     private static final Color DARK_READONLY_BG = new Color(28, 33, 55);
@@ -75,6 +79,8 @@ public class PanelEstadisticas extends JPanel {
     private JPanel panelContenido;
     private JPanel panelDetalle;
     private JPanel panelFiltros;
+    private JPanel panelFiltroPeriodo;
+    private JPanel panelFiltroEstado;
     private JPanel panelSubtotales;
     private JPanel panelTotalesView;
 
@@ -101,6 +107,7 @@ public class PanelEstadisticas extends JPanel {
     private JComboBox<String> cmbFiltroEstado;
     private JLabel lblFiltroAnioTotales;
     private JComboBox<String> cmbFiltroAnioTotales;
+    private JPanel panelFiltroAnio;
 
 
 
@@ -119,7 +126,6 @@ public class PanelEstadisticas extends JPanel {
     private JTable tablaTotales;
     private DefaultTableModel modeloTotales;
     private JScrollPane scrollTotales;
-    private JLabel lblTituloTotales;
 
     // Layout
     private CardLayout cardContenido;
@@ -145,6 +151,26 @@ public class PanelEstadisticas extends JPanel {
         return val != null ? "$ " + DF.format(val) : "$ 0.00";
     }
 
+    private boolean isLightMode() {
+        return currentTheme.bgBase.getRed() > 128;
+    }
+
+    private Color panelBg() {
+        return isLightMode() ? FIXED_BG : currentTheme.bgBase;
+    }
+
+    private Color surfaceBg() {
+        return isLightMode() ? FIXED_BG : currentTheme.bgSurface;
+    }
+
+    private Color toggleBg() {
+        return isLightMode() ? TOGGLE_BG : currentTheme.bgSurface;
+    }
+
+    private Color toggleBorder() {
+        return isLightMode() ? TOGGLE_BORDER : currentTheme.brand;
+    }
+
     // ──────────────────────────────────────────────
     // Constructor
     // ──────────────────────────────────────────────
@@ -163,11 +189,9 @@ public class PanelEstadisticas extends JPanel {
 
     private void initComponents() {
         setLayout(new BorderLayout());
-        setBackground(currentTheme.bgBase);
-
-        // ── Title ──
+        setBackground(panelBg());
         panelSuperior = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 6));
-        panelSuperior.setBackground(currentTheme.bgSurface);
+        panelSuperior.setBackground(surfaceBg());
         panelSuperior.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
         lblTitulo = new JLabel("ESTAD\u00cdSTICAS");
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
@@ -205,19 +229,23 @@ public class PanelEstadisticas extends JPanel {
         grupoToggle.add(btnDetalle);
         grupoToggle.add(btnTotales);
 
-        panelToggle = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
-        panelToggle.setBackground(currentTheme.bgSurface);
+        panelToggle = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 4));
+        panelToggle.setBackground(toggleBg());
+        panelToggle.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(toggleBorder()),
+            BorderFactory.createEmptyBorder(2, 4, 2, 4)));
         panelToggle.add(btnDetalle);
         panelToggle.add(btnTotales);
 
         // ── CardLayout container ──
         cardContenido = new CardLayout();
         panelContenido = new JPanel(cardContenido);
-        panelContenido.setBackground(currentTheme.bgBase);
+        panelContenido.setBackground(panelBg());
 
         // ==================== DETALLE CARD ====================
         panelDetalle = new JPanel(new BorderLayout(0, 4));
-        panelDetalle.setBackground(currentTheme.bgBase);
+        panelDetalle.setBackground(panelBg());
+        panelDetalle.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
 
         buildFilterPanel();
         buildTable();
@@ -234,7 +262,7 @@ public class PanelEstadisticas extends JPanel {
         panelContenido.add(panelTotalesView, "totales");
 
         JPanel panelCentro = new JPanel(new BorderLayout());
-        panelCentro.setBackground(currentTheme.bgBase);
+        panelCentro.setBackground(panelBg());
         panelCentro.add(panelToggle, BorderLayout.NORTH);
         panelCentro.add(panelContenido, BorderLayout.CENTER);
         add(panelCentro, BorderLayout.CENTER);
@@ -247,8 +275,17 @@ public class PanelEstadisticas extends JPanel {
 
     private void buildFilterPanel() {
         panelFiltros = new JPanel(new GridBagLayout());
-        panelFiltros.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
-        panelFiltros.setBackground(currentTheme.bgSurface);
+        panelFiltros.setBackground(surfaceBg());
+
+        // ── Panel: FILTRO POR PERÍODO ──
+        panelFiltroPeriodo = new JPanel(new GridBagLayout());
+        panelFiltroPeriodo.setBackground(surfaceBg());
+        panelFiltroPeriodo.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(currentTheme.brand),
+            "FILTRO POR PER\u00cdODO",
+            TitledBorder.LEFT, TitledBorder.TOP,
+            new Font("Segoe UI", Font.BOLD, 11), currentTheme.textPrimary
+        ));
 
         // ── Radio: Período mensual ──
         radioMensual = new JRadioButton("Per\u00edodo mensual") {
@@ -259,15 +296,9 @@ public class PanelEstadisticas extends JPanel {
             }
         };
         radioMensual.setFont(FUENTE_LABEL);
-        radioMensual.setBackground(currentTheme.bgSurface);
+        radioMensual.setBackground(surfaceBg());
         radioMensual.setSelected(true);
         radioMensual.addActionListener(e -> actualizarEstadoFiltros());
-
-        GridBagConstraints gbcRadioMensual = new GridBagConstraints();
-        gbcRadioMensual.fill = GridBagConstraints.HORIZONTAL;
-        gbcRadioMensual.insets = new Insets(2, 4, 2, 4);
-        gbcRadioMensual.gridx = 0; gbcRadioMensual.gridy = 0;
-        panelFiltros.add(radioMensual, gbcRadioMensual);
 
         lblAnio = new JLabel("A\u00d1O:");
         lblAnio.setFont(FUENTE_LABEL);
@@ -289,18 +320,6 @@ public class PanelEstadisticas extends JPanel {
                 return this;
             }
         });
-
-        GridBagConstraints gbcLblAnio = new GridBagConstraints();
-        gbcLblAnio.fill = GridBagConstraints.HORIZONTAL;
-        gbcLblAnio.insets = new Insets(2, 4, 2, 4);
-        gbcLblAnio.gridx = 1; gbcLblAnio.gridy = 0;
-        panelFiltros.add(lblAnio, gbcLblAnio);
-
-        GridBagConstraints gbcCmbAnio = new GridBagConstraints();
-        gbcCmbAnio.fill = GridBagConstraints.HORIZONTAL;
-        gbcCmbAnio.insets = new Insets(2, 4, 2, 4);
-        gbcCmbAnio.gridx = 2; gbcCmbAnio.gridy = 0;
-        panelFiltros.add(cmbAnio, gbcCmbAnio);
 
         lblMes = new JLabel("MES:");
         lblMes.setFont(FUENTE_LABEL);
@@ -326,20 +345,8 @@ public class PanelEstadisticas extends JPanel {
             }
         });
 
-        GridBagConstraints gbcLblMes = new GridBagConstraints();
-        gbcLblMes.fill = GridBagConstraints.HORIZONTAL;
-        gbcLblMes.insets = new Insets(2, 4, 2, 4);
-        gbcLblMes.gridx = 3; gbcLblMes.gridy = 0;
-        panelFiltros.add(lblMes, gbcLblMes);
-
-        GridBagConstraints gbcCmbMes = new GridBagConstraints();
-        gbcCmbMes.fill = GridBagConstraints.HORIZONTAL;
-        gbcCmbMes.insets = new Insets(2, 4, 2, 4);
-        gbcCmbMes.gridx = 4; gbcCmbMes.gridy = 0;
-        panelFiltros.add(cmbMes, gbcCmbMes);
-
-        // ── Radio: Rango personalizado ──
-        radioRango = new JRadioButton("Rango personalizado") {
+        // ── Radio: Período personalizado ──
+        radioRango = new JRadioButton("Per\u00edodo personalizado:") {
             @Override
             protected void paintComponent(Graphics g) {
                 setForeground(isEnabled() ? currentTheme.textPrimary : getDisabledFg());
@@ -347,14 +354,8 @@ public class PanelEstadisticas extends JPanel {
             }
         };
         radioRango.setFont(FUENTE_LABEL);
-        radioRango.setBackground(currentTheme.bgSurface);
+        radioRango.setBackground(surfaceBg());
         radioRango.addActionListener(e -> actualizarEstadoFiltros());
-
-        GridBagConstraints gbcRadioRango = new GridBagConstraints();
-        gbcRadioRango.fill = GridBagConstraints.HORIZONTAL;
-        gbcRadioRango.insets = new Insets(2, 4, 2, 4);
-        gbcRadioRango.gridx = 0; gbcRadioRango.gridy = 1;
-        panelFiltros.add(radioRango, gbcRadioRango);
 
         lblDesde = new JLabel("DESDE:");
         lblDesde.setFont(FUENTE_LABEL);
@@ -368,31 +369,37 @@ public class PanelEstadisticas extends JPanel {
 
         dateHasta = crearDateChooser();
 
-        GridBagConstraints gbcLblDesde = new GridBagConstraints();
-        gbcLblDesde.fill = GridBagConstraints.HORIZONTAL;
-        gbcLblDesde.insets = new Insets(2, 4, 2, 4);
-        gbcLblDesde.gridx = 1; gbcLblDesde.gridy = 1;
-        panelFiltros.add(lblDesde, gbcLblDesde);
+        // ── Filter button ──
+        JButton btnFiltrar = new JButton("FILTRAR");
+        btnFiltrar.setFont(FUENTE_BOTON);
+        btnFiltrar.setFocusPainted(false);
+        btnFiltrar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnFiltrar.addActionListener(e -> cargarDatos());
 
-        GridBagConstraints gbcDateDesde = new GridBagConstraints();
-        gbcDateDesde.fill = GridBagConstraints.HORIZONTAL;
-        gbcDateDesde.insets = new Insets(2, 4, 2, 4);
-        gbcDateDesde.gridx = 2; gbcDateDesde.gridy = 1;
-        panelFiltros.add(dateDesde, gbcDateDesde);
+        // ── Layout inside panelFiltroPeriodo ──
+        panelFiltroPeriodo.add(radioMensual, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 4, 2, 4), 0, 0));
+        panelFiltroPeriodo.add(lblAnio, new GridBagConstraints(1, 0, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 4, 2, 4), 0, 0));
+        panelFiltroPeriodo.add(cmbAnio, new GridBagConstraints(2, 0, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 4, 2, 4), 0, 0));
+        panelFiltroPeriodo.add(lblMes, new GridBagConstraints(3, 0, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 4, 2, 4), 0, 0));
+        panelFiltroPeriodo.add(cmbMes, new GridBagConstraints(4, 0, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 4, 2, 4), 0, 0));
+        panelFiltroPeriodo.add(btnFiltrar, new GridBagConstraints(5, 0, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 12, 2, 4), 0, 0));
 
-        GridBagConstraints gbcLblHasta = new GridBagConstraints();
-        gbcLblHasta.fill = GridBagConstraints.HORIZONTAL;
-        gbcLblHasta.insets = new Insets(2, 4, 2, 4);
-        gbcLblHasta.gridx = 3; gbcLblHasta.gridy = 1;
-        panelFiltros.add(lblHasta, gbcLblHasta);
+        panelFiltroPeriodo.add(radioRango, new GridBagConstraints(0, 1, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 4, 2, 4), 0, 0));
+        panelFiltroPeriodo.add(lblDesde, new GridBagConstraints(1, 1, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 4, 2, 4), 0, 0));
+        panelFiltroPeriodo.add(dateDesde, new GridBagConstraints(2, 1, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 4, 2, 4), 0, 0));
+        panelFiltroPeriodo.add(lblHasta, new GridBagConstraints(3, 1, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 4, 2, 4), 0, 0));
+        panelFiltroPeriodo.add(dateHasta, new GridBagConstraints(4, 1, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 4, 2, 4), 0, 0));
 
-        GridBagConstraints gbcDateHasta = new GridBagConstraints();
-        gbcDateHasta.fill = GridBagConstraints.HORIZONTAL;
-        gbcDateHasta.insets = new Insets(2, 4, 2, 4);
-        gbcDateHasta.gridx = 4; gbcDateHasta.gridy = 1;
-        panelFiltros.add(dateHasta, gbcDateHasta);
+        // ── Panel: FILTRO POR ESTADO ──
+        panelFiltroEstado = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
+        panelFiltroEstado.setBackground(surfaceBg());
+        panelFiltroEstado.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(currentTheme.brand),
+            "FILTRO POR ESTADO",
+            TitledBorder.LEFT, TitledBorder.TOP,
+            new Font("Segoe UI", Font.BOLD, 11), currentTheme.textPrimary
+        ));
 
-        // ── Adicional filters (row 2) ──
         lblFiltroEstado = new JLabel("ESTADO:");
         lblFiltroEstado.setFont(FUENTE_LABEL);
         lblFiltroEstado.setForeground(currentTheme.textPrimary);
@@ -411,31 +418,18 @@ public class PanelEstadisticas extends JPanel {
                 return this;
             }
         });
+        cmbFiltroEstado.addActionListener(e -> {
+            if (cmbFiltroEstado.getSelectedIndex() >= 0) {
+                cargarDatos();
+            }
+        });
 
-        GridBagConstraints gbcLblEstado = new GridBagConstraints();
-        gbcLblEstado.fill = GridBagConstraints.HORIZONTAL;
-        gbcLblEstado.insets = new Insets(2, 4, 2, 4);
-        gbcLblEstado.gridx = 0; gbcLblEstado.gridy = 2;
-        panelFiltros.add(lblFiltroEstado, gbcLblEstado);
+        panelFiltroEstado.add(lblFiltroEstado);
+        panelFiltroEstado.add(cmbFiltroEstado);
 
-        GridBagConstraints gbcCmbEstado = new GridBagConstraints();
-        gbcCmbEstado.fill = GridBagConstraints.HORIZONTAL;
-        gbcCmbEstado.insets = new Insets(2, 4, 2, 4);
-        gbcCmbEstado.gridx = 1; gbcCmbEstado.gridy = 2;
-        panelFiltros.add(cmbFiltroEstado, gbcCmbEstado);
-
-        // Apply button
-        JButton btnFiltrar = new JButton("FILTRAR");
-        btnFiltrar.setFont(FUENTE_BOTON);
-        btnFiltrar.setFocusPainted(false);
-        btnFiltrar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnFiltrar.addActionListener(e -> cargarDatos());
-
-        GridBagConstraints gbcBtnFiltrar = new GridBagConstraints();
-        gbcBtnFiltrar.fill = GridBagConstraints.HORIZONTAL;
-        gbcBtnFiltrar.insets = new Insets(2, 12, 2, 4);
-        gbcBtnFiltrar.gridx = 5; gbcBtnFiltrar.gridy = 0; gbcBtnFiltrar.gridheight = 2;
-        panelFiltros.add(btnFiltrar, gbcBtnFiltrar);
+        // ── Outer layout: periodo panel (left) + estado panel (right) ──
+        panelFiltros.add(panelFiltroPeriodo, new GridBagConstraints(0, 0, 1, 1, 1, 1, GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(1, 2, 1, 2), 0, 0));
+        panelFiltros.add(panelFiltroEstado, new GridBagConstraints(1, 0, 1, 1, 0, 1, GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(1, 2, 1, 2), 0, 0));
 
         // Button group
         grupoFiltro = new ButtonGroup();
@@ -482,13 +476,9 @@ public class PanelEstadisticas extends JPanel {
 
     private void buildTotalesView() {
         panelTotalesView = new JPanel(new BorderLayout(0, 4));
-        panelTotalesView.setBackground(currentTheme.bgBase);
+        panelTotalesView.setBackground(panelBg());
 
-        lblTituloTotales = new JLabel("RESUMEN POR PER\u00cdODO", SwingConstants.CENTER);
-        lblTituloTotales.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        lblTituloTotales.setForeground(currentTheme.brand);
-
-        // ── Año filter ──
+        // ── Año filter with TitledBorder ──
         lblFiltroAnioTotales = new JLabel("AÑO:");
         lblFiltroAnioTotales.setFont(FUENTE_LABEL);
         lblFiltroAnioTotales.setForeground(currentTheme.textPrimary);
@@ -510,15 +500,16 @@ public class PanelEstadisticas extends JPanel {
         });
         cmbFiltroAnioTotales.addActionListener(e -> cargarResumen());
 
-        JPanel panelTotalesFilter = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
-        panelTotalesFilter.setOpaque(false);
-        panelTotalesFilter.add(lblFiltroAnioTotales);
-        panelTotalesFilter.add(cmbFiltroAnioTotales);
-
-        JPanel panelTotalesNorth = new JPanel(new BorderLayout());
-        panelTotalesNorth.setOpaque(false);
-        panelTotalesNorth.add(lblTituloTotales, BorderLayout.NORTH);
-        panelTotalesNorth.add(panelTotalesFilter, BorderLayout.CENTER);
+        panelFiltroAnio = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
+        panelFiltroAnio.setBackground(surfaceBg());
+        panelFiltroAnio.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(currentTheme.brand),
+            "FILTRO POR A\u00d1O",
+            TitledBorder.LEFT, TitledBorder.TOP,
+            new Font("Segoe UI", Font.BOLD, 11), currentTheme.textPrimary
+        ));
+        panelFiltroAnio.add(lblFiltroAnioTotales);
+        panelFiltroAnio.add(cmbFiltroAnioTotales);
 
         String[] cols = {"MES", "CANT.", "NETO", "IVA", "BRUTO"};
         modeloTotales = new DefaultTableModel(cols, 0) {
@@ -539,7 +530,7 @@ public class PanelEstadisticas extends JPanel {
 
         scrollTotales = new JScrollPane(tablaTotales);
 
-        panelTotalesView.add(panelTotalesNorth, BorderLayout.NORTH);
+        panelTotalesView.add(panelFiltroAnio, BorderLayout.NORTH);
         panelTotalesView.add(scrollTotales, BorderLayout.CENTER);
     }
 
@@ -549,6 +540,7 @@ public class PanelEstadisticas extends JPanel {
 
     private void buildTotalsPanel() {
         panelSubtotales = new JPanel();
+        panelSubtotales.setBackground(toggleBg());
         panelSubtotales.setLayout(new BoxLayout(panelSubtotales, BoxLayout.Y_AXIS));
 
         panelSubtotales.setBorder(BorderFactory.createCompoundBorder(
@@ -563,40 +555,20 @@ public class PanelEstadisticas extends JPanel {
 
         // ── Header row: BRUTO / IVA / NETO ──
         JPanel headerRow = new JPanel(new GridBagLayout());
-
-        GridBagConstraints gbcHdrEmpty = new GridBagConstraints();
-        gbcHdrEmpty.fill = GridBagConstraints.HORIZONTAL;
-        gbcHdrEmpty.insets = new Insets(0, 1, 0, 1);
-        gbcHdrEmpty.gridx = 0; gbcHdrEmpty.gridwidth = 4;
-        gbcHdrEmpty.weightx = weights[0] + weights[1] + weights[2] + weights[3];
-        headerRow.add(new JLabel(""), gbcHdrEmpty);
+        headerRow.setBackground(toggleBg());
+        headerRow.add(new JLabel(""), new GridBagConstraints(0, 0, 4, 1, weights[0] + weights[1] + weights[2] + weights[3], 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(0, 1, 0, 1), 0, 0));
 
         JLabel lblHdrBruto = new JLabel("BRUTO", SwingConstants.CENTER);
         lblHdrBruto.setFont(FUENTE_LABEL);
-        GridBagConstraints gbcHdrBruto = new GridBagConstraints();
-        gbcHdrBruto.fill = GridBagConstraints.HORIZONTAL;
-        gbcHdrBruto.insets = new Insets(0, 1, 0, 1);
-        gbcHdrBruto.gridx = 4; gbcHdrBruto.gridwidth = 1;
-        gbcHdrBruto.weightx = weights[4];
-        headerRow.add(lblHdrBruto, gbcHdrBruto);
+        headerRow.add(lblHdrBruto, new GridBagConstraints(4, 0, 1, 1, weights[4], 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(0, 1, 0, 1), 0, 0));
 
         JLabel lblHdrIva = new JLabel("IVA", SwingConstants.CENTER);
         lblHdrIva.setFont(FUENTE_LABEL);
-        GridBagConstraints gbcHdrIva = new GridBagConstraints();
-        gbcHdrIva.fill = GridBagConstraints.HORIZONTAL;
-        gbcHdrIva.insets = new Insets(0, 1, 0, 1);
-        gbcHdrIva.gridx = 5; gbcHdrIva.gridwidth = 1;
-        gbcHdrIva.weightx = weights[5];
-        headerRow.add(lblHdrIva, gbcHdrIva);
+        headerRow.add(lblHdrIva, new GridBagConstraints(5, 0, 1, 1, weights[5], 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(0, 1, 0, 1), 0, 0));
 
         JLabel lblHdrNeto = new JLabel("NETO", SwingConstants.CENTER);
         lblHdrNeto.setFont(FUENTE_LABEL);
-        GridBagConstraints gbcHdrNeto = new GridBagConstraints();
-        gbcHdrNeto.fill = GridBagConstraints.HORIZONTAL;
-        gbcHdrNeto.insets = new Insets(0, 1, 0, 1);
-        gbcHdrNeto.gridx = 6; gbcHdrNeto.gridwidth = 1;
-        gbcHdrNeto.weightx = weights[6];
-        headerRow.add(lblHdrNeto, gbcHdrNeto);
+        headerRow.add(lblHdrNeto, new GridBagConstraints(6, 0, 1, 1, weights[6], 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(0, 1, 0, 1), 0, 0));
 
         // ── Total row ──
         lblTotalLabel = new JLabel("TOTAL:");
@@ -622,6 +594,7 @@ public class PanelEstadisticas extends JPanel {
 
     private JPanel buildTotalsRow(JLabel label, JLabel bruto, JLabel iva, JLabel neto) {
         JPanel row = new JPanel(new GridBagLayout());
+        row.setBackground(toggleBg());
 
         int[] widths = {90, 110, 200, 90, 100, 100, 100};
         double total = 0;
@@ -629,37 +602,10 @@ public class PanelEstadisticas extends JPanel {
         double[] weights = new double[widths.length];
         for (int i = 0; i < widths.length; i++) weights[i] = (double) widths[i] / total;
 
-        GridBagConstraints gbcLabel = new GridBagConstraints();
-        gbcLabel.fill = GridBagConstraints.HORIZONTAL;
-        gbcLabel.insets = new Insets(2, 1, 2, 1);
-        gbcLabel.gridx = 0; gbcLabel.gridwidth = 4;
-        gbcLabel.weightx = weights[0] + weights[1] + weights[2] + weights[3];
-        gbcLabel.anchor = GridBagConstraints.WEST;
-        row.add(label, gbcLabel);
-
-        GridBagConstraints gbcBruto = new GridBagConstraints();
-        gbcBruto.fill = GridBagConstraints.HORIZONTAL;
-        gbcBruto.insets = new Insets(2, 1, 2, 1);
-        gbcBruto.gridx = 4; gbcBruto.gridwidth = 1;
-        gbcBruto.weightx = weights[4];
-        gbcBruto.anchor = GridBagConstraints.EAST;
-        row.add(bruto, gbcBruto);
-
-        GridBagConstraints gbcIva = new GridBagConstraints();
-        gbcIva.fill = GridBagConstraints.HORIZONTAL;
-        gbcIva.insets = new Insets(2, 1, 2, 1);
-        gbcIva.gridx = 5; gbcIva.gridwidth = 1;
-        gbcIva.weightx = weights[5];
-        gbcIva.anchor = GridBagConstraints.EAST;
-        row.add(iva, gbcIva);
-
-        GridBagConstraints gbcNeto = new GridBagConstraints();
-        gbcNeto.fill = GridBagConstraints.HORIZONTAL;
-        gbcNeto.insets = new Insets(2, 1, 2, 1);
-        gbcNeto.gridx = 6; gbcNeto.gridwidth = 1;
-        gbcNeto.weightx = weights[6];
-        gbcNeto.anchor = GridBagConstraints.EAST;
-        row.add(neto, gbcNeto);
+        row.add(label, new GridBagConstraints(0, 0, 4, 1, weights[0] + weights[1] + weights[2] + weights[3], 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(2, 1, 2, 1), 0, 0));
+        row.add(bruto, new GridBagConstraints(4, 0, 1, 1, weights[4], 0, GridBagConstraints.EAST, GridBagConstraints.HORIZONTAL, new Insets(2, 1, 2, 1), 0, 0));
+        row.add(iva, new GridBagConstraints(5, 0, 1, 1, weights[5], 0, GridBagConstraints.EAST, GridBagConstraints.HORIZONTAL, new Insets(2, 1, 2, 1), 0, 0));
+        row.add(neto, new GridBagConstraints(6, 0, 1, 1, weights[6], 0, GridBagConstraints.EAST, GridBagConstraints.HORIZONTAL, new Insets(2, 1, 2, 1), 0, 0));
 
         return row;
     }
@@ -838,15 +784,20 @@ public class PanelEstadisticas extends JPanel {
     public void applyTheme(Theme t) {
         currentTheme = t;
 
-        setBackground(t.bgBase);
+        setBackground(panelBg());
 
-        if (panelSuperior != null) panelSuperior.setBackground(t.bgSurface);
+        if (panelSuperior != null) panelSuperior.setBackground(surfaceBg());
         if (lblTitulo != null) {
             lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
             lblTitulo.setForeground(t.brand);
         }
 
-        if (panelToggle != null) panelToggle.setBackground(t.bgSurface);
+        if (panelToggle != null) {
+            panelToggle.setBackground(toggleBg());
+            panelToggle.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(toggleBorder()),
+                BorderFactory.createEmptyBorder(2, 4, 2, 4)));
+        }
 
         if (btnDetalle != null) {
             btnDetalle.setBackground(t.btnBg);
@@ -857,9 +808,29 @@ public class PanelEstadisticas extends JPanel {
             btnTotales.setForeground(t.textPrimary);
         }
 
-        if (panelFiltros != null) panelFiltros.setBackground(t.bgSurface);
-        if (radioMensual != null) { radioMensual.setBackground(t.bgSurface); radioMensual.setForeground(t.textPrimary); }
-        if (radioRango != null) { radioRango.setBackground(t.bgSurface); radioRango.setForeground(t.textPrimary); }
+        if (panelFiltros != null) {
+        panelFiltros.setBackground(surfaceBg());
+        }
+        if (panelFiltroPeriodo != null) {
+        panelFiltroPeriodo.setBackground(surfaceBg());
+            panelFiltroPeriodo.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(t.brand),
+                "FILTRO POR PER\u00cdODO",
+                TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 11), t.textPrimary
+            ));
+        }
+        if (panelFiltroEstado != null) {
+        panelFiltroEstado.setBackground(surfaceBg());
+            panelFiltroEstado.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(t.brand),
+                "FILTRO POR ESTADO",
+                TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 11), t.textPrimary
+            ));
+        }
+        if (radioMensual != null) { radioMensual.setBackground(surfaceBg()); radioMensual.setForeground(t.textPrimary); }
+        if (radioRango != null) { radioRango.setBackground(surfaceBg()); radioRango.setForeground(t.textPrimary); }
 
         if (lblAnio != null) { lblAnio.setForeground(t.textPrimary); lblAnio.setFont(FUENTE_LABEL); }
         if (lblMes != null) { lblMes.setForeground(t.textPrimary); lblMes.setFont(FUENTE_LABEL); }
@@ -888,17 +859,17 @@ public class PanelEstadisticas extends JPanel {
         }
 
         if (panelSubtotales != null) {
-            panelSubtotales.setBackground(t.bgSurface);
+        panelSubtotales.setBackground(toggleBg());
             panelSubtotales.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(t.brand),
                 BorderFactory.createEmptyBorder(4, 6, 4, 6)));
             themeTotalsLabels(panelSubtotales, t);
         }
 
-        if (panelDetalle != null) panelDetalle.setBackground(t.bgBase);
-        if (panelContenido != null) panelContenido.setBackground(t.bgBase);
+        if (panelDetalle != null) panelDetalle.setBackground(panelBg());
+        if (panelContenido != null) panelContenido.setBackground(panelBg());
 
-        if (scrollTabla != null) scrollTabla.getViewport().setBackground(t.bgBase);
+        if (scrollTabla != null) scrollTabla.getViewport().setBackground(panelBg());
         if (tablaDetalle != null) {
             boolean isDark = t.bgBase.getRed() < 50;
             Color evenBg = isDark ? new Color(30, 40, 62) : new Color(210, 222, 242);
@@ -930,15 +901,23 @@ public class PanelEstadisticas extends JPanel {
         }
 
 
-        if (panelTotalesView != null) panelTotalesView.setBackground(t.bgBase);
-        if (lblTituloTotales != null) lblTituloTotales.setForeground(t.brand);
+        if (panelTotalesView != null) panelTotalesView.setBackground(panelBg());
+        if (panelFiltroAnio != null) {
+        panelFiltroAnio.setBackground(surfaceBg());
+            panelFiltroAnio.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(t.brand),
+                "FILTRO POR A\u00d1O",
+                TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 11), t.textPrimary
+            ));
+        }
         if (lblFiltroAnioTotales != null) { lblFiltroAnioTotales.setForeground(t.textPrimary); lblFiltroAnioTotales.setFont(FUENTE_LABEL); }
         if (cmbFiltroAnioTotales != null) {
             installComboUI(cmbFiltroAnioTotales);
             cmbFiltroAnioTotales.setBackground(getFieldBg(true));
             cmbFiltroAnioTotales.setForeground(t.textPrimary);
         }
-        if (scrollTotales != null) scrollTotales.getViewport().setBackground(t.bgBase);
+        if (scrollTotales != null) scrollTotales.getViewport().setBackground(panelBg());
         if (tablaTotales != null) {
             boolean isDark = t.bgBase.getRed() < 50;
             Color evenBg = isDark ? new Color(30, 40, 62) : new Color(210, 222, 242);
@@ -960,9 +939,11 @@ public class PanelEstadisticas extends JPanel {
                             if (!isSel) {
                                 comp.setBackground(lastRowBg);
                                 if (comp instanceof javax.swing.JComponent) {
+                                    int l = col == 0 ? 1 : 0;
+                                    int r = col == table.getColumnCount() - 1 ? 1 : 0;
                                     ((javax.swing.JComponent) comp).setBorder(
                                         javax.swing.BorderFactory.createCompoundBorder(
-                                            javax.swing.BorderFactory.createMatteBorder(1, 0, 0, 0, t.brand),
+                                            javax.swing.BorderFactory.createMatteBorder(1, l, 1, r, t.brand),
                                             javax.swing.BorderFactory.createEmptyBorder(1, 4, 1, 4)));
                                 }
                             }
@@ -982,7 +963,7 @@ public class PanelEstadisticas extends JPanel {
     private void themeTotalsLabels(Container container, Theme t) {
         for (java.awt.Component c : container.getComponents()) {
             if (c instanceof JPanel) {
-                c.setBackground(t.bgSurface);
+                c.setBackground(toggleBg());
                 for (java.awt.Component c2 : ((JPanel) c).getComponents()) {
                     if (c2 instanceof JLabel) {
                         ((JLabel) c2).setForeground(t.textPrimary);

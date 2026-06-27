@@ -29,6 +29,8 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.io.File;
+
+import javax.swing.border.TitledBorder;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -45,6 +47,7 @@ public class VentanaComprobantes extends javax.swing.JFrame {
     private static final Font FUENTE_LABEL = new Font("Segoe UI", Font.PLAIN, 11);
     private static final Color DISABLED_FG_LIGHT = new Color(95, 97, 106);
     private static final Color DISABLED_FG_DARK = new Color(210, 207, 190);
+    private static final Color FIXED_BG = new Color(200, 212, 235);
     private static final Color LIGHT_READONLY_BG = new Color(236, 237, 241);
     private static final Color LIGHT_EDITABLE_BG = new Color(255, 253, 230);
     private static final Color DARK_READONLY_BG = new Color(28, 33, 55);
@@ -84,6 +87,18 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         return currentTheme.bgBase.getRed() > 128
             ? (editing ? LIGHT_EDITABLE_BG : LIGHT_READONLY_BG)
             : (editing ? DARK_EDITABLE_BG : DARK_READONLY_BG);
+    }
+
+    private boolean isLightMode() {
+        return currentTheme.bgBase.getRed() > 128;
+    }
+
+    private Color panelBg() {
+        return isLightMode() ? FIXED_BG : currentTheme.bgBase;
+    }
+
+    private Color surfaceBg() {
+        return isLightMode() ? FIXED_BG : currentTheme.bgSurface;
     }
 
     public VentanaComprobantes() {
@@ -141,11 +156,11 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         setResizable(false);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(currentTheme.bgBase);
+        getContentPane().setBackground(panelBg());
 
         panelSuperior = new JPanel();
         panelSuperior.setLayout(new BoxLayout(panelSuperior, BoxLayout.Y_AXIS));
-        panelSuperior.setBackground(currentTheme.bgSurface);
+        panelSuperior.setBackground(surfaceBg());
         panelSuperior.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
 
         lblTitulo = new JLabel("HISTORIAL DE COMPROBANTES", SwingConstants.CENTER);
@@ -201,7 +216,13 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         cmbFiltroEstado.addActionListener(e -> aplicarFiltro());
 
         panelFiltroComprobantes = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
-        panelFiltroComprobantes.setBackground(currentTheme.bgSurface);
+        panelFiltroComprobantes.setBackground(surfaceBg());
+        panelFiltroComprobantes.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(currentTheme.brand),
+            "FILTROS",
+            TitledBorder.LEFT, TitledBorder.TOP,
+            new Font("Segoe UI", Font.BOLD, 11), currentTheme.textPrimary
+        ));
         panelFiltroComprobantes.add(lblFiltroCliente);
         panelFiltroComprobantes.add(cmbFiltroCliente);
         panelFiltroComprobantes.add(lblFiltroEstado);
@@ -247,12 +268,12 @@ public class VentanaComprobantes extends javax.swing.JFrame {
         btnVerPDF.addActionListener(e -> btnVerPDFAction());
 
         panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 4));
-        panelBotones.setBackground(currentTheme.bgBase);
+        panelBotones.setBackground(panelBg());
         panelBotones.add(btnActualizar);
         panelBotones.add(btnVerPDF);
 
         panelCentro = new JPanel(new BorderLayout(0, 4));
-        panelCentro.setBackground(currentTheme.bgBase);
+        panelCentro.setBackground(panelBg());
         panelCentro.add(scrollPane, BorderLayout.CENTER);
         panelCentro.add(panelBotones, BorderLayout.SOUTH);
 
@@ -396,9 +417,17 @@ public class VentanaComprobantes extends javax.swing.JFrame {
 
     private void applyTheme(Theme t) {
         currentTheme = t;
-        if (getContentPane() != null) getContentPane().setBackground(t.bgBase);
-        if (panelSuperior != null) panelSuperior.setBackground(t.bgSurface);
-        if (panelFiltroComprobantes != null) panelFiltroComprobantes.setBackground(t.bgSurface);
+        if (getContentPane() != null) getContentPane().setBackground(panelBg());
+        if (panelSuperior != null) panelSuperior.setBackground(surfaceBg());
+        if (panelFiltroComprobantes != null) {
+            panelFiltroComprobantes.setBackground(surfaceBg());
+            panelFiltroComprobantes.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(t.brand),
+                "FILTROS",
+                TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 11), t.textPrimary
+            ));
+        }
         if (lblTitulo != null) lblTitulo.setForeground(t.brand);
         if (lblFiltroCliente != null) {
             lblFiltroCliente.setForeground(t.textPrimary);
@@ -419,11 +448,11 @@ public class VentanaComprobantes extends javax.swing.JFrame {
             cmbFiltroEstado.setBackground(getFieldBg(true));
             cmbFiltroEstado.setForeground(t.textPrimary);
         }
-        if (panelCentro != null) panelCentro.setBackground(t.bgBase);
-        if (panelBotones != null) panelBotones.setBackground(t.bgBase);
+        if (panelCentro != null) panelCentro.setBackground(panelBg());
+        if (panelBotones != null) panelBotones.setBackground(panelBg());
         if (btnActualizar != null) { btnActualizar.setBackground(t.btnBg); btnActualizar.setForeground(t.textPrimary); }
         if (btnVerPDF != null) { btnVerPDF.setBackground(t.btnBg); btnVerPDF.setForeground(t.textPrimary); }
-        if (scrollPane != null) scrollPane.getViewport().setBackground(t.bgBase);
+        if (scrollPane != null) scrollPane.getViewport().setBackground(panelBg());
         if (tabla != null) {
             boolean isDarkTheme = t.bgBase.getRed() < 50;
             Color evenBg = isDarkTheme ? new Color(30, 40, 62) : new Color(210, 222, 242);
