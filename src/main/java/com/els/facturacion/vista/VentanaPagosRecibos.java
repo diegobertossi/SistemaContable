@@ -3,14 +3,21 @@ package com.els.facturacion.vista;
 import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import javax.swing.SwingConstants;
 
 public class VentanaPagosRecibos extends JFrame {
 
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
     private JTabbedPane tabbedPane;
     private VentanaRecibos recibosView;
+    private JPanel statusBar;
+    private JLabel lblStatus;
 
     public VentanaPagosRecibos() {
         initComponents();
@@ -19,7 +26,7 @@ public class VentanaPagosRecibos extends JFrame {
     }
 
     private void initComponents() {
-        setTitle("Gesti\u00f3n de Pagos y Recibos");
+        setTitle("MÓDULO PAGOS Y RECIBOS");
         setSize(1024, 600);
         setMinimumSize(new Dimension(1024, 600));
         setMaximumSize(new Dimension(1024, 600));
@@ -41,7 +48,7 @@ public class VentanaPagosRecibos extends JFrame {
         recibosView = new VentanaRecibos();
         Container recibosContent = recibosView.getContentPane();
         recibosView.remove(recibosContent);
-        tabbedPane.addTab("Recibos", recibosContent);
+        tabbedPane.addTab("Historial y Recibos", recibosContent);
 
         tabbedPane.addChangeListener(e -> {
             if (tabbedPane.getSelectedIndex() == 1) {
@@ -49,7 +56,16 @@ public class VentanaPagosRecibos extends JFrame {
             }
         });
 
-        add(tabbedPane, BorderLayout.CENTER);
+        getContentPane().add(tabbedPane, BorderLayout.CENTER);
+
+        lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica", SwingConstants.LEFT);
+        lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblStatus.setForeground(currentTheme.statusBarFg);
+
+        statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
+        statusBar.setBackground(currentTheme.statusBarBg);
+        statusBar.add(lblStatus);
+        getContentPane().add(statusBar, BorderLayout.SOUTH);
     }
 
     private void applyTheme(Theme t) {
@@ -61,5 +77,7 @@ public class VentanaPagosRecibos extends JFrame {
             tabbedPane.setBackground(t.bgSurface);
             tabbedPane.setForeground(t.textPrimary);
         }
+        if (statusBar != null) statusBar.setBackground(t.statusBarBg);
+        if (lblStatus != null) lblStatus.setForeground(t.statusBarFg);
     }
 }

@@ -164,7 +164,7 @@ public class VentanaClientes extends javax.swing.JFrame {
     }
 
     private void initComponents() {
-        setTitle("Gestion de Clientes");
+        setTitle("MÓDULO CLIENTES");
         setSize(1024, 600);
         setResizable(false);
         setDefaultCloseOperation(javax.swing.JFrame.DISPOSE_ON_CLOSE);
@@ -176,7 +176,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         panelSuperior.setBackground(currentTheme.bgSurface);
         panelSuperior.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
 
-        lblTitulo = new JLabel("MODULO DE CLIENTES");
+        lblTitulo = new JLabel("GESTIÓN DE CLIENTES");
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblTitulo.setForeground(currentTheme.brand);
         panelSuperior.add(lblTitulo);
@@ -467,12 +467,11 @@ public class VentanaClientes extends javax.swing.JFrame {
 
         getContentPane().add(panelSuperior, BorderLayout.NORTH);
         getContentPane().add(panelCentro, BorderLayout.CENTER);
-        boolean barIsLight = currentTheme.bgBase.getRed() > 128;
         statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
-        statusBar.setBackground(barIsLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
+        statusBar.setBackground(currentTheme.statusBarBg);
         lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica");
         lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        lblStatus.setForeground(barIsLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
+        lblStatus.setForeground(currentTheme.statusBarFg);
         statusBar.add(lblStatus);
         getContentPane().add(statusBar, BorderLayout.SOUTH);
         updatePlaceholders();
@@ -1978,12 +1977,10 @@ public class VentanaClientes extends javax.swing.JFrame {
             }
         }
         if (statusBar != null) {
-            boolean isLight = t.bgBase.getRed() > 128;
-            statusBar.setBackground(isLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
+            statusBar.setBackground(t.statusBarBg);
         }
         if (lblStatus != null) {
-            boolean isLight = t.bgBase.getRed() > 128;
-            lblStatus.setForeground(isLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
+            lblStatus.setForeground(t.statusBarFg);
         }
     }
 

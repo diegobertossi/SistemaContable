@@ -82,10 +82,10 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private static final Color LIGHT_EDITABLE_BG = new Color(255, 253, 230);
     private static final Color DARK_READONLY_BG = new Color(28, 33, 55);
     private static final Color DARK_EDITABLE_BG = new Color(22, 27, 45);
-    private static final Color LIGHT_REQUIRED_BG = new Color(180, 235, 170);
-    private static final Color DARK_REQUIRED_BG = new Color(30, 68, 35);
-    private static final Color LIGHT_REQUIRED_SELECTION_BG = new Color(130, 200, 120);
-    private static final Color DARK_REQUIRED_SELECTION_BG = new Color(18, 48, 22);
+    private static final Color LIGHT_REQUIRED_BG = new Color(220, 248, 220);
+    private static final Color DARK_REQUIRED_BG = new Color(30, 70, 40);
+    private static final Color LIGHT_REQUIRED_SELECTION_BG = new Color(170, 218, 170);
+    private static final Color DARK_REQUIRED_SELECTION_BG = new Color(50, 100, 60);
 
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
@@ -152,8 +152,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private JPanel panelTotales;
     private JPanel panelEmitir;
     private JPanel panelAnterior;
-    private JPanel statusBar;
-    private JLabel lblStatus;
+
     private JScrollPane scrollTabla;
     private JPanel panelSuperiorOp;
     private JLabel lblTituloOp;
@@ -381,7 +380,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         datosWrapper.setLayout(new BoxLayout(datosWrapper, BoxLayout.Y_AXIS));
         datosWrapper.setBackground(currentTheme.bgSurface);
 
-        lblTituloDatos = new JLabel("GENERACION DE COMPROBANTES", SwingConstants.CENTER);
+        lblTituloDatos = new JLabel("GENERACIÓN DE COMPROBANTES", SwingConstants.CENTER);
         lblTituloDatos.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblTituloDatos.setForeground(currentTheme.brand);
         lblTituloDatos.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -393,18 +392,18 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelTituloDatos.add(lblTituloDatos);
 
         centerCol = new JPanel(new GridBagLayout());
-        centerCol.setBorder(new CompoundBorder(new LineBorder(currentTheme.brand), new EmptyBorder(4, 10, 4, 10)));
+        centerCol.setBorder(new CompoundBorder(new LineBorder(currentTheme.brand), new EmptyBorder(3, 10, 2, 10)));
         centerCol.setBackground(currentTheme.bgSurface);
         centerCol.setAlignmentX(Component.CENTER_ALIGNMENT);
-        centerCol.setMaximumSize(new Dimension(900, 2000));
+        centerCol.setMaximumSize(new Dimension(900, 520));
 
-        centerCol.add(crearSeccionPuntoVenta(), new GridBagConstraints(0, 0, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(4, 0, 4, 0), 0, 0));
-        centerCol.add(crearSeccionEmision(), new GridBagConstraints(0, 1, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(4, 0, 4, 0), 0, 0));
+        centerCol.add(crearSeccionPuntoVenta(), new GridBagConstraints(0, 0, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 0, 2, 0), 0, 0));
+        centerCol.add(crearSeccionEmision(), new GridBagConstraints(0, 1, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 0, 2, 0), 0, 0));
         JPanel receptorPanel = crearSeccionReceptor(); // creates panelBotonesReceptor as side effect
         if (panelBotonesReceptor != null) {
-            centerCol.add(panelBotonesReceptor, new GridBagConstraints(0, 2, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 0, 2, 0), 0, 0));
+            centerCol.add(panelBotonesReceptor, new GridBagConstraints(0, 2, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(1, 0, 1, 0), 0, 0));
         }
-        centerCol.add(receptorPanel, new GridBagConstraints(0, 3, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(4, 0, 4, 0), 0, 0));
+        centerCol.add(receptorPanel, new GridBagConstraints(0, 3, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 0, 2, 0), 0, 0));
 
         chkModoPrueba = new JCheckBox("MODO PRUEBA");
         chkModoPrueba.setOpaque(false);
@@ -423,7 +422,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelNav.setBackground(currentTheme.bgSurface);
         panelNav.add(chkModoPrueba);
         panelNav.add(btnSiguiente);
-        centerCol.add(panelNav, new GridBagConstraints(0, 4, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(2, 0, 0, 0), 0, 0));
+        centerCol.add(panelNav, new GridBagConstraints(0, 4, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(1, 0, 0, 0), 0, 0));
 
         datosWrapper.add(centerCol);
 
@@ -616,15 +615,6 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         panelPrincipalWrapper = new JPanel(new BorderLayout());
         panelPrincipalWrapper.setBackground(currentTheme.bgSurface);
         panelPrincipalWrapper.add(panelPrincipal, BorderLayout.CENTER);
-
-        boolean barIsLight = currentTheme.bgBase.getRed() > 128;
-        statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
-        statusBar.setBackground(barIsLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
-        lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica");
-        lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        lblStatus.setForeground(barIsLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
-        statusBar.add(lblStatus);
-        panelPrincipalWrapper.add(statusBar, BorderLayout.SOUTH);
 
         getContentPane().add(panelPrincipalWrapper);
 
@@ -1087,14 +1077,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         if (panelTotales != null) panelTotales.setBackground(t.bgBase);
         if (panelEmitir != null) panelEmitir.setBackground(t.bgBase);
         if (panelAnterior != null) panelAnterior.setBackground(t.bgBase);
-        if (statusBar != null) {
-            boolean isLight = t.bgBase.getRed() > 128;
-            statusBar.setBackground(isLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
-        }
-        if (lblStatus != null) {
-            boolean isLight = t.bgBase.getRed() > 128;
-            lblStatus.setForeground(isLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
-        }
+
         if (lblTituloOp != null) lblTituloOp.setForeground(t.brand);
         if (lblTituloDatos != null) lblTituloDatos.setForeground(t.brand);
         if (lblSubtituloOp != null) actualizarSubtitulo();

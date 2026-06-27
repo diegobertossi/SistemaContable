@@ -28,6 +28,8 @@ public class Theme {
     public final Color hoverBg;
     public final Color pressedBg;
     public final Color danger;
+    public final Color statusBarBg;
+    public final Color statusBarFg;
 
     public Theme(String name, Color bgBase, Color bgSurface, Color bgElevated, Color bgInput,
           Color textPrimary, Color textSecondary, Color textTertiary, Color textMuted,
@@ -50,6 +52,13 @@ public class Theme {
         this.hoverBg = hoverBg;
         this.pressedBg = pressedBg;
         this.danger = danger;
+        boolean isLight = bgBase.getRed() > 128;
+        this.statusBarBg = isLight
+            ? new Color(175, 185, 215)
+            : new Color(32, 38, 58);
+        this.statusBarFg = isLight
+            ? new Color(80, 90, 110)
+            : new Color(160, 175, 200);
     }
 
     public static final Theme LIGHT = new Theme(

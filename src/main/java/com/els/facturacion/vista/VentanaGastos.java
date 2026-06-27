@@ -55,8 +55,6 @@ public class VentanaGastos extends javax.swing.JFrame {
     private JLabel lblDesc;
     private JLabel lblMonto;
     private JButton btnFiltrar;
-    private JPanel statusBar;
-    private JLabel lblStatus;
     private JButton btnAgregar;
     private JButton btnEliminar;
     private JButton btnLimpiar;
@@ -237,18 +235,7 @@ public class VentanaGastos extends javax.swing.JFrame {
         add(panelSuperior, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
         add(panelFiltro, BorderLayout.BEFORE_FIRST_LINE);
-        JPanel southWrapper = new JPanel(new BorderLayout());
-        southWrapper.setBackground(currentTheme.bgBase);
-        southWrapper.add(panelFormulario, BorderLayout.CENTER);
-        boolean barIsLight = currentTheme.bgBase.getRed() > 128;
-        statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
-        statusBar.setBackground(barIsLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
-        lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica");
-        lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        lblStatus.setForeground(barIsLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
-        statusBar.add(lblStatus);
-        southWrapper.add(statusBar, BorderLayout.SOUTH);
-        add(southWrapper, BorderLayout.SOUTH);
+        add(panelFormulario, BorderLayout.SOUTH);
     }
 
     private void cargarCategorias() {
@@ -341,14 +328,6 @@ public class VentanaGastos extends javax.swing.JFrame {
         if (panelFiltro != null) panelFiltro.setBackground(t.bgBase);
         if (panelFormulario != null) panelFormulario.setBackground(t.bgBase);
         if (panelBotones != null) panelBotones.setBackground(t.bgBase);
-        if (statusBar != null) {
-            boolean isLight = t.bgBase.getRed() > 128;
-            statusBar.setBackground(isLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
-        }
-        if (lblStatus != null) {
-            boolean isLight = t.bgBase.getRed() > 128;
-            lblStatus.setForeground(isLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
-        }
         if (lblTitulo != null) lblTitulo.setForeground(t.brand);
         if (lblTotal != null) lblTotal.setForeground(t.brand);
         if (lblMes != null) lblMes.setForeground(t.textPrimary);

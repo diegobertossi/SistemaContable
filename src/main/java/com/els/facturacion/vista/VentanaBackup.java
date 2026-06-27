@@ -16,6 +16,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -34,7 +35,6 @@ public class VentanaBackup extends JFrame {
 
     private static final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 11);
     private static final Font FUENTE_TITULO = new Font("Segoe UI", Font.BOLD, 18);
-    private static final Font FUENTE_STATUS = new Font("Segoe UI", Font.PLAIN, 11);
 
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
@@ -43,6 +43,7 @@ public class VentanaBackup extends JFrame {
     private JLabel lblStatus;
     private JLabel lblTitulo;
     private JPanel panelBotones;
+    private JPanel statusBar;
     private JPanel wrapperPanel;
 
     private static final String HOST = "localhost";
@@ -95,17 +96,22 @@ public class VentanaBackup extends JFrame {
         g.gridx = 0; g.gridy = 1;
         panelBotones.add(btnImportar, g);
 
-        lblStatus = new JLabel(" ", SwingConstants.CENTER);
-        lblStatus.setFont(FUENTE_STATUS);
+        lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica", SwingConstants.LEFT);
+        lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblStatus.setForeground(currentTheme.statusBarFg);
+
+        statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
+        statusBar.setBackground(currentTheme.statusBarBg);
+        statusBar.add(lblStatus);
 
         wrapperPanel = new JPanel(new BorderLayout(0, 8));
         wrapperPanel.setBackground(currentTheme.bgBase);
         wrapperPanel.setBorder(BorderFactory.createEmptyBorder(16, 10, 12, 10));
         wrapperPanel.add(lblTitulo, BorderLayout.NORTH);
         wrapperPanel.add(panelBotones, BorderLayout.CENTER);
-        wrapperPanel.add(lblStatus, BorderLayout.SOUTH);
 
         add(wrapperPanel, BorderLayout.CENTER);
+        add(statusBar, BorderLayout.SOUTH);
     }
 
     private String getDbName() {
@@ -114,7 +120,7 @@ public class VentanaBackup extends JFrame {
 
     private void setStatus(String text, Color color) {
         lblStatus.setText(text);
-        lblStatus.setForeground(color != null ? color : currentTheme.textSecondary);
+        lblStatus.setForeground(color != null ? color : currentTheme.statusBarFg);
     }
 
     private void generarBackup() {
@@ -306,11 +312,14 @@ public class VentanaBackup extends JFrame {
                 }
             }
         }
-        if (lblStatus != null && lblStatus.getText() != null && !lblStatus.getText().trim().isEmpty()) {
-            String txt = lblStatus.getText();
-            if (txt.startsWith("Error")) lblStatus.setForeground(t.danger);
-            else if (txt.contains("correctamente") || txt.contains("guardado")) lblStatus.setForeground(new Color(30, 150, 30));
-            else lblStatus.setForeground(t.textSecondary);
+        if (statusBar != null) statusBar.setBackground(t.statusBarBg);
+        if (lblStatus != null) {
+            lblStatus.setForeground(t.statusBarFg);
+            if (lblStatus.getText() != null && !lblStatus.getText().trim().isEmpty()) {
+                String txt = lblStatus.getText();
+                if (txt.startsWith("Error")) lblStatus.setForeground(t.danger);
+                else if (txt.contains("correctamente") || txt.contains("guardado")) lblStatus.setForeground(new Color(30, 150, 30));
+            }
         }
     }
 }

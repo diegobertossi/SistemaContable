@@ -77,6 +77,53 @@ Si se agrega un JComboBox a cualquier ventana del proyecto:
 ## Skill de referencia completa
 Para el patrón completo de estilizado de VentanaClientes, VentanaFacturacion y VentanaComprobantes (constantes, helpers, CustomComboUI, themeDateField, themeComboEditor, paneles, problemas conocidos), cargar el skill `swing-estilo-ventanas`.
 
+## StatusBar
+
+Toda ventana **top-level** (JFrame o JDialog abierto directamente, no embebido como tab) debe incluir exactamente UN `statusBar` en `BorderLayout.SOUTH`. Las ventanas embebidas como contenido de tabs NO tienen statusBar propia — el contenedor la provee.
+
+### Colores (centralizados en Theme)
+- **Claro**: `statusBarBg = (200, 210, 232)` — más oscuro que `bgBase (226, 232, 245)`
+- **Oscuro**: `statusBarBg = (22, 27, 45)` — más claro que `bgBase (15, 18, 30)`
+- **Texto claro**: `statusBarFg = (80, 90, 110)`
+- **Texto oscuro**: `statusBarFg = (160, 175, 200)`
+
+### Texto estándar
+```java
+"  FacturaSoft v1.0  |  Sistema de Facturación Electrónica"
+```
+
+### Patrón de implementación
+```java
+// Field declarations
+private JPanel statusBar;
+private JLabel lblStatus;
+
+// En initComponents():
+lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturación Electrónica", SwingConstants.LEFT);
+lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+lblStatus.setForeground(currentTheme.statusBarFg);
+statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
+statusBar.setBackground(currentTheme.statusBarBg);
+statusBar.add(lblStatus);
+getContentPane().add(statusBar, BorderLayout.SOUTH);
+
+// En applyTheme():
+if (statusBar != null) statusBar.setBackground(t.statusBarBg);
+if (lblStatus != null) lblStatus.setForeground(t.statusBarFg);
+```
+
+### Ventanas top-level CON statusBar
+VentanaClientes, VentanaRemitos, VentanaCajaGastos, VentanaPagosRecibos, VentanaGestionComprobantes, VentanaBackup, VentanaConfigCertificados, VentanaMigracion, VentanaEquiposPresupuestados, VentanaImportarRemito, VentanaSeleccionCliente.
+
+### Ventanas top-level SIN statusBar (tienen su propio footer)
+VentanaPrincipal — tiene `textVersionSoft` y `textProgramador` propios.
+
+### Ventanas embebidas como tabs (SIN statusBar propia)
+VentanaFacturacion, VentanaComprobantes, VentanaPagos, VentanaRecibos, VentanaCaja, VentanaGastos, VentanaVisualizacionRemitos, VentanaMigracion (antes), PanelEstadisticas.
+
+### VentanaBackup: setStatus dinámico
+VentanaBackup usa `setStatus(String text, Color color)` para mostrar progreso/errores. El color por defecto es `currentTheme.statusBarFg` (no `textSecondary`). En `applyTheme()` se re-aplica `statusBarFg` y luego se detectan mensajes de error/éxito para colorearlos.
+
 # PDF Generation — GestorFacturaPDF
 
 `GestorFacturaPDF.java` genera PDFs de facturas usando JasperReports.

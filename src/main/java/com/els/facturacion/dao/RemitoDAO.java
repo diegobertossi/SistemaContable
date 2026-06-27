@@ -200,6 +200,31 @@ public class RemitoDAO {
         dto.setReparsoftRemitoId(rs.getObject("reparsoft_remito_id") != null ? rs.getInt("reparsoft_remito_id") : null);
         dto.setEstado(rs.getString("estado"));
         dto.setObservaciones(rs.getString("observaciones"));
+        dto.setItems(listarItemsPorRemitoId(dto.getId()));
         return dto;
+    }
+
+    private List<RemitoItemDTO> listarItemsPorRemitoId(int remitoId) {
+        String sql = "SELECT codigo, descripcion, cantidad, unidad_medida, els_referencia, orden "
+                   + "FROM remito_items WHERE remito_id = ? ORDER BY orden";
+        List<RemitoItemDTO> items = new ArrayList<>();
+        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+            ps.setInt(1, remitoId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    RemitoItemDTO item = new RemitoItemDTO();
+                    item.setCodigo(rs.getString("codigo"));
+                    item.setDescripcion(rs.getString("descripcion"));
+                    item.setCantidad(rs.getBigDecimal("cantidad"));
+                    item.setUnidadMedida(rs.getString("unidad_medida"));
+                    item.setElsReferencia(rs.getObject("els_referencia") != null ? rs.getInt("els_referencia") : null);
+                    item.setOrden(rs.getObject("orden") != null ? rs.getInt("orden") : null);
+                    items.add(item);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error listando items de remito: " + e.getMessage());
+        }
+        return items;
     }
 }

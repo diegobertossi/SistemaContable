@@ -3,7 +3,7 @@ package com.els.facturacion.vista;
 import com.els.facturacion.controlador.ControladorRemitos;
 import com.els.facturacion.dao.RemitoReparsoftLecturaDAO;
 import com.els.facturacion.modelo.RemitoDTO;
-import com.els.facturacion.reportes.GestorReportes;
+import com.els.facturacion.pdf.GestorRemitoPDF;
 import com.els.facturacion.util.AutoCompleteComboBox;
 import com.els.facturacion.util.UbicacionSistema;
 
@@ -19,6 +19,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.SwingWorker;
 import javax.swing.plaf.basic.BasicComboBoxUI;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -43,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.swing.border.MatteBorder;
+import javax.swing.SwingConstants;
 
 
 public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
@@ -74,8 +76,6 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
     private JButton btnVerPDF;
     private JPanel panelSuperior;
     private JScrollPane scrollPane;
-    private JPanel statusBar;
-    private JLabel lblStatus;
     private JPanel panelBotones;
     private JPanel panelCentro;
     private List<String> listaNrosRemito;
@@ -202,7 +202,8 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
         btnVerPDF.addActionListener(e -> verPDF());
 
         panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 4));
-        panelBotones.setBackground(currentTheme.bgBase);
+        panelBotones.setBorder(new MatteBorder(1, 1, 1, 1, (Color) new Color(169, 169, 169)));
+        panelBotones.setBackground(new Color(200, 212, 235));
         panelBotones.add(btnActualizar);
         panelBotones.add(btnVerPDF);
 
@@ -212,22 +213,14 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
         panelCentro.setBorder(null);
         panelCentro.setLayout(null);
         panelFiltro.setBounds(10, 10, 988, 36);
-        scrollPane.setBounds(10, 56, 988, 434);
-        panelBotones.setBounds(10, 515, 1004, 40);
+        scrollPane.setBounds(10, 52, 988, 396);
+        panelBotones.setBounds(10, 454, 988, 30);
         panelCentro.add(panelFiltro);
         panelCentro.add(scrollPane);
         panelCentro.add(panelBotones);
         getContentPane().add(panelSuperior, BorderLayout.NORTH);
         getContentPane().add(panelCentro, BorderLayout.CENTER);
 
-        boolean barIsLight = currentTheme.bgBase.getRed() > 128;
-        statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
-        statusBar.setBackground(barIsLight ? new Color(200, 208, 225) : new Color(50, 58, 80));
-        lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica");
-        lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        lblStatus.setForeground(barIsLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
-        statusBar.add(lblStatus);
-        getContentPane().add(statusBar, BorderLayout.SOUTH);
     }
 
     public void cargarRemitos() {
@@ -348,9 +341,18 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
         boolean filtrar = filtro != null && !filtro.trim().isEmpty()
             && !"--Todos--".equals(filtro.trim());
         String filtroLower = filtrar ? filtro.trim().toLowerCase() : "";
+        List<Map<String, Object>> filtrados = new ArrayList<>();
         for (Map<String, Object> r : allRemitosData) {
             String cli = (String) r.get("cliente");
             if (filtrar && !cli.toLowerCase().contains(filtroLower)) continue;
+            filtrados.add(r);
+        }
+        filtrados.sort((a, b) -> {
+            String nroA = (String) a.get("numeroRemito");
+            String nroB = (String) b.get("numeroRemito");
+            return nroB != null ? nroB.compareTo(nroA != null ? nroA : "") : -1;
+        });
+        for (Map<String, Object> r : filtrados) {
             String nro = (String) r.get("numeroRemito");
             listaNrosRemito.add(nro);
             String cliente = (String) r.get("cliente");
@@ -399,19 +401,50 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
                 "Remito no encontrado", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        try {
-            GestorReportes gestor = new GestorReportes();
-            String nombre = "remito_" + remito.getNumeroRemito().replaceAll("[^a-zA-Z0-9_-]", "_") + ".pdf";
-            String ruta = System.getProperty("java.io.tmpdir") + File.separator + nombre;
-            ruta = gestor.generarReporteRemito(remito, ruta);
-            if (ruta != null && Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().open(new File(ruta));
-            } else {
-                JOptionPane.showMessageDialog(this, "Error al generar PDF", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error al generar PDF: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        final String codigoUbicacion;
+        if (nroRemito != null && nroRemito.contains(" - ")) {
+            codigoUbicacion = nroRemito.split(" - ")[0].trim();
+        } else {
+            codigoUbicacion = "";
         }
+        final int cantBultos;
+        if (remito.getObservaciones() != null) {
+            String obs = remito.getObservaciones();
+            int idx = obs.toLowerCase().indexOf("bultos:");
+            if (idx >= 0) {
+                int parsed = 0;
+                try {
+                    parsed = Integer.parseInt(obs.substring(idx + 7).trim());
+                } catch (NumberFormatException ignored) {}
+                cantBultos = parsed;
+            } else {
+                cantBultos = 0;
+            }
+        } else {
+            cantBultos = 0;
+        }
+        new SwingWorker<String, Void>() {
+            @Override
+            protected String doInBackground() throws Exception {
+                GestorRemitoPDF gestor = new GestorRemitoPDF();
+                return gestor.generarPDFRemito(remito, codigoUbicacion, cantBultos);
+            }
+            @Override
+            protected void done() {
+                try {
+                    String ruta = get();
+                    if (ruta != null && Desktop.isDesktopSupported()) {
+                        Desktop.getDesktop().open(new File(ruta));
+                    } else {
+                        JOptionPane.showMessageDialog(VentanaVisualizacionRemitos.this,
+                            "Error al generar PDF", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(VentanaVisualizacionRemitos.this,
+                        "Error al generar PDF: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
     }
 
     private RemitoDTO buscarRemitoEnLocal(String nroRemito) {
@@ -523,12 +556,6 @@ public class VentanaVisualizacionRemitos extends javax.swing.JFrame {
             cmbFiltroCliente.setBackground(getFieldBg(cmbFiltroCliente.isEnabled()));
             cmbFiltroCliente.setForeground(cmbFiltroCliente.isEnabled() ? t.textPrimary : getDisabledFg());
             themeComboEditor(cmbFiltroCliente, t);
-        }
-        if (statusBar != null) {
-            statusBar.setBackground(bg);
-        }
-        if (lblStatus != null) {
-            lblStatus.setForeground(isLight ? new Color(80, 90, 110) : new Color(160, 175, 200));
         }
     }
 }

@@ -102,6 +102,8 @@ public class PanelEstadisticas extends JPanel {
     private JLabel lblFiltroAnioTotales;
     private JComboBox<String> cmbFiltroAnioTotales;
 
+
+
     // Totals labels
     private JLabel lblTotalLabel;
     private JLabel lblTotalBruto;
@@ -236,6 +238,7 @@ public class PanelEstadisticas extends JPanel {
         panelCentro.add(panelToggle, BorderLayout.NORTH);
         panelCentro.add(panelContenido, BorderLayout.CENTER);
         add(panelCentro, BorderLayout.CENTER);
+
     }
 
     // ──────────────────────────────────────────────
@@ -531,7 +534,7 @@ public class PanelEstadisticas extends JPanel {
         tablaTotales.getTableHeader().setResizingAllowed(false);
         tablaTotales.setRowHeight(22);
         tablaTotales.setShowGrid(true);
-        tablaTotales.setAutoCreateRowSorter(true);
+        tablaTotales.setAutoCreateRowSorter(false);
         tablaTotales.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 
         scrollTotales = new JScrollPane(tablaTotales);
@@ -925,6 +928,7 @@ public class PanelEstadisticas extends JPanel {
                 Theme.styleTableHeader(tablaDetalle.getTableHeader(), t);
             }
         }
+
 
         if (panelTotalesView != null) panelTotalesView.setBackground(t.bgBase);
         if (lblTituloTotales != null) lblTituloTotales.setForeground(t.brand);

@@ -82,9 +82,9 @@ public class VentanaRemitos extends JFrame {
     private static final Color DARK_EDITABLE_BG = new Color(22, 27, 45);
 
     private static final String[] COLUMNAS = {
-        "ELS", "EQUIPO", "MARCA", "MODELO", "N\u00b0 SERIE", "AVISO", "ESTADO TEC", "ESTADO COM", "AGREGAR A REMITO"
+        "ELS", "EQUIPO", "MARCA", "MODELO", "CLIENTE", "ESTADO TEC", "ESTADO COM", "AGREGAR A REMITO"
     };
-    private static final int[] ANCHOS = { 60, 200, 120, 120, 120, 60, 100, 100, 130 };
+    private static final int[] ANCHOS = { 60, 200, 120, 120, 200, 100, 100, 130 };
 
     private Theme currentTheme;
     private RemitoReparsoftLecturaDAO dao;
@@ -120,6 +120,8 @@ public class VentanaRemitos extends JFrame {
 
     private JTabbedPane tabbedPane;
     private VentanaVisualizacionRemitos visView;
+    private JPanel statusBar;
+    private JLabel lblStatus;
 
     private boolean cargandoDatos = false;
     private boolean remitoGenerado = false;
@@ -167,7 +169,7 @@ public class VentanaRemitos extends JFrame {
         panelSuperior = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 6));
         panelSuperior.setBackground(currentTheme.bgSurface);
         panelSuperior.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
-        lblTitulo = new JLabel("M\u00d3DULO REMITOS");
+        lblTitulo = new JLabel("GENERACIÓN DE REMITOS");
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblTitulo.setForeground(currentTheme.brand);
         panelSuperior.add(lblTitulo);
@@ -223,11 +225,11 @@ public class VentanaRemitos extends JFrame {
         modeloTabla = new DefaultTableModel(null, COLUMNAS) {
             @Override
             public Class<?> getColumnClass(int columnIndex) {
-                return columnIndex == 8 ? Boolean.class : String.class;
+                return columnIndex == 7 ? Boolean.class : String.class;
             }
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 8 && !remitoGenerado;
+                return column == 7 && !remitoGenerado;
             }
         };
         tabla = new JTable(modeloTabla);
@@ -384,6 +386,15 @@ public class VentanaRemitos extends JFrame {
         });
 
         getContentPane().add(tabbedPane, BorderLayout.CENTER);
+
+        lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica");
+        lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblStatus.setForeground(currentTheme.statusBarFg);
+
+        statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
+        statusBar.setBackground(currentTheme.statusBarBg);
+        statusBar.add(lblStatus);
+        getContentPane().add(statusBar, BorderLayout.SOUTH);
     }
 
     // ─── Data loading ──────────────────────────────────────────────────
@@ -505,8 +516,7 @@ public class VentanaRemitos extends JFrame {
                 eq.get("equipo"),
                 eq.get("marca"),
                 eq.get("modelo"),
-                eq.get("serie"),
-                eq.get("aviso"),
+                eq.get("cliente"),
                 eq.get("estadoTec"),
                 eq.get("estadoCom"),
                 false
@@ -573,9 +583,19 @@ public class VentanaRemitos extends JFrame {
     private void visualizarRemito() {
         int filas = modeloTabla.getRowCount();
         int cont = 0;
+        String clienteRemito = null;
+        boolean clientesDistintos = false;
         for (int i = 0; i < filas; i++) {
-            Boolean val = (Boolean) modeloTabla.getValueAt(i, 8);
-            if (val != null && val) cont++;
+            Boolean val = (Boolean) modeloTabla.getValueAt(i, 7);
+            if (val != null && val) {
+                cont++;
+                String cliente = (String) modeloTabla.getValueAt(i, 4);
+                if (clienteRemito == null) {
+                    clienteRemito = cliente;
+                } else if (!clienteRemito.equals(cliente)) {
+                    clientesDistintos = true;
+                }
+            }
         }
         if (txtCantBultos.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Debe ingresar la 'CANTIDAD DE BULTOS'");
@@ -585,16 +605,21 @@ public class VentanaRemitos extends JFrame {
             JOptionPane.showMessageDialog(this, "Debe agregar al menos un equipo al remito");
             return;
         }
+        if (clientesDistintos) {
+            JOptionPane.showMessageDialog(this,
+                "No se puede generar un remito con items de diferentes clientes");
+            return;
+        }
 
         List<RemitoItemDTO> items = new ArrayList<>();
         for (int i = 0; i < filas; i++) {
-            Boolean val = (Boolean) modeloTabla.getValueAt(i, 8);
+            Boolean val = (Boolean) modeloTabla.getValueAt(i, 7);
             if (val != null && val) {
                 int els = (int) modeloTabla.getValueAt(i, 0);
                 String equipo = (String) modeloTabla.getValueAt(i, 1);
                 String marca = (String) modeloTabla.getValueAt(i, 2);
                 String modelo = (String) modeloTabla.getValueAt(i, 3);
-                String serie = (String) modeloTabla.getValueAt(i, 4);
+                String serie = buscarSeriePorEls(els);
                 String descripcion = String.format("ELS: %d - EQUIPO: %s - MARCA: %s - MODELO: %s - N\u00b0 SERIE: %s",
                         els,
                         equipo != null ? equipo : "",
@@ -621,7 +646,7 @@ public class VentanaRemitos extends JFrame {
         remito.setRazonSocialEmisor(emisor.getRazonSocial());
         remito.setDomicilioEmisor("");
         remito.setCuitReceptor("");
-        remito.setRazonSocialReceptor(clienteNombre);
+        remito.setRazonSocialReceptor(clienteRemito != null ? clienteRemito : "");
         remito.setDomicilioReceptor("");
         remito.setEstado("pendiente");
         remito.setObservaciones("");
@@ -684,14 +709,23 @@ public class VentanaRemitos extends JFrame {
         int filas = modeloTabla.getRowCount();
         List<Integer> elsSeleccionados = new ArrayList<>();
         List<RemitoItemDTO> items = new ArrayList<>();
+        String clienteRemito = null;
         for (int i = 0; i < filas; i++) {
-            Boolean val = (Boolean) modeloTabla.getValueAt(i, 8);
+            Boolean val = (Boolean) modeloTabla.getValueAt(i, 7);
             if (val != null && val) {
                 int els = (int) modeloTabla.getValueAt(i, 0);
                 String equipo = (String) modeloTabla.getValueAt(i, 1);
                 String marca = (String) modeloTabla.getValueAt(i, 2);
                 String modelo = (String) modeloTabla.getValueAt(i, 3);
-                String serie = (String) modeloTabla.getValueAt(i, 4);
+                String cliente = (String) modeloTabla.getValueAt(i, 4);
+                if (clienteRemito == null) {
+                    clienteRemito = cliente;
+                } else if (!clienteRemito.equals(cliente)) {
+                    JOptionPane.showMessageDialog(this,
+                        "No se puede generar un remito con items de diferentes clientes");
+                    return;
+                }
+                String serie = buscarSeriePorEls(els);
                 String descripcion = String.format("ELS: %d - EQUIPO: %s - MARCA: %s - MODELO: %s - N\u00b0 SERIE: %s",
                         els,
                         equipo != null ? equipo : "",
@@ -736,7 +770,7 @@ public class VentanaRemitos extends JFrame {
         remito.setRazonSocialEmisor(emisor.getRazonSocial());
         remito.setDomicilioEmisor("");
         remito.setCuitReceptor("");
-        remito.setRazonSocialReceptor(clienteNombre);
+        remito.setRazonSocialReceptor(clienteRemito != null ? clienteRemito : "");
         remito.setDomicilioReceptor("");
         remito.setEstado("pendiente");
         remito.setObservaciones("Cant. bultos: " + txtCantBultos.getText().trim());
@@ -767,8 +801,7 @@ public class VentanaRemitos extends JFrame {
                 if (remitoId > 0) {
                     JOptionPane.showMessageDialog(VentanaRemitos.this,
                         "Remito guardado correctamente: " + remito.getNumeroRemito());
-                    setFormEditable(false);
-                    remitoGenerado = true;
+                    resetForm();
                     generarPDFRemito(remito);
                 } else {
                     JOptionPane.showMessageDialog(VentanaRemitos.this,
@@ -828,16 +861,43 @@ public class VentanaRemitos extends JFrame {
     private void resetForm() {
         remitoGenerado = false;
         setFormEditable(true);
+
+        cargandoDatos = true;
+        cmbCliente.setSelectedItem("--Todos--");
+        cmbCliente.setEditorText("--Todos--");
+        cmbSucursal.setData(new ArrayList<>());
+        cmbSucursal.setEditorText("");
+        cargandoDatos = false;
+
+        clienteNombre = "";
+        idClienteActual = -1;
+        sucursalNombre = "";
+        idSucursalActual = -1;
+        part1 = "";
+
+        cmbUbicacion.setSelectedIndex(0);
         txtCantBultos.setText("");
         txtNumeroRemito.setText("");
         txtRemitoConformado.setText("");
+        txtTipoRemito.setText("");
         txtTipoRemito.setVisible(false);
         panelAcciones.setVisible(false);
-        cmbUbicacion.setSelectedIndex(0);
-        modeloTabla.setRowCount(0);
+
+        cargarClientes();
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────
+
+    private String buscarSeriePorEls(int els) {
+        if (allEquiposData == null) return null;
+        for (Map<String, Object> eq : allEquiposData) {
+            Object val = eq.get("els");
+            if (val != null && ((Number) val).intValue() == els) {
+                return (String) eq.get("serie");
+            }
+        }
+        return null;
+    }
 
     private Color getDisabledFg() {
         return currentTheme.bgBase.getRed() > 128 ? DISABLED_FG_LIGHT : DISABLED_FG_DARK;
@@ -990,6 +1050,10 @@ public class VentanaRemitos extends JFrame {
 
         // Separator
         if (separator != null) separator.setForeground(t.borderLight);
+
+        // Status bar
+        if (statusBar != null) statusBar.setBackground(t.statusBarBg);
+        if (lblStatus != null) lblStatus.setForeground(t.statusBarFg);
     }
 
     // ─── Centering ──────────────────────────────────────────────────────

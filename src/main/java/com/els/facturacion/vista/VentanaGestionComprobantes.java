@@ -4,8 +4,13 @@ import com.els.facturacion.controlador.ControladorFacturacion;
 import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import javax.swing.SwingConstants;
 
 public class VentanaGestionComprobantes extends JFrame {
 
@@ -13,6 +18,8 @@ public class VentanaGestionComprobantes extends JFrame {
     private JTabbedPane tabbedPane;
     private VentanaComprobantes comprobantesView;
     private PanelEstadisticas panelEstadisticas;
+    private JPanel statusBar;
+    private JLabel lblStatus;
 
     public VentanaGestionComprobantes() {
         initComponents();
@@ -21,7 +28,7 @@ public class VentanaGestionComprobantes extends JFrame {
     }
 
     private void initComponents() {
-        setTitle("Gesti\u00f3n de Comprobantes");
+        setTitle("MÓDULO COMPROBANTES");
         setSize(1024, 600);
         setMinimumSize(new Dimension(1024, 600));
         setMaximumSize(new Dimension(1024, 600));
@@ -59,7 +66,16 @@ public class VentanaGestionComprobantes extends JFrame {
             }
         });
 
-        add(tabbedPane, BorderLayout.CENTER);
+        getContentPane().add(tabbedPane, BorderLayout.CENTER);
+
+        lblStatus = new JLabel("  FacturaSoft v1.0  |  Sistema de Facturaci\u00f3n Electr\u00f3nica", SwingConstants.LEFT);
+        lblStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblStatus.setForeground(currentTheme.statusBarFg);
+
+        statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 2));
+        statusBar.setBackground(currentTheme.statusBarBg);
+        statusBar.add(lblStatus);
+        getContentPane().add(statusBar, BorderLayout.SOUTH);
     }
 
     private void applyTheme(Theme t) {
@@ -74,5 +90,7 @@ public class VentanaGestionComprobantes extends JFrame {
         if (panelEstadisticas != null) {
             panelEstadisticas.applyTheme(t);
         }
+        if (statusBar != null) statusBar.setBackground(t.statusBarBg);
+        if (lblStatus != null) lblStatus.setForeground(t.statusBarFg);
     }
 }
