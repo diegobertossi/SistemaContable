@@ -89,7 +89,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private static final Color LIGHT_REQUIRED_HOVER_BG = new Color(200, 238, 200);
     private static final Color DARK_REQUIRED_HOVER_BG = new Color(45, 100, 60);
     private static final Color RECUADRO_BG = new Color(183, 196, 220);
-    private static final Color RECUADRO_BORDER = new Color(165, 180, 210);
+    private static final Color RECUADRO_BG_DARK = new Color(42, 50, 75);
 
     private Theme currentTheme = VentanaPrincipal.getCurrentTheme();
 
@@ -150,8 +150,6 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     // FIX: live-theme — contenedores visibles (antes locales)
     private JPanel panelTituloDatos;
     private JPanel panelBotonesReceptor;
-    private JPanel wrapBotonesReceptor;
-    private JPanel wrapNav;
     private JPanel wrapSubtituloOp;
     private JPanel panelPrincipalWrapper;
     private JPanel panelOperacion;
@@ -208,11 +206,11 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     }
 
     private Color recuadroBg() {
-        return currentTheme.bgBase.getRed() > 128 ? RECUADRO_BG : currentTheme.bgSurface;
+        return currentTheme.bgBase.getRed() > 128 ? RECUADRO_BG : RECUADRO_BG_DARK;
     }
 
     private Color recuadroBorder() {
-        return currentTheme.bgBase.getRed() > 128 ? RECUADRO_BORDER : currentTheme.brand;
+        return currentTheme.brand;
     }
 
     private void themeRecuadro(JPanel wrap) {
@@ -446,17 +444,14 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         btnSiguiente.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnSiguiente.setFocusPainted(false);
         btnSiguiente.setMargin(new Insets(6, 14, 6, 14));
-        panelNav = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 3));
-        panelNav.setBackground(currentTheme.bgSurface);
-        wrapNav = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 2));
-        wrapNav.setBackground(recuadroBg());
-        wrapNav.setBorder(BorderFactory.createCompoundBorder(
+        panelNav = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 2));
+        panelNav.setBackground(recuadroBg());
+        panelNav.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(recuadroBorder()),
             BorderFactory.createEmptyBorder(2, 6, 2, 6)));
-        wrapNav.add(chkModoPrueba);
-        wrapNav.add(btnSiguiente);
-        panelNav.add(wrapNav);
-        centerCol.add(panelNav, new GridBagConstraints(0, 4, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE, new Insets(2, 0, 1, 0), 0, 0));
+        panelNav.add(chkModoPrueba);
+        panelNav.add(btnSiguiente);
+        centerCol.add(panelNav, new GridBagConstraints(0, 4, 1, 1, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 0, 1, 0), 0, 0));
 
         datosWrapper.add(centerCol);
         datosWrapper.add(Box.createVerticalStrut(6));
@@ -546,7 +541,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
         panelSur = new JPanel(new GridBagLayout());
         panelSur.setBackground(recuadroBg());
-        panelSur.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, currentTheme.borderLight));
+        panelSur.setBorder(BorderFactory.createMatteBorder(1, 1, 1, 1, currentTheme.brand));
         Insets panelIns = new Insets(3, 6, 3, 6);
 
         // Row 0 - Items management + Totals
@@ -1071,17 +1066,14 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         btnFacturarPorCliente.setFocusPainted(false);
         btnFacturarPorCliente.addActionListener(e -> setReceptorFieldsEnabled(true));
 
-        panelBotonesReceptor = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 3));
-        panelBotonesReceptor.setBackground(currentTheme.bgSurface);
-        wrapBotonesReceptor = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 2));
-        wrapBotonesReceptor.setBackground(recuadroBg());
-        wrapBotonesReceptor.setBorder(BorderFactory.createCompoundBorder(
+        panelBotonesReceptor = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 2));
+        panelBotonesReceptor.setBackground(recuadroBg());
+        panelBotonesReceptor.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(recuadroBorder()),
             BorderFactory.createEmptyBorder(2, 6, 2, 6)));
-        wrapBotonesReceptor.add(btnImportarRemito);
-        wrapBotonesReceptor.add(btnVerEquipos);
-        wrapBotonesReceptor.add(btnFacturarPorCliente);
-        panelBotonesReceptor.add(wrapBotonesReceptor);
+        panelBotonesReceptor.add(btnImportarRemito);
+        panelBotonesReceptor.add(btnVerEquipos);
+        panelBotonesReceptor.add(btnFacturarPorCliente);
 
         // NO add panelBotonesReceptor to secReceptor — it goes in centerCol
 
@@ -1153,7 +1145,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         if (panelSuperiorOp != null) panelSuperiorOp.setBackground(t.bgSurface);
         if (panelSur != null) {
             panelSur.setBackground(recuadroBg());
-            panelSur.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, t.borderLight));
+            panelSur.setBorder(BorderFactory.createMatteBorder(1, 1, 1, 1, t.brand));
         }
         if (panelItems != null) panelItems.setBackground(recuadroBg());
         if (panelTotales != null) panelTotales.setBackground(recuadroBg());
@@ -1167,7 +1159,6 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             centerCol.setBackground(t.bgSurface);
             centerCol.setBorder(new CompoundBorder(new LineBorder(t.brand), new EmptyBorder(4, 10, 4, 10)));
         }
-        if (panelNav != null) panelNav.setBackground(t.bgSurface);
         // Section panels con titled border
         if (secPuntoVenta != null) {
             secPuntoVenta.setBackground(t.bgSurface);
@@ -1293,11 +1284,20 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         if (btnVisualizarFactura != null) { btnVisualizarFactura.setBackground(t.btnBg); btnVisualizarFactura.setForeground(t.textPrimary); }
         if (chkModoPrueba != null) { chkModoPrueba.setBackground(t.bgBase); chkModoPrueba.setForeground(t.danger); }
         if (btnSiguiente != null) { btnSiguiente.setBackground(t.btnBg); btnSiguiente.setForeground(t.textPrimary); }
-        themeRecuadro(wrapBotonesReceptor);
-        themeRecuadro(wrapNav);
+        if (panelBotonesReceptor != null) {
+            panelBotonesReceptor.setBackground(recuadroBg());
+            panelBotonesReceptor.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(recuadroBorder()),
+                BorderFactory.createEmptyBorder(2, 6, 2, 6)));
+        }
+        if (panelNav != null) {
+            panelNav.setBackground(recuadroBg());
+            panelNav.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(recuadroBorder()),
+                BorderFactory.createEmptyBorder(2, 6, 2, 6)));
+        }
         themeRecuadro(wrapSubtituloOp);
         if (panelTituloDatos != null) panelTituloDatos.setBackground(t.bgSurface);
-        if (panelBotonesReceptor != null) panelBotonesReceptor.setBackground(t.bgSurface);
         // FIX: live-theme — walk desde panelPrincipalWrapper (en lugar de this, que está fuera del árbol)
         if (panelPrincipalWrapper != null) {
             themeLabels(panelPrincipalWrapper, t);
@@ -1532,7 +1532,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
     private void actualizarSubtitulo() {
         if (lblSubtituloOp != null && !subtituloText.isEmpty()) {
-            String hex = String.format("#%02x%02x%02x", currentTheme.textPrimary.getRed(), currentTheme.textPrimary.getGreen(), currentTheme.textPrimary.getBlue());
+            String hex = String.format("#%02x%02x%02x", currentTheme.brand.getRed(), currentTheme.brand.getGreen(), currentTheme.brand.getBlue());
             lblSubtituloOp.setText("<html><font color='" + hex + "' size='5'><b>" + subtituloText + "</b></font></html>");
         } else if (lblSubtituloOp != null) {
             lblSubtituloOp.setText(" ");

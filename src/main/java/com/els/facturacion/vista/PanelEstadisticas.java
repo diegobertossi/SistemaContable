@@ -82,6 +82,7 @@ public class PanelEstadisticas extends JPanel {
     private JPanel panelFiltroPeriodo;
     private JPanel panelFiltroEstado;
     private JPanel panelSubtotales;
+    private JPanel panelCentro;
     private JPanel panelTotalesView;
 
     // Toggle buttons
@@ -164,11 +165,11 @@ public class PanelEstadisticas extends JPanel {
     }
 
     private Color toggleBg() {
-        return isLightMode() ? TOGGLE_BG : currentTheme.bgSurface;
+        return isLightMode() ? TOGGLE_BG : new Color(42, 50, 75);
     }
 
     private Color toggleBorder() {
-        return isLightMode() ? TOGGLE_BORDER : currentTheme.brand;
+        return currentTheme.brand;
     }
 
     // ──────────────────────────────────────────────
@@ -233,7 +234,7 @@ public class PanelEstadisticas extends JPanel {
         panelToggle.setBackground(toggleBg());
         panelToggle.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(toggleBorder()),
-            BorderFactory.createEmptyBorder(2, 4, 2, 4)));
+            BorderFactory.createEmptyBorder(2, 6, 2, 6)));
         panelToggle.add(btnDetalle);
         panelToggle.add(btnTotales);
 
@@ -245,7 +246,7 @@ public class PanelEstadisticas extends JPanel {
         // ==================== DETALLE CARD ====================
         panelDetalle = new JPanel(new BorderLayout(0, 4));
         panelDetalle.setBackground(panelBg());
-        panelDetalle.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+        panelDetalle.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
 
         buildFilterPanel();
         buildTable();
@@ -261,8 +262,9 @@ public class PanelEstadisticas extends JPanel {
         panelContenido.add(panelDetalle, "detalle");
         panelContenido.add(panelTotalesView, "totales");
 
-        JPanel panelCentro = new JPanel(new BorderLayout());
+        panelCentro = new JPanel(new BorderLayout());
         panelCentro.setBackground(panelBg());
+        panelCentro.setBorder(BorderFactory.createEmptyBorder(4, 6, 6, 6));
         panelCentro.add(panelToggle, BorderLayout.NORTH);
         panelCentro.add(panelContenido, BorderLayout.CENTER);
         add(panelCentro, BorderLayout.CENTER);
@@ -545,7 +547,7 @@ public class PanelEstadisticas extends JPanel {
 
         panelSubtotales.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(currentTheme.brand),
-            BorderFactory.createEmptyBorder(4, 6, 4, 6)));
+            BorderFactory.createEmptyBorder(2, 6, 2, 6)));
 
         int[] widths = {90, 110, 200, 90, 100, 100, 100};
         double tw = 0;
@@ -796,7 +798,7 @@ public class PanelEstadisticas extends JPanel {
             panelToggle.setBackground(toggleBg());
             panelToggle.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(toggleBorder()),
-                BorderFactory.createEmptyBorder(2, 4, 2, 4)));
+                BorderFactory.createEmptyBorder(2, 6, 2, 6)));
         }
 
         if (btnDetalle != null) {
@@ -862,10 +864,11 @@ public class PanelEstadisticas extends JPanel {
         panelSubtotales.setBackground(toggleBg());
             panelSubtotales.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(t.brand),
-                BorderFactory.createEmptyBorder(4, 6, 4, 6)));
+                BorderFactory.createEmptyBorder(2, 6, 2, 6)));
             themeTotalsLabels(panelSubtotales, t);
         }
 
+        if (panelCentro != null) { panelCentro.setBackground(panelBg()); panelCentro.setBorder(BorderFactory.createEmptyBorder(4, 6, 6, 6)); }
         if (panelDetalle != null) panelDetalle.setBackground(panelBg());
         if (panelContenido != null) panelContenido.setBackground(panelBg());
 
