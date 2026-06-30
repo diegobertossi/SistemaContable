@@ -113,7 +113,7 @@ if (lblStatus != null) lblStatus.setForeground(t.statusBarFg);
 ```
 
 ### Ventanas top-level CON statusBar
-VentanaClientes, VentanaRemitos, VentanaCajaGastos, VentanaPagosRecibos, VentanaGestionComprobantes, VentanaBackup, VentanaConfigCertificados, VentanaMigracion, VentanaEquiposPresupuestados, VentanaImportarRemito, VentanaSeleccionCliente.
+VentanaClientes, VentanaRemitos, VentanaCajaGastos, VentanaPagosRecibos, VentanaGestionComprobantes, VentanaBackup, VentanaConfiguracion, VentanaMigracion, VentanaEquiposPresupuestados, VentanaImportarRemito, VentanaSeleccionCliente.
 
 ### Ventanas top-level SIN statusBar (tienen su propio footer)
 VentanaPrincipal — tiene `textVersionSoft` y `textProgramador` propios.

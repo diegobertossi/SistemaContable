@@ -1,6 +1,11 @@
 package com.els.facturacion.arca;
 
 import com.els.facturacion.conexion.ConexionFacturacion;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -9,6 +14,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Properties;
 
 public class TokenCache {
 
@@ -24,6 +30,8 @@ public class TokenCache {
             + "</loginTicketRequest>";
     private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
     private static final DateTimeFormatter FORMATO_FECHA_ARCA = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+    private static final Path ARCHIVO_CACHE = Paths.get(
+        System.getProperty("user.home"), ".facturasoft", "token_cache.properties");
 
     private String token;
     private String sign;
@@ -63,6 +71,7 @@ public class TokenCache {
         this.expiracion = expiracion;
         this.ultimoCuit = cuit;
         guardarEnBD(token, sign, expiracion, cuit);
+        guardarEnArchivo(token, sign, expiracion, cuit);
     }
 
     public String getToken() {
@@ -120,6 +129,56 @@ public class TokenCache {
             System.err.println("Error cargando token desde BD: " + e.getMessage());
         }
         return false;
+    }
+
+    public boolean cargarDeArchivo(String cuit) {
+        try {
+            if (!Files.exists(ARCHIVO_CACHE)) return false;
+
+            Properties props = new Properties();
+            try (InputStream is = Files.newInputStream(ARCHIVO_CACHE)) {
+                props.load(is);
+            }
+
+            String cuitGuardado = props.getProperty("cuit");
+            if (cuitGuardado == null || !cuitGuardado.equals(cuit)) return false;
+
+            String expStr = props.getProperty("expiracion");
+            if (expStr == null) return false;
+
+            expiracion = LocalDateTime.parse(expStr, FORMATO_FECHA);
+            LocalDateTime ahora = LocalDateTime.now();
+            if (!expiracion.isAfter(ahora.plusMinutes(1))) {
+                System.out.println("Token en archivo expirado, se renovará");
+                return false;
+            }
+
+            token = props.getProperty("token");
+            sign = props.getProperty("sign");
+            ultimoCuit = cuit;
+
+            System.out.println("✓ Token cargado desde archivo válido hasta: " + expiracion);
+            return true;
+        } catch (Exception e) {
+            System.err.println("Error cargando token desde archivo: " + e.getMessage());
+        }
+        return false;
+    }
+
+    private void guardarEnArchivo(String token, String sign, LocalDateTime expiracion, String cuit) {
+        try {
+            Files.createDirectories(ARCHIVO_CACHE.getParent());
+            Properties props = new Properties();
+            props.setProperty("cuit", cuit);
+            props.setProperty("token", token);
+            props.setProperty("sign", sign);
+            props.setProperty("expiracion", expiracion.format(FORMATO_FECHA));
+            try (OutputStream os = Files.newOutputStream(ARCHIVO_CACHE)) {
+                props.store(os, "FacturaSoft Token Cache - No modificar");
+            }
+        } catch (Exception e) {
+            System.err.println("Error guardando token en archivo: " + e.getMessage());
+        }
     }
 
     public String generarLoginTicketRequest(String source, String destination, String service) {

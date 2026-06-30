@@ -89,7 +89,7 @@ public class VentanaPrincipal extends JFrame {
     private JButton btnClientes;
     private JButton btnRemitos;
     private JButton btnPagosRecibos;
-    private JButton btnHerramientas;
+    private JButton btnConfiguracion;
     private JButton btnCajaGastos;
     private JButton btnSalir;
     private JButton btnCerrarSesion;
@@ -274,11 +274,11 @@ public class VentanaPrincipal extends JFrame {
         btnPagosRecibos.addActionListener(e -> new VentanaPagosRecibos().setVisible(true));
         panelDeControl.add(btnPagosRecibos);
 
-        btnHerramientas = crearBoton(" HERRAMIENTAS");
-        btnHerramientas.setBounds(col1X, row3Y, btnW, btnH);
-        try { btnHerramientas.setIcon(new ImageIcon(getClass().getResource("/img/Herramientas.png"))); } catch (Exception e) { }
-        btnHerramientas.addActionListener(e -> new VentanaConfigCertificados().setVisible(true));
-        panelDeControl.add(btnHerramientas);
+        btnConfiguracion = crearBoton(" CONFIGURACIÓN");
+        btnConfiguracion.setBounds(col1X, row3Y, btnW, btnH);
+        try { btnConfiguracion.setIcon(new ImageIcon(getClass().getResource("/img/Herramientas.png"))); } catch (Exception e) { }
+        btnConfiguracion.addActionListener(e -> new VentanaConfiguracion().setVisible(true));
+        panelDeControl.add(btnConfiguracion);
 
         btnCajaGastos = crearBoton("      CAJA Y GASTOS");
         btnCajaGastos.setBounds(col2X, row3Y, btnW, btnH);
@@ -661,7 +661,7 @@ public class VentanaPrincipal extends JFrame {
     public JButton getBotonClientes() { return btnClientes; }
     public JButton getBotonRemitos() { return btnRemitos; }
     public JButton getBotonPagosRecibos() { return btnPagosRecibos; }
-    public JButton getBotonHerramientas() { return btnHerramientas; }
+    public JButton getBotonConfiguracion() { return btnConfiguracion; }
     public JButton getBotonCajaGastos() { return btnCajaGastos; }
     public JButton getBtnSalir() { return btnSalir; }
     public JPanel getPanelDeControl() { return panelDeControl; }

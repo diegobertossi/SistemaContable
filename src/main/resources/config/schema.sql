@@ -20,6 +20,7 @@ DROP TABLE IF EXISTS factura_pagos;
 DROP TABLE IF EXISTS comprobantes;
 DROP TABLE IF EXISTS clientes;
 DROP TABLE IF EXISTS token_cache;
+DROP TABLE IF EXISTS remito_preimpreso_config;
 DROP TABLE IF EXISTS configuraciones;
 DROP TABLE IF EXISTS cuit_certificados;
 
@@ -38,6 +39,17 @@ CREATE TABLE IF NOT EXISTS cuit_certificados (
     activo BOOLEAN DEFAULT TRUE,
     INDEX idx_cuit (cuit),
     INDEX idx_activo (activo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabla: remito_preimpreso_config
+CREATE TABLE IF NOT EXISTS remito_preimpreso_config (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    punto_venta INT NOT NULL,
+    cai BIGINT NOT NULL,
+    fecha_vencimiento DATE NOT NULL,
+    desde INT NOT NULL,
+    hasta INT NOT NULL,
+    INDEX idx_punto_venta (punto_venta)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tabla: token_cache

@@ -47,22 +47,23 @@ public class CuitDAO {
     }
 
     public boolean actualizar(CuitConfigDTO cuit) {
-        String sql = "UPDATE cuit_certificados SET razon_social = ?, condicion_iva = ?, "
+        String sql = "UPDATE cuit_certificados SET cuit = ?, razon_social = ?, condicion_iva = ?, "
                 + "punto_venta = ?, ruta_certificado = ?, password_cert = ?, activo = ?, "
                 + "domicilio = ?, ingresos_brutos = ?, fecha_inicio_actividades = ? "
                 + "WHERE id = ?";
 
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
-            ps.setString(1, cuit.getRazonSocial());
-            ps.setString(2, cuit.getCondicionIva());
-            ps.setInt(3, cuit.getPuntoVenta());
-            ps.setString(4, cuit.getRutaCertificado());
-            ps.setString(5, cuit.getPasswordCert());
-            ps.setBoolean(6, cuit.getActivo());
-            ps.setString(7, cuit.getDomicilio());
-            ps.setString(8, cuit.getIngresosBrutos());
-            ps.setString(9, cuit.getFechaInicioActividades());
-            ps.setInt(10, cuit.getId());
+            ps.setString(1, cuit.getCuit());
+            ps.setString(2, cuit.getRazonSocial());
+            ps.setString(3, cuit.getCondicionIva());
+            ps.setInt(4, cuit.getPuntoVenta());
+            ps.setString(5, cuit.getRutaCertificado());
+            ps.setString(6, cuit.getPasswordCert());
+            ps.setBoolean(7, cuit.getActivo());
+            ps.setString(8, cuit.getDomicilio());
+            ps.setString(9, cuit.getIngresosBrutos());
+            ps.setString(10, cuit.getFechaInicioActividades());
+            ps.setInt(11, cuit.getId());
 
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {

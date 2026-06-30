@@ -63,7 +63,23 @@ public class ServicioWSAA {
             return tokenCache.getToken();
         }
 
-        return solicitarNuevoToken(cuit, rutaP12, passwordP12);
+        if (tokenCache.cargarDeArchivo(cuit)) {
+            return tokenCache.getToken();
+        }
+
+        try {
+            return solicitarNuevoToken(cuit, rutaP12, passwordP12);
+        } catch (Exception e) {
+            if (e.getMessage() != null && e.getMessage().contains("coe.alreadyAuthenticated")) {
+                System.err.println("AFIP ya tiene un token vigente pero no está en caché local.");
+                System.err.println("Espere a que expire (~12h desde la última emisión) o use el botón CONFIGURACIÓN > CUITs > BACKUP.");
+                throw new Exception("AFIP ya tiene un Token Activo (TA) vigente para este CUIT. "
+                    + "La base de datos local fue restaurada y perdió el token anterior.\n\n"
+                    + "Espere aproximadamente 12 horas desde la última emisión para que expire, "
+                    + "o utilice la función BACKUP en CONFIGURACIÓN > CUITs para restaurar un respaldo.");
+            }
+            throw e;
+        }
     }
 
     private String solicitarNuevoToken(String cuit, String rutaP12, String passwordP12) throws Exception {
