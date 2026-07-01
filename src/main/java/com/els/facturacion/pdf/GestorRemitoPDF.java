@@ -1,12 +1,16 @@
 package com.els.facturacion.pdf;
 
+import com.els.facturacion.dao.RemitoPreimpresoConfigDAO;
 import com.els.facturacion.modelo.RemitoDTO;
 import com.els.facturacion.modelo.RemitoItemDTO;
+import com.els.facturacion.modelo.RemitoPreimpresoConfigDTO;
 import com.els.facturacion.util.UbicacionSistema;
+import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import net.sf.jasperreports.engine.export.JRPdfExporter;
 
 import java.io.File;
@@ -14,7 +18,9 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +30,9 @@ import java.util.stream.Collectors;
 public class GestorRemitoPDF {
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter FMT_ISO = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter FMT_COMPACT = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private final RemitoPreimpresoConfigDAO configDAO = new RemitoPreimpresoConfigDAO();
     private static final List<String> PREIMPRESO_PREFIXES = Arrays.asList("0002", "0005", "0006", "0007");
 
     private static final Map<String, String> UBICACION_LABEL = new HashMap<>();
@@ -39,7 +48,8 @@ public class GestorRemitoPDF {
 
     public String generarPDFRemito(RemitoDTO remito, String codigoUbicacion, int cantBultos) {
         try {
-            String templateName = determinarTemplate(codigoUbicacion);
+            boolean esPreimpreso = codigoUbicacion != null && PREIMPRESO_PREFIXES.contains(codigoUbicacion.trim());
+            String templateName = esPreimpreso ? "RemitoPreImpreso.jasper" : "RemitoComun.jasper";
             String outputDir = determinarDirectorioSalida(templateName);
             Files.createDirectories(Paths.get(outputDir));
 
@@ -53,19 +63,6 @@ public class GestorRemitoPDF {
             String filename = nroSecuencia + "-" + ubicacionLabel + " _" + clienteClean + ".pdf";
             String outputPath = outputDir + File.separator + filename;
 
-            Map<String, Object> params = new HashMap<>();
-            params.put("cliente", remito.getRazonSocialReceptor() != null ? remito.getRazonSocialReceptor() : "");
-            params.put("remitoConformado", remito.getNumeroRemito() != null ? remito.getNumeroRemito() : "");
-            params.put("cantBultos", cantBultos);
-            params.put("cuit", remito.getCuitEmisor() != null ? remito.getCuitEmisor() : "");
-            params.put("domicilio", remito.getDomicilioEmisor() != null ? remito.getDomicilioEmisor() : "");
-            params.put("fecha_Entrada", remito.getFechaEmision() != null ? remito.getFechaEmision().format(FMT) : "");
-
-            String descripcionTexto = remito.getItems() != null
-                ? remito.getItems().stream().map(RemitoItemDTO::getDescripcion).collect(Collectors.joining("\n\n"))
-                : "";
-            params.put("descripcion", descripcionTexto);
-
             InputStream jasperStream = getClass().getClassLoader()
                 .getResourceAsStream("reportes/" + templateName);
             if (jasperStream == null) {
@@ -73,8 +70,20 @@ public class GestorRemitoPDF {
                 return null;
             }
 
+            Map<String, Object> params;
+            JRDataSource dataSource;
+
+            if (esPreimpreso) {
+                params = buildPreimpresoParams(remito, cantBultos, codigoUbicacion);
+                List<RemitoItemDTO> items = remito.getItems() != null ? remito.getItems() : java.util.Collections.emptyList();
+                dataSource = new JRBeanCollectionDataSource(items);
+            } else {
+                params = buildComunParams(remito, cantBultos);
+                dataSource = new JREmptyDataSource(1);
+            }
+
             JasperPrint jasperPrint = JasperFillManager.fillReport(
-                jasperStream, params, new JREmptyDataSource(1));
+                jasperStream, params, dataSource);
 
             try (FileOutputStream fos = new FileOutputStream(outputPath)) {
                 JRPdfExporter exporter = new JRPdfExporter();
@@ -93,11 +102,79 @@ public class GestorRemitoPDF {
         }
     }
 
-    private String determinarTemplate(String codigoUbicacion) {
-        if (codigoUbicacion != null && PREIMPRESO_PREFIXES.contains(codigoUbicacion.trim())) {
-            return "RemitoPreImpreso.jasper";
+    public static String formatDateString(String dateStr) {
+        if (dateStr == null || dateStr.isEmpty()) return "";
+        if (dateStr.matches("\\d{2}/\\d{2}/\\d{4}")) return dateStr;
+        for (DateTimeFormatter fmt : Arrays.asList(FMT_ISO, FMT_COMPACT)) {
+            try {
+                return LocalDate.parse(dateStr, fmt).format(FMT);
+            } catch (DateTimeParseException ignored) {
+            }
         }
-        return "RemitoComun.jasper";
+        return dateStr;
+    }
+
+    private Map<String, Object> buildPreimpresoParams(RemitoDTO remito, int cantBultos, String codigoUbicacion) {
+        Map<String, Object> p = new HashMap<>();
+        p.put("EMISOR_RAZON_SOCIAL", remito.getRazonSocialEmisor() != null ? remito.getRazonSocialEmisor() : "");
+        p.put("EMISOR_DOMICILIO", remito.getDomicilioEmisor() != null ? remito.getDomicilioEmisor() : "");
+        p.put("EMISOR_CUIT", remito.getCuitEmisor() != null ? remito.getCuitEmisor() : "");
+        p.put("EMISOR_ING_BRUTOS", remito.getIngresosBrutosEmisor() != null ? remito.getIngresosBrutosEmisor() : "");
+        p.put("EMISOR_INICIO_ACT", formatDateString(remito.getFechaInicioActividadesEmisor()));
+        p.put("EMISOR_CONDICION_IVA", remito.getCondicionIvaEmisor() != null ? remito.getCondicionIvaEmisor() : "");
+        p.put("PUNTO_VENTA", codigoUbicacion != null ? codigoUbicacion : "");
+        p.put("COMP_NRO", remito.getNumeroRemito() != null ? remito.getNumeroRemito() : "");
+        p.put("FECHA_EMISION", remito.getFechaEmision() != null ? remito.getFechaEmision().format(FMT) : "");
+        p.put("CLIENTE_RAZON_SOCIAL", remito.getRazonSocialReceptor() != null ? remito.getRazonSocialReceptor() : "");
+        p.put("CLIENTE_CUIT", remito.getCuitReceptor() != null ? remito.getCuitReceptor() : "");
+        p.put("CLIENTE_DOMICILIO", remito.getDomicilioReceptor() != null ? remito.getDomicilioReceptor() : "");
+        p.put("CLIENTE_CONDICION_IVA", remito.getCondicionIvaReceptor() != null ? remito.getCondicionIvaReceptor() : "");
+        p.put("TRANSPORTISTA_NOMBRE", "");
+        p.put("TRANSPORTISTA_DOMICILIO", "");
+        p.put("TRANSPORTISTA_CUIT", "");
+        p.put("CANTIDAD_BULTOS", String.valueOf(cantBultos));
+        p.put("COPIA_LABEL", "ORIGINAL");
+
+        String caiNro = "";
+        String caiVenc = "";
+        String desdeNro = "";
+        String hastaNro = "";
+        if (codigoUbicacion != null) {
+            try {
+                int pv = Integer.parseInt(codigoUbicacion.trim());
+                RemitoPreimpresoConfigDTO cfg = configDAO.buscarPorPuntoVenta(pv);
+                if (cfg != null) {
+                    caiNro = cfg.getCai() != null ? String.valueOf(cfg.getCai()) : "";
+                    caiVenc = formatDateString(cfg.getFechaVencimiento());
+                    String ubicPadded = String.format("%04d", cfg.getPuntoVenta());
+                    desdeNro = ubicPadded + "-" + String.format("%08d", cfg.getDesde());
+                    hastaNro = ubicPadded + "-" + String.format("%08d", cfg.getHasta());
+                }
+            } catch (NumberFormatException e) {
+                System.err.println("Error parseando punto de venta: " + codigoUbicacion);
+            }
+        }
+        p.put("CAI_NRO", caiNro);
+        p.put("CAI_VENCIMIENTO", caiVenc);
+        p.put("DESDE_NRO", desdeNro);
+        p.put("HASTA_NRO", hastaNro);
+
+        return p;
+    }
+
+    private Map<String, Object> buildComunParams(RemitoDTO remito, int cantBultos) {
+        Map<String, Object> p = new HashMap<>();
+        p.put("cliente", remito.getRazonSocialReceptor() != null ? remito.getRazonSocialReceptor() : "");
+        p.put("remitoConformado", remito.getNumeroRemito() != null ? remito.getNumeroRemito() : "");
+        p.put("cantBultos", cantBultos);
+        p.put("cuit", remito.getCuitEmisor() != null ? remito.getCuitEmisor() : "");
+        p.put("domicilio", remito.getDomicilioEmisor() != null ? remito.getDomicilioEmisor() : "");
+        p.put("fecha_Entrada", remito.getFechaEmision() != null ? remito.getFechaEmision().format(FMT) : "");
+        String descTexto = remito.getItems() != null
+            ? remito.getItems().stream().map(RemitoItemDTO::getDescripcion).collect(Collectors.joining("\n\n"))
+            : "";
+        p.put("descripcion", descTexto);
+        return p;
     }
 
     private String determinarDirectorioSalida(String templateName) {

@@ -1,14 +1,18 @@
 package com.els.facturacion.vista;
 
 import com.els.facturacion.controlador.ControladorRemitos;
+import com.els.facturacion.dao.RemitoPreimpresoConfigDAO;
 import com.els.facturacion.dao.RemitoReparsoftLecturaDAO;
 import com.els.facturacion.modelo.CuitConfigDTO;
 import com.els.facturacion.modelo.RemitoDTO;
 import com.els.facturacion.modelo.RemitoItemDTO;
+import com.els.facturacion.modelo.RemitoPreimpresoConfigDTO;
 import com.els.facturacion.pdf.GestorRemitoPDF;
+import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import net.sf.jasperreports.view.JasperViewer;
 import com.els.facturacion.util.AutoCompleteComboBox;
 import com.els.facturacion.util.UbicacionSistema;
@@ -644,38 +648,25 @@ public class VentanaRemitos extends JFrame {
         remito.setFechaEmision(LocalDate.now());
         remito.setCuitEmisor(emisor.getCuit());
         remito.setRazonSocialEmisor(emisor.getRazonSocial());
-        remito.setDomicilioEmisor("");
+        remito.setDomicilioEmisor(emisor.getDomicilio() != null ? emisor.getDomicilio() : "");
+        remito.setCondicionIvaEmisor(emisor.getCondicionIva() != null ? emisor.getCondicionIva() : "");
+        remito.setIngresosBrutosEmisor(emisor.getIngresosBrutos() != null ? emisor.getIngresosBrutos() : "");
+        remito.setFechaInicioActividadesEmisor(emisor.getFechaInicioActividades() != null ? emisor.getFechaInicioActividades() : "");
         remito.setCuitReceptor("");
         remito.setRazonSocialReceptor(clienteRemito != null ? clienteRemito : "");
         remito.setDomicilioReceptor("");
+        remito.setCondicionIvaReceptor("");
         remito.setEstado("pendiente");
         remito.setObservaciones("");
         remito.setItems(items);
 
         final int cantBultos = parseCantBultos(txtCantBultos.getText().trim());
+        final boolean esPreimpreso = part1 != null && Arrays.asList("0002", "0005", "0006", "0007").contains(part1.trim());
 
         new SwingWorker<JasperPrint, Void>() {
             @Override
             protected JasperPrint doInBackground() throws Exception {
-                String templateName;
-                if (part1 != null && Arrays.asList("0002", "0005", "0006", "0007").contains(part1.trim())) {
-                    templateName = "RemitoPreImpreso.jasper";
-                } else {
-                    templateName = "RemitoComun.jasper";
-                }
-
-                Map<String, Object> params = new HashMap<>();
-                params.put("cliente", remito.getRazonSocialReceptor() != null ? remito.getRazonSocialReceptor() : "");
-                params.put("remitoConformado", remito.getNumeroRemito() != null ? remito.getNumeroRemito() : "");
-                params.put("cantBultos", cantBultos);
-                params.put("cuit", remito.getCuitEmisor() != null ? remito.getCuitEmisor() : "");
-                params.put("domicilio", remito.getDomicilioEmisor() != null ? remito.getDomicilioEmisor() : "");
-                params.put("fecha_Entrada", remito.getFechaEmision() != null ? remito.getFechaEmision().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "");
-
-                String descripcionTexto = items.stream()
-                    .map(RemitoItemDTO::getDescripcion)
-                    .collect(Collectors.joining("\n\n"));
-                params.put("descripcion", descripcionTexto);
+                String templateName = esPreimpreso ? "RemitoPreImpreso.jasper" : "RemitoComun.jasper";
 
                 InputStream jasperStream = getClass().getClassLoader()
                     .getResourceAsStream("reportes/" + templateName);
@@ -683,7 +674,71 @@ public class VentanaRemitos extends JFrame {
                     throw new Exception("No se encontro " + templateName);
                 }
 
-                return JasperFillManager.fillReport(jasperStream, params, new JREmptyDataSource(1));
+                Map<String, Object> params;
+                JRDataSource dataSource;
+
+                if (esPreimpreso) {
+                    String caiNro = "";
+                    String caiVenc = "";
+                    String desdeNro = "";
+                    String hastaNro = "";
+                    if (part1 != null && !part1.isEmpty()) {
+                        try {
+                            int pv = Integer.parseInt(part1.trim());
+                            RemitoPreimpresoConfigDAO cfgDAO = new RemitoPreimpresoConfigDAO();
+                            RemitoPreimpresoConfigDTO cfg = cfgDAO.buscarPorPuntoVenta(pv);
+                            if (cfg != null) {
+                                caiNro = cfg.getCai() != null ? String.valueOf(cfg.getCai()) : "";
+                                caiVenc = GestorRemitoPDF.formatDateString(cfg.getFechaVencimiento());
+                                String ubicPadded = String.format("%04d", cfg.getPuntoVenta());
+                                desdeNro = ubicPadded + "-" + String.format("%08d", cfg.getDesde());
+                                hastaNro = ubicPadded + "-" + String.format("%08d", cfg.getHasta());
+                            }
+                        } catch (NumberFormatException e) {
+                            System.err.println("Error parseando punto de venta: " + part1);
+                        }
+                    }
+
+                    params = new HashMap<>();
+                    params.put("EMISOR_RAZON_SOCIAL", remito.getRazonSocialEmisor() != null ? remito.getRazonSocialEmisor() : "");
+                    params.put("EMISOR_DOMICILIO", remito.getDomicilioEmisor() != null ? remito.getDomicilioEmisor() : "");
+                    params.put("EMISOR_CUIT", remito.getCuitEmisor() != null ? remito.getCuitEmisor() : "");
+                    params.put("EMISOR_ING_BRUTOS", remito.getIngresosBrutosEmisor() != null ? remito.getIngresosBrutosEmisor() : "");
+                    params.put("EMISOR_INICIO_ACT", GestorRemitoPDF.formatDateString(remito.getFechaInicioActividadesEmisor()));
+                    params.put("EMISOR_CONDICION_IVA", remito.getCondicionIvaEmisor() != null ? remito.getCondicionIvaEmisor() : "");
+                    params.put("PUNTO_VENTA", part1 != null ? part1 : "");
+                    params.put("COMP_NRO", remito.getNumeroRemito() != null ? remito.getNumeroRemito() : "");
+                    params.put("FECHA_EMISION", remito.getFechaEmision() != null ? remito.getFechaEmision().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "");
+                    params.put("CLIENTE_RAZON_SOCIAL", remito.getRazonSocialReceptor() != null ? remito.getRazonSocialReceptor() : "");
+                    params.put("CLIENTE_CUIT", remito.getCuitReceptor() != null ? remito.getCuitReceptor() : "");
+                    params.put("CLIENTE_DOMICILIO", remito.getDomicilioReceptor() != null ? remito.getDomicilioReceptor() : "");
+                    params.put("CLIENTE_CONDICION_IVA", remito.getCondicionIvaReceptor() != null ? remito.getCondicionIvaReceptor() : "");
+                    params.put("TRANSPORTISTA_NOMBRE", "");
+                    params.put("TRANSPORTISTA_DOMICILIO", "");
+                    params.put("TRANSPORTISTA_CUIT", "");
+                    params.put("CANTIDAD_BULTOS", String.valueOf(cantBultos));
+                    params.put("COPIA_LABEL", "ORIGINAL");
+                    params.put("CAI_NRO", caiNro);
+                    params.put("CAI_VENCIMIENTO", caiVenc);
+                    params.put("DESDE_NRO", desdeNro);
+                    params.put("HASTA_NRO", hastaNro);
+                    dataSource = new JRBeanCollectionDataSource(items);
+                } else {
+                    params = new HashMap<>();
+                    params.put("cliente", remito.getRazonSocialReceptor() != null ? remito.getRazonSocialReceptor() : "");
+                    params.put("remitoConformado", remito.getNumeroRemito() != null ? remito.getNumeroRemito() : "");
+                    params.put("cantBultos", cantBultos);
+                    params.put("cuit", remito.getCuitEmisor() != null ? remito.getCuitEmisor() : "");
+                    params.put("domicilio", remito.getDomicilioEmisor() != null ? remito.getDomicilioEmisor() : "");
+                    params.put("fecha_Entrada", remito.getFechaEmision() != null ? remito.getFechaEmision().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "");
+                    String descripcionTexto = items.stream()
+                        .map(RemitoItemDTO::getDescripcion)
+                        .collect(Collectors.joining("\n\n"));
+                    params.put("descripcion", descripcionTexto);
+                    dataSource = new JREmptyDataSource(1);
+                }
+
+                return JasperFillManager.fillReport(jasperStream, params, dataSource);
             }
             @Override
             protected void done() {
@@ -768,10 +823,14 @@ public class VentanaRemitos extends JFrame {
         remito.setFechaEmision(LocalDate.now());
         remito.setCuitEmisor(emisor.getCuit());
         remito.setRazonSocialEmisor(emisor.getRazonSocial());
-        remito.setDomicilioEmisor("");
+        remito.setDomicilioEmisor(emisor.getDomicilio() != null ? emisor.getDomicilio() : "");
+        remito.setCondicionIvaEmisor(emisor.getCondicionIva() != null ? emisor.getCondicionIva() : "");
+        remito.setIngresosBrutosEmisor(emisor.getIngresosBrutos() != null ? emisor.getIngresosBrutos() : "");
+        remito.setFechaInicioActividadesEmisor(emisor.getFechaInicioActividades() != null ? emisor.getFechaInicioActividades() : "");
         remito.setCuitReceptor("");
         remito.setRazonSocialReceptor(clienteRemito != null ? clienteRemito : "");
         remito.setDomicilioReceptor("");
+        remito.setCondicionIvaReceptor("");
         remito.setEstado("pendiente");
         remito.setObservaciones("Cant. bultos: " + txtCantBultos.getText().trim());
         remito.setItems(items);
@@ -801,8 +860,9 @@ public class VentanaRemitos extends JFrame {
                 if (remitoId > 0) {
                     JOptionPane.showMessageDialog(VentanaRemitos.this,
                         "Remito guardado correctamente: " + remito.getNumeroRemito());
+                    String part1Actual = part1;
                     resetForm();
-                    generarPDFRemito(remito);
+                    generarPDFRemito(remito, part1Actual);
                 } else {
                     JOptionPane.showMessageDialog(VentanaRemitos.this,
                         "Error al guardar el remito",
@@ -816,13 +876,13 @@ public class VentanaRemitos extends JFrame {
 
     // ─── PDF generation ────────────────────────────────────────────────
 
-    private void generarPDFRemito(RemitoDTO remito) {
+    private void generarPDFRemito(RemitoDTO remito, String codigoUbicacion) {
         new SwingWorker<String, Void>() {
             @Override
             protected String doInBackground() throws Exception {
                 GestorRemitoPDF gestor = new GestorRemitoPDF();
                 int cantBultos = parseCantBultos(txtCantBultos.getText().trim());
-                return gestor.generarPDFRemito(remito, part1, cantBultos);
+                return gestor.generarPDFRemito(remito, codigoUbicacion, cantBultos);
             }
             @Override
             protected void done() {

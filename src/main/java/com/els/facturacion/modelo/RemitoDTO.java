@@ -11,9 +11,13 @@ public class RemitoDTO {
     private String cuitEmisor;
     private String razonSocialEmisor;
     private String domicilioEmisor;
+    private String condicionIvaEmisor;
+    private String ingresosBrutosEmisor;
+    private String fechaInicioActividadesEmisor;
     private String cuitReceptor;
     private String razonSocialReceptor;
     private String domicilioReceptor;
+    private String condicionIvaReceptor;
     private Integer comprobanteId;
     private Integer reparsoftRemitoId;
     private String estado;
@@ -45,6 +49,14 @@ public class RemitoDTO {
     public void setRazonSocialReceptor(String razonSocialReceptor) { this.razonSocialReceptor = razonSocialReceptor; }
     public String getDomicilioReceptor() { return domicilioReceptor; }
     public void setDomicilioReceptor(String domicilioReceptor) { this.domicilioReceptor = domicilioReceptor; }
+    public String getCondicionIvaEmisor() { return condicionIvaEmisor; }
+    public void setCondicionIvaEmisor(String condicionIvaEmisor) { this.condicionIvaEmisor = condicionIvaEmisor; }
+    public String getIngresosBrutosEmisor() { return ingresosBrutosEmisor; }
+    public void setIngresosBrutosEmisor(String ingresosBrutosEmisor) { this.ingresosBrutosEmisor = ingresosBrutosEmisor; }
+    public String getFechaInicioActividadesEmisor() { return fechaInicioActividadesEmisor; }
+    public void setFechaInicioActividadesEmisor(String fechaInicioActividadesEmisor) { this.fechaInicioActividadesEmisor = fechaInicioActividadesEmisor; }
+    public String getCondicionIvaReceptor() { return condicionIvaReceptor; }
+    public void setCondicionIvaReceptor(String condicionIvaReceptor) { this.condicionIvaReceptor = condicionIvaReceptor; }
     public Integer getComprobanteId() { return comprobanteId; }
     public void setComprobanteId(Integer comprobanteId) { this.comprobanteId = comprobanteId; }
     public Integer getReparsoftRemitoId() { return reparsoftRemitoId; }
