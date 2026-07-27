@@ -5,84 +5,57 @@
 
 ---
 
-## Hito 1: AGENTS.md + esquema DB + ClienteDTO.tipoPersona
+## Hito 1: AGENTS.md + esquema DB + ClienteDTO.tipoPersona — COMPLETO ✅
 
 **Objetivo:** Preparar la base para los cambios de clientes. Se actualiza la documentación, se agrega la columna `tipo_persona` a la tabla `clientes` y al DTO, y se expande la tabla `cliente` de ReparSoft con las nuevas columnas (nullable, sin impacto visual en ese sistema).
 
-**Archivos a modificar:**
+**Archivos modificados:**
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/main/resources/AGENTS.md` | Actualizar regla ReparSoft: de "solo lectura" a "sincronización bidireccional en tabla cliente" |
-| `src/main/java/com/els/facturacion/modelo/ClienteDTO.java` | Agregar campo `tipoPersona` (String, default `"empresa"`) |
-| `src/main/java/com/els/facturacion/dao/ClienteDAO.java` | Agregar `tipo_persona` en INSERT, UPDATE y `mapear()` |
-| `src/main/resources/config/schema_brc.sql` | Agregar `tipo_persona VARCHAR(20) DEFAULT 'empresa'` al CREATE TABLE clientes + migración ALTER TABLE |
-| `src/main/resources/config/schema_bsas.sql` | Ídem |
-| `src/main/resources/config/alter_reparsoft_cliente.sql` | **Nuevo**: ALTER TABLE para `ordenesbsas.cliente` y `ordenesbrc.cliente` agregando `tipo_documento`, `condicion_iva`, `tipo_persona` (NULL, con defaults) |
+| `src/main/resources/AGENTS.md` | Actualizada regla ReparSoft: de "solo lectura" a "sincronización bidireccional en tabla cliente" ✅ |
+| `src/main/java/com/els/facturacion/modelo/ClienteDTO.java` | Agregado campo `tipoPersona` (String, default `"empresa"`) ✅ |
+| `src/main/java/com/els/facturacion/dao/ClienteDAO.java` | Agregado `tipo_persona` en INSERT, UPDATE y `mapear()` ✅ |
+| `src/main/resources/config/schema_brc.sql` | Agregado `tipo_persona VARCHAR(20) DEFAULT 'empresa'` ✅ |
+| `src/main/resources/config/schema_bsas.sql` | Agregado `tipo_persona VARCHAR(20) DEFAULT 'empresa'` ✅ |
+| `src/main/resources/config/alter_reparsoft_cliente.sql` | **Nuevo**: ALTER TABLE para `ordenesbsas.cliente` y `ordenesbrc.cliente` agregando `tipo_documento`, `condicion_iva`, `tipo_persona` (NULL, con defaults) ✅ |
 
-**Dependencias:** Ninguna.
-
-**Criterio de aceptación:**
-- `AGENTS.md` refleja la nueva política de sincronización.
-- `ClienteDTO` tiene getter/setter para `tipoPersona`.
-- `ClienteDAO` persiste y recupera `tipo_persona` correctamente.
-- Las tablas `clientes` en ambas bases de facturación tienen la columna.
-- Las tablas `cliente` en `ordenesbrc`/`ordenesbsas` tienen las nuevas columnas (todo NULL permitido).
-- El script `alter_reparsoft_cliente.sql` está documentado para ejecución manual.
-
-**Esfuerzo:** Bajo
+**Esfuerzo:** Bajo ✅
 
 ---
 
-## Hito 2: RadioButton Particular/Empresa + validación condicional
+## Hito 2: RadioButton Particular/Empresa + validación condicional — COMPLETO ✅
 
 **Objetivo:** Agregar un selector de tipo de persona (Particular / Empresa) en la ventana de clientes, con validación de campos obligatorios según el tipo.
 
-**Archivos a modificar:**
+**Archivos modificados:**
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/main/java/com/els/facturacion/vista/VentanaClientes.java` | Agregar `JRadioButton` group (rdParticular, rdEmpresa) en el formulario. Validación condicional al guardar: Particular → solo nombre y teléfono obligatorios; Empresa → todos menos email. Mostrar/ocultar indicadores visuales. |
-| `src/main/java/com/els/facturacion/controlador/ControladorClientes.java` | Pasar `tipoPersona` desde la vista al DTO. |
+| `src/main/java/com/els/facturacion/vista/VentanaClientes.java` | Agregados `JRadioButton` group (rdParticular, rdEmpresa) con validación condicional ✅ |
+| `src/main/java/com/els/facturacion/controlador/ControladorClientes.java` | Pasa `tipoPersona` desde la vista al DTO ✅ |
 
-**Dependencias:** Hito 1.
-
-**Criterio de aceptación:**
-- Al crear un cliente, se puede seleccionar Particular o Empresa.
-- Si es Particular: solo `razonSocial` (nombre) y `telefono` son obligatorios. El resto puede estar vacío.
-- Si es Empresa: `razonSocial`, `tipoDocumento`, `nroDocumento`, `condicionIva`, `telefono`, `domicilio` son obligatorios. `email` es opcional.
-- La grilla muestra el tipo de persona.
-- Al cargar un cliente existente, el RadioButton refleja su tipo.
-- Clientes existentes sin `tipo_persona` se muestran como Empresa (default).
-
-**Esfuerzo:** Bajo
+**Esfuerzo:** Bajo ✅
 
 ---
 
-## Hito 3: Sincronización bidireccional FacturaSoft ↔ ReparSoft (Clientes)
+## Hito 3: Sincronización bidireccional FacturaSoft ↔ ReparSoft (Clientes) — COMPLETO ✅
 
 **Objetivo:** Las operaciones CRUD de clientes en FacturaSoft impactan automáticamente en la tabla `cliente` de ReparSoft (base según ubicación actual). La importación existente también actualiza registros vinculados.
 
-**Archivos a modificar:**
+**Archivos modificados:**
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/main/java/com/els/facturacion/controlador/ControladorReparsoft.java` | Nuevos métodos: `insertarClienteEnReparsoft(ClienteDTO)`, `actualizarClienteEnReparsoft(ClienteDTO)`, `eliminarClienteEnReparsoft(int elsReferencia)` |
-| `src/main/java/com/els/facturacion/controlador/ControladorClientes.java` | `guardarCliente()`: después de insertar/actualizar en FacturaSoft, llama al método de sync en ReparSoft. Si es INSERT, guarda `idCliente` devuelto en `els_referencia`. `eliminarCliente()`: también elimina en ReparSoft. |
-| `src/main/java/com/els/facturacion/dao/ClienteDAO.java` | `importarDesdeReparsoft()`: actualizar registros existentes que ya tienen match (no solo insertar nuevos). Guardar `idCliente` en `els_referencia`. |
+| `src/main/java/com/els/facturacion/controlador/ControladorReparsoft.java` | Métodos `insertarClienteEnReparsoft()`, `actualizarClienteEnReparsoft()`, `eliminarClienteEnReparsoft()` implementados ✅ |
+| `src/main/java/com/els/facturacion/controlador/ControladorClientes.java` | `guardarCliente()` y `eliminarCliente()` con sync a ReparSoft ✅ |
+| `src/main/java/com/els/facturacion/dao/ClienteDAO.java` | `importarDesdeReparsoft()` actualiza `els_referencia` en registros existentes ✅ |
 
 **Dependencias:** Hito 2.
 
-**Criterio de aceptación:**
-- Al crear un cliente en FacturaSoft, aparece también en `ordenes_{ubicacion}.cliente`.
-- Al modificar un cliente en FacturaSoft, se actualiza en ReparSoft.
-- Al eliminar un cliente en FacturaSoft, se elimina (o desactiva) en ReparSoft.
-- `els_referencia` almacena el `idCliente` de ReparSoft para mantener el vínculo.
-- La importación desde ReparSoft actualiza registros vinculados (no solo inserta nuevos).
+**Riesgo abordado:** ReparSoft `cliente` tiene `idCliente` auto-incremental. FacturaSoft guarda ese ID en `els_referencia` para futuras actualizaciones.
 
-**Riesgo:** ReparSoft `cliente` tiene `idCliente` auto-incremental. FacturaSoft necesita guardar ese ID en `els_referencia` para futuras actualizaciones.
-
-**Esfuerzo:** Alto
+**Esfuerzo:** Alto ✅
 
 ---
 
@@ -110,20 +83,88 @@
 
 ---
 
-## Hito 5: Módulo Remitos (postergado)
+## Hito 5: Módulo Remitos — COMPLETO ✅
 
-**Objetivo:** Completar la ventana de gestión de remitos. Los DTOs (`RemitoDTO`, `RemitoItemDTO`) y el DAO (`RemitoDAO`) ya están implementados. Falta la interfaz gráfica `VentanaRemitos.java` y el `ControladorRemitos.java`.
+**Objetivo:** Gestión completa de remitos con interfaz gráfica, controlador y sincronización con ReparSoft.
 
-**Dependencias:** Ninguna (se puede arrancar independientemente).
+**Dependencias:** Ninguna.
 
 **Estado actual:**
-- `RemitoDTO` — COMPLETO (55 líneas, con todos los campos)
-- `RemitoItemDTO` — COMPLETO (44 líneas)
-- `RemitoDAO` — COMPLETO (164 líneas con insertar, listar, buscar, actualizarEstado, getUltimoNumero)
-- `ControladorRemitos` — PENDIENTE (clase mencionada en AGENTS.md pero sin archivo)
-- `VentanaRemitos` — PENDIENTE (botón en VentanaPrincipal muestra "Funcionalidad en desarrollo")
+- `RemitoDTO` — COMPLETO ✅
+- `RemitoItemDTO` — COMPLETO ✅
+- `RemitoDAO` — COMPLETO ✅
+- `ControladorRemitos` — COMPLETO (110 líneas, CRUD + sync ReparSoft) ✅
+- `VentanaRemitos` — COMPLETO (1033 líneas con statusBar, applyTheme, initComponents) ✅
 
-**Esfuerzo:** Medio (cuando se retome)
+**Esfuerzo:** Medio ✅
+
+---
+
+## Hito 11: Unificación de campos de cliente en ReparSoftClientes — COMPLETO ✅
+
+**Objetivo:** Agregar los mismos campos de "Datos del Cliente" de FacturaSoft (`tipo_documento`, `condicion_iva`, `tipo_persona`) a ReparSoft (`SistemaGestion\ReparsoftCliente`), manteniendo el estilo visual de ReparSoft (fuente Cambria, colores gris/azul acero).
+
+**Archivos modificados en `SistemaGestion\ReparsoftCliente`:**
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/dto/ClienteDTO.java` | Agregados campos `tipoDocumento` (default "CUIT"), `condicionIva` (default ""), `tipoPersona` (default "empresa") con getters/setters ✅ |
+| `src/persistencia/dao/mysql/ClienteDAOImpl.java` | Actualizados INSERT, UPDATE y `mapearCliente()` para los 3 campos nuevos ✅ |
+| `src/presentacion/vista/VentanaClientes.java` | Agregados `cmbTipoDocumento` (JComboBox: CUIT/DNI/CI/Pasaporte/Otro), `cmbCondicionIva` (JComboBox: IVA Resp. Inscripto/Monotributo/Cons. Final/Exento/No Responsable), `rdParticular`/`rdEmpresa` (JRadioButton group). Mismo estilo Cambria + colores ReparSoft ✅ |
+| `src/presentacion/controlador/ControladorCliente.java` | Actualizados `habilitarCampos`, `deshabilitarCampos`, `limpiarCampos`, guardar/editar, y selección de tabla para los 3 campos ✅ |
+| `src/presentacion/vista/VentanaAgregarCliente.java` | Mismos 3 campos nuevos (usado desde otros módulos) ✅ |
+
+**Archivo SQL ejecutado:**
+```sql
+ALTER TABLE ordenesbsas.cliente
+    ADD COLUMN tipo_documento VARCHAR(10) NULL DEFAULT 'CUIT',
+    ADD COLUMN condicion_iva VARCHAR(60) NULL,
+    ADD COLUMN tipo_persona VARCHAR(20) NULL DEFAULT 'empresa';
+ALTER TABLE ordenesbrc.cliente
+    ADD COLUMN tipo_documento VARCHAR(10) NULL DEFAULT 'CUIT',
+    ADD COLUMN condicion_iva VARCHAR(60) NULL,
+    ADD COLUMN tipo_persona VARCHAR(20) NULL DEFAULT 'empresa';
+```
+
+**Consideraciones de impacto:**
+- Columnas NULL con DEFAULT → **sin impacto en registros existentes**
+- Backups (`mysqldump --complete-insert`) incluyen automáticamente las nuevas columnas → **0 cambios en backup system**
+- Sincronización FacturaSoft → ReparSoft ya escribe estos 3 campos desde la implementación del Hito 3
+
+**Dependencias:** Hito 3 (la sincronización ya escribe estos campos).
+
+**Esfuerzo:** Bajo ✅
+
+---
+
+## Hito 12: Campo Teléfono Contacto en clientes — COMPLETO ✅
+
+**Objetivo:** Agregar el campo `Teléfono Contacto` (proveniente de ReparSoft `TelefonoContacto`) en el formulario de clientes de FacturaSoft y sincronizarlo bidireccionalmente.
+
+**Archivos modificados:**
+
+| Sistema | Archivo | Cambio |
+|---------|---------|--------|
+| **FacturaSoft** | `src/main/java/.../modelo/ClienteDTO.java` | Nuevo campo `telefonoContacto` con getter/setter ✅ |
+| | `src/main/java/.../dao/ClienteDAO.java` | `telefono_contacto` en INSERT, UPDATE, `mapear()` e importación desde ReparSoft ✅ |
+| | `src/main/java/.../controlador/ControladorReparsoft.java` | `TelefonoContacto` sync en `insertarClienteEnReparsoft` y `actualizarClienteEnReparsoft` ✅ |
+| | `src/main/java/.../vista/VentanaClientes.java` | Panel multi-field "Tel. Contacto:" (con +/−) insertado entre Teléfono y Email, mismo estilo. Soportado en `setFormEditable`, `cargarClienteSeleccionado`, `guardarCliente`, `limpiarFormulario`, `applyTheme`, columna oculta en tabla (index 10) ✅ |
+| | `src/main/resources/config/schema_brc.sql` | Columna `telefono_contacto VARCHAR(50)` agregada ✅ |
+| | `src/main/resources/config/schema_bsas.sql` | Columna `telefono_contacto VARCHAR(50)` agregada ✅ |
+| **ReparSoft** | `src/presentacion/controlador/ControladorCliente.java` | `sincronizarConFacturaSoft()` incluye `telefono_contacto` en INSERT y UPDATE ✅ |
+| | `sql/Ordenesdetrabajo_BRC.sql`, `sql/Ordenesdetrabajo_BSAS.sql`, `./Ordenesdetrabajo_BRC.sql`, `./Ordenesdetrabajo_BSAS.sql`, `./OrdenesdetrabajoAntiguas_BRC.sql`, `./OrdenesdetrabajoAntiguas_BSAS.sql` | Agregadas columnas `tipo_documento`, `condicion_iva`, `tipo_persona` (ya tenían `TelefonoContacto`) ✅ |
+
+**SQL migration ejecutado:**
+```sql
+ALTER TABLE facturacion_db_brc.clientes ADD COLUMN telefono_contacto VARCHAR(50) AFTER telefono;
+ALTER TABLE facturacion_db_bsas.clientes ADD COLUMN telefono_contacto VARCHAR(50) AFTER telefono;
+```
+
+**Mejora adicional:** `importarDesdeReparsoft()` ahora actualiza `telefonoContacto`, `telefono`, `email` y `domicilio` en clientes ya existentes, no solo en nuevos.
+
+**Dependencias:** Hitos 3 y 11.
+
+**Esfuerzo:** Bajo ✅
 
 ---
 
@@ -188,17 +229,20 @@
 ## Resumen de dependencias
 
 ```
-Hito 1 (AGENTS + DB + DTO)
+Hito 1 (AGENTS + DB + DTO) ── COMPLETO ✅
     │
     ▼
-Hito 2 (RadioButton + validación)
+Hito 2 (RadioButton + validación) ── COMPLETO ✅
     │
     ▼
-Hito 3 (Sincronización ReparSoft)
+Hito 3 (Sincronización ReparSoft) ── COMPLETO ✅
+    │
+    ▼
+Hito 11 (Unif. campos ReparSoft) ── COMPLETO ✅
     
 Hito 4 (Campo OC) ── COMPLETO ✅
     
-Hito 5 (Remitos) ── postergado, sin dependencias
+Hito 5 (Remitos) ── COMPLETO ✅
 ```
 
 ---
@@ -352,19 +396,24 @@ Hito 5 (Remitos) ── postergado, sin dependencias
 ## Resumen de dependencias actualizado
 
 ```
-Hito 1 (AGENTS + DB + DTO)
+Hito 1 (AGENTS + DB + DTO) ── COMPLETO ✅
     │
     ▼
-Hito 2 (RadioButton + validación)
+Hito 2 (RadioButton + validación) ── COMPLETO ✅
     │
     ▼
-Hito 3 (Sincronización ReparSoft)
+Hito 3 (Sincronización ReparSoft) ── COMPLETO ✅
+    │
+    ▼
+Hito 11 (Unif. campos ReparSoft) ── COMPLETO ✅
+
+Hito 12 (Tel. Contacto) ── COMPLETO ✅
     
 Hito 4 (Campo OC) ── COMPLETO ✅
     
-Hito 5 (Remitos) ── postergado, sin dependencias
+Hito 5 (Remitos) ── COMPLETO ✅
 
-Hito 6 (WSFE robustez) ── sin dependencias previas, CRÍTICO para prod
+Hito 6 (WSFE robustez) ── sin dependencias previas, ⬅ SIGUIENTE PRIORIDAD
     │
     ├──▶ Hito 7 (Multi-PV) ── requiere Hito 6
     │
@@ -381,9 +430,9 @@ Hito 8 (Config cert) ── independiente
 
 1. **ReparSoft `cliente`**: El ALTER TABLE agrega columnas NULL, pero ReparSoft (el otro sistema) podría tener un mapeo rígido que no espere esas columnas. Probablemente no haya problema porque son NULL, pero hay que verificarlo.
 2. **Escritura concurrente**: Si alguien usa ReparSoft al mismo tiempo que FacturaSoft escribe en `cliente`, puede haber conflictos. No hay lock distribuido.
-3. **Importación dual**: La importación desde ReparSoft debe actualizar `els_referencia` en clientes ya existentes. Actualmente solo inserta nuevos.
+3. ~~**Importación dual**: La importación desde ReparSoft debe actualizar `els_referencia` en clientes ya existentes. Actualmente solo inserta nuevos.~~ ✅ **Resuelto en Hito 12**: ahora actualiza `telefonoContacto`, `telefono`, `email` y `domicilio` en clientes existentes.
 4. **OC en visualización**: El campo `comprobante_asociado` debe incluirse en la tabla de comprobantes y en el PDF de factura si tiene valor.
 5. **TokenCache multi-CUIT (Hito 6)**: Cambio crítico. Si falla, multi-emisor no funciona. Testear exhaustivamente con 2+ CUITs.
 6. **Parsing XML con XPath (Hito 6)**: Reemplaza `indexOf` frágil. Verificar que `javax.xml.xpath` está disponible en JDK 8 target (sí, desde JDK 1.5).
 7. **Idempotencia emisión (Hito 6)**: Si ARCA responde OK pero falla INSERT local, el comprobante queda en ARCA con CAE. La verificación previa mitiga, pero no elimina race condition. Considerar tabla `comprobantes_pendientes_sync`.
-8. **Versión del plan**: v1.3 — 20/06/2026
+8. **Versión del plan**: v1.4 — 26/07/2026

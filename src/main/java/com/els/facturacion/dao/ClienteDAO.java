@@ -24,8 +24,8 @@ public class ClienteDAO {
 
     public int insertar(ClienteDTO cliente) {
         String sql = "INSERT INTO clientes (tipo_documento, nro_documento, razon_social, condicion_iva, "
-                + "domicilio, telefono, email, origen, els_referencia, activo, tipo_persona) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "domicilio, telefono, telefono_contacto, email, origen, els_referencia, activo, tipo_persona) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement ps = getConn().prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, cliente.getTipoDocumento());
@@ -34,15 +34,16 @@ public class ClienteDAO {
             ps.setString(4, cliente.getCondicionIva());
             ps.setString(5, cliente.getDomicilio());
             ps.setString(6, cliente.getTelefono());
-            ps.setString(7, cliente.getEmail());
-            ps.setString(8, cliente.getOrigen());
+            ps.setString(7, cliente.getTelefonoContacto());
+            ps.setString(8, cliente.getEmail());
+            ps.setString(9, cliente.getOrigen());
             if (cliente.getElsReferencia() != null) {
-                ps.setInt(9, cliente.getElsReferencia());
+                ps.setInt(10, cliente.getElsReferencia());
             } else {
-                ps.setNull(9, java.sql.Types.INTEGER);
+                ps.setNull(10, java.sql.Types.INTEGER);
             }
-            ps.setBoolean(10, cliente.getActivo() != null ? cliente.getActivo() : true);
-            ps.setString(11, cliente.getTipoPersona() != null ? cliente.getTipoPersona() : "empresa");
+            ps.setBoolean(11, cliente.getActivo() != null ? cliente.getActivo() : true);
+            ps.setString(12, cliente.getTipoPersona() != null ? cliente.getTipoPersona() : "empresa");
 
             int affected = ps.executeUpdate();
             if (affected > 0) {
@@ -59,7 +60,7 @@ public class ClienteDAO {
 
     public boolean actualizar(ClienteDTO cliente) {
         String sql = "UPDATE clientes SET tipo_documento = ?, nro_documento = ?, razon_social = ?, "
-                + "condicion_iva = ?, domicilio = ?, telefono = ?, email = ?, activo = ?, "
+                + "condicion_iva = ?, domicilio = ?, telefono = ?, telefono_contacto = ?, email = ?, activo = ?, "
                 + "tipo_persona = ?, els_referencia = ? WHERE id = ?";
 
         try (PreparedStatement ps = getConn().prepareStatement(sql)) {
@@ -69,15 +70,16 @@ public class ClienteDAO {
             ps.setString(4, cliente.getCondicionIva());
             ps.setString(5, cliente.getDomicilio());
             ps.setString(6, cliente.getTelefono());
-            ps.setString(7, cliente.getEmail());
-            ps.setBoolean(8, cliente.getActivo() != null ? cliente.getActivo() : true);
-            ps.setString(9, cliente.getTipoPersona() != null ? cliente.getTipoPersona() : "empresa");
+            ps.setString(7, cliente.getTelefonoContacto());
+            ps.setString(8, cliente.getEmail());
+            ps.setBoolean(9, cliente.getActivo() != null ? cliente.getActivo() : true);
+            ps.setString(10, cliente.getTipoPersona() != null ? cliente.getTipoPersona() : "empresa");
             if (cliente.getElsReferencia() != null) {
-                ps.setInt(10, cliente.getElsReferencia());
+                ps.setInt(11, cliente.getElsReferencia());
             } else {
-                ps.setNull(10, java.sql.Types.INTEGER);
+                ps.setNull(11, java.sql.Types.INTEGER);
             }
-            ps.setInt(11, cliente.getId());
+            ps.setInt(12, cliente.getId());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error actualizando cliente: " + e.getMessage());
@@ -180,7 +182,7 @@ public class ClienteDAO {
             if (connRep == null) return importados;
 
             String sql = "SELECT DISTINCT c.idCliente, c.nombre, c.CUIT, c.Domicilio, "
-                    + "c.TelefonoEmpresa, c.CorreoElectronico "
+                    + "c.TelefonoEmpresa, c.TelefonoContacto, c.CorreoElectronico "
                     + "FROM cliente c "
                     + "ORDER BY c.nombre";
             try (PreparedStatement ps = connRep.prepareStatement(sql);
@@ -190,6 +192,7 @@ public class ClienteDAO {
                     String nombre = "";
                     String domicilio = "";
                     String telefono = "";
+                    String telefonoContacto = "";
                     String email = "";
                     int idCliente = 0;
                     try { idCliente = rs.getInt("idCliente"); } catch (Exception e) {}
@@ -197,6 +200,7 @@ public class ClienteDAO {
                     try { nombre = rs.getString("nombre"); } catch (Exception e) {}
                     try { domicilio = rs.getString("Domicilio"); } catch (Exception e) {}
                     try { telefono = rs.getString("TelefonoEmpresa"); } catch (Exception e) {}
+                    try { telefonoContacto = rs.getString("TelefonoContacto"); } catch (Exception e) {}
                     try { email = rs.getString("CorreoElectronico"); } catch (Exception e) {}
 
                     if (nombre == null || nombre.trim().isEmpty()) continue;
@@ -220,9 +224,35 @@ public class ClienteDAO {
                         existente = buscarPorElsReferencia(idCliente);
                     }
                     if (existente != null) {
+                        boolean needUpdate = false;
                         if (existente.getElsReferencia() == null || existente.getElsReferencia() == 0) {
                             existente.setElsReferencia(idCliente);
+                            needUpdate = true;
+                        }
+                        if (telefonoContacto != null && !telefonoContacto.trim().isEmpty()
+                            && !telefonoContacto.trim().equals(existente.getTelefonoContacto())) {
+                            existente.setTelefonoContacto(telefonoContacto.trim());
+                            needUpdate = true;
+                        }
+                        if (telefono != null && !telefono.trim().isEmpty()
+                            && !telefono.trim().equals(existente.getTelefono())) {
+                            existente.setTelefono(telefono.trim());
+                            needUpdate = true;
+                        }
+                        if (email != null && !email.trim().isEmpty()
+                            && !email.trim().equals(existente.getEmail())) {
+                            existente.setEmail(email.trim());
+                            needUpdate = true;
+                        }
+                        if (domicilio != null && !domicilio.trim().isEmpty()
+                            && !domicilio.trim().equals(existente.getDomicilio())) {
+                            existente.setDomicilio(domicilio.trim());
+                            needUpdate = true;
+                        }
+                        if (needUpdate) {
                             actualizar(existente);
+                            System.out.println("Actualizado cliente #" + existente.getId()
+                                + " con datos desde ReparSoft");
                         }
                         continue;
                     }
@@ -234,6 +264,7 @@ public class ClienteDAO {
                     cli.setCondicionIva("IVA Responsable Inscripto");
                     cli.setDomicilio(domicilio != null ? domicilio.trim() : "");
                     cli.setTelefono(telefono != null ? telefono.trim() : "");
+                    cli.setTelefonoContacto(telefonoContacto != null ? telefonoContacto.trim() : "");
                     cli.setEmail(email != null ? email.trim() : "");
                     cli.setElsReferencia(idCliente);
                     cli.setOrigen("reparsoft");
@@ -299,6 +330,7 @@ public class ClienteDAO {
         dto.setCondicionIva(rs.getString("condicion_iva"));
         dto.setDomicilio(rs.getString("domicilio"));
         dto.setTelefono(rs.getString("telefono"));
+        dto.setTelefonoContacto(rs.getString("telefono_contacto"));
         dto.setEmail(rs.getString("email"));
         dto.setOrigen(rs.getString("origen"));
         dto.setElsReferencia(rs.getObject("els_referencia") != null ? rs.getInt("els_referencia") : null);

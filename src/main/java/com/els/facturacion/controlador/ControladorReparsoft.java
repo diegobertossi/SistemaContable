@@ -237,8 +237,8 @@ public class ControladorReparsoft {
         }
 
         String sql = "INSERT INTO cliente (idCliente, nombre, CUIT, Domicilio, TelefonoEmpresa, "
-                + "CorreoElectronico, tipo_documento, condicion_iva, tipo_persona) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "TelefonoContacto, CorreoElectronico, tipo_documento, condicion_iva, tipo_persona) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, nextId);
@@ -246,10 +246,11 @@ public class ControladorReparsoft {
             ps.setString(3, cliente.getNroDocumento());
             ps.setString(4, cliente.getDomicilio());
             ps.setString(5, cliente.getTelefono());
-            ps.setString(6, cliente.getEmail());
-            ps.setString(7, cliente.getTipoDocumento());
-            ps.setString(8, cliente.getCondicionIva());
-            ps.setString(9, cliente.getTipoPersona() != null ? cliente.getTipoPersona() : "empresa");
+            ps.setString(6, cliente.getTelefonoContacto());
+            ps.setString(7, cliente.getEmail());
+            ps.setString(8, cliente.getTipoDocumento());
+            ps.setString(9, cliente.getCondicionIva());
+            ps.setString(10, cliente.getTipoPersona() != null ? cliente.getTipoPersona() : "empresa");
 
             int affected = ps.executeUpdate();
             if (affected > 0) {
@@ -269,7 +270,7 @@ public class ControladorReparsoft {
         if (conn == null) return false;
 
         String sql = "UPDATE cliente SET nombre = ?, CUIT = ?, Domicilio = ?, TelefonoEmpresa = ?, "
-                + "CorreoElectronico = ?, tipo_documento = ?, condicion_iva = ?, tipo_persona = ? "
+                + "TelefonoContacto = ?, CorreoElectronico = ?, tipo_documento = ?, condicion_iva = ?, tipo_persona = ? "
                 + "WHERE idCliente = ?";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -277,11 +278,12 @@ public class ControladorReparsoft {
             ps.setString(2, cliente.getNroDocumento());
             ps.setString(3, cliente.getDomicilio());
             ps.setString(4, cliente.getTelefono());
-            ps.setString(5, cliente.getEmail());
-            ps.setString(6, cliente.getTipoDocumento());
-            ps.setString(7, cliente.getCondicionIva());
-            ps.setString(8, cliente.getTipoPersona() != null ? cliente.getTipoPersona() : "empresa");
-            ps.setInt(9, cliente.getElsReferencia());
+            ps.setString(5, cliente.getTelefonoContacto());
+            ps.setString(6, cliente.getEmail());
+            ps.setString(7, cliente.getTipoDocumento());
+            ps.setString(8, cliente.getCondicionIva());
+            ps.setString(9, cliente.getTipoPersona() != null ? cliente.getTipoPersona() : "empresa");
+            ps.setInt(10, cliente.getElsReferencia());
 
             boolean ok = ps.executeUpdate() > 0;
             if (ok) {

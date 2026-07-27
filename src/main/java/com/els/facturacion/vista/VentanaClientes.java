@@ -140,6 +140,10 @@ public class VentanaClientes extends javax.swing.JFrame {
     private JPanel phonePanel;
     private JButton btnAddPhone;
     private JButton btnRemovePhone;
+    private List<JTextField> contactPhoneFields = new ArrayList<>();
+    private JPanel contactPhonePanel;
+    private JButton btnAddContactPhone;
+    private JButton btnRemoveContactPhone;
     private Border defaultBorder;
     private Border normalBorder;
 
@@ -246,6 +250,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         txtDomicilio.setFont(FUENTE_INPUT_BOLD);
         txtDomicilio.setDisabledTextColor(getDisabledFg());
         buildPhonePanel();
+        buildContactPhonePanel();
         buildEmailPanel();
 
         int row = 0;
@@ -312,6 +317,10 @@ public class VentanaClientes extends javax.swing.JFrame {
         panelForm.add(phonePanel, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
 
         row++;
+        panelForm.add(new JLabel("Tel. Contacto:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.NONE, new Insets(5, 5, 3, 2), 0, 0));
+        panelForm.add(contactPhonePanel, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
+
+        row++;
         panelForm.add(new JLabel("Email:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.NONE, new Insets(5, 5, 3, 2), 0, 0));
         panelForm.add(emailPanel, new GridBagConstraints(1, row, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, new Insets(3, 0, 3, 5), 0, 0));
 
@@ -337,7 +346,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         panelForm.add(panel, new GridBagConstraints(0, row, 2, 1, 1, 1.0, GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0));
 
         // ── Tabla (lado izquierdo) ──
-        String[] columnas = {"ID", "Tipo", "Razon Social", "SUCURSAL", "Tipo Doc", "Nro Doc", "Condicion IVA", "Domicilio", "Telefono", "Email"};
+        String[] columnas = {"ID", "Tipo", "Razon Social", "SUCURSAL", "Tipo Doc", "Nro Doc", "Condicion IVA", "Domicilio", "Telefono", "Email", "Tel Contacto"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             public boolean isCellEditable(int row, int column) { return false; }
         };
@@ -348,7 +357,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         tabla.getColumnModel().getColumn(0).setMinWidth(0);
         tabla.getColumnModel().getColumn(0).setMaxWidth(0);
         tabla.getColumnModel().getColumn(0).setPreferredWidth(0);
-        int[] hiddenCols = {1, 3, 4, 6, 7, 9};
+        int[] hiddenCols = {1, 3, 4, 6, 7, 9, 10};
         for (int c : hiddenCols) {
             tabla.getColumnModel().getColumn(c).setMinWidth(0);
             tabla.getColumnModel().getColumn(c).setMaxWidth(0);
@@ -844,6 +853,169 @@ public class VentanaClientes extends javax.swing.JFrame {
         field.setDisabledTextColor(getDisabledFg());
     }
 
+    // ── Contact Phone multi-field (Teléfono Contacto) ──
+
+    private void buildContactPhonePanel() {
+        contactPhonePanel = new JPanel();
+        contactPhonePanel.setLayout(new BoxLayout(contactPhonePanel, BoxLayout.Y_AXIS));
+        contactPhonePanel.setOpaque(false);
+
+        JTextField first = new TextPrompt("Opcional");
+        initContactPhoneField(first, "");
+        contactPhoneFields.add(first);
+        JPanel w0 = new JPanel(new BorderLayout());
+        w0.setOpaque(false);
+        w0.add(first, BorderLayout.CENTER);
+        w0.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+        contactPhonePanel.add(w0);
+
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
+        btnRow.setOpaque(false);
+        btnAddContactPhone = new JButton("+");
+        btnAddContactPhone.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        btnAddContactPhone.setFocusPainted(false);
+        btnAddContactPhone.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnAddContactPhone.setPreferredSize(new Dimension(40, 20));
+        btnAddContactPhone.setForeground(currentTheme.textPrimary);
+        addButtonFeedback(btnAddContactPhone);
+        btnAddContactPhone.addActionListener(e -> addContactPhoneField());
+        btnRemoveContactPhone = new JButton("\u2212");
+        btnRemoveContactPhone.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        btnRemoveContactPhone.setFocusPainted(false);
+        btnRemoveContactPhone.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnRemoveContactPhone.setPreferredSize(new Dimension(40, 20));
+        btnRemoveContactPhone.setForeground(currentTheme.textPrimary);
+        addButtonFeedback(btnRemoveContactPhone);
+        btnRemoveContactPhone.addActionListener(e -> removeContactPhoneField());
+        btnRow.add(btnAddContactPhone);
+        btnRow.add(btnRemoveContactPhone);
+        contactPhonePanel.add(btnRow);
+
+        updateContactPhoneButtons();
+    }
+
+    private void initContactPhoneField(JTextField field, String text) {
+        field.setText(text);
+        field.setFont(FUENTE_INPUT);
+        field.setForeground(currentTheme.textPrimary);
+        field.setBackground(getFieldBg(modoEdicion));
+        field.setDisabledTextColor(getDisabledFg());
+        if (defaultBorder == null) {
+            defaultBorder = field.getBorder();
+            normalBorder = defaultBorder;
+        }
+        field.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent e) {
+                char c = e.getKeyChar();
+                if (!Character.isDigit(c) && c != java.awt.event.KeyEvent.VK_BACK_SPACE
+                    && c != java.awt.event.KeyEvent.VK_DELETE) {
+                    e.consume();
+                }
+            }
+        });
+    }
+
+    private void addContactPhoneField() {
+        if (contactPhoneFields.size() >= MAX_PHONES) return;
+        JTextField newField = new TextPrompt("Opcional");
+        initContactPhoneField(newField, "");
+        contactPhoneFields.add(newField);
+        JPanel w = new JPanel(new BorderLayout());
+        w.setOpaque(false);
+        w.add(newField, BorderLayout.CENTER);
+        w.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+        contactPhonePanel.add(w, contactPhonePanel.getComponentCount() - 1);
+        contactPhonePanel.revalidate();
+        contactPhonePanel.repaint();
+        newField.requestFocusInWindow();
+        updateContactPhoneButtons();
+    }
+
+    private void removeContactPhoneField() {
+        if (contactPhoneFields.size() <= 1) return;
+        int resp = JOptionPane.showConfirmDialog(this,
+            "\u00bfEst\u00e1 seguro de eliminar este tel\u00e9fono?",
+            "Confirmar eliminaci\u00f3n", JOptionPane.YES_NO_OPTION);
+        if (resp != JOptionPane.YES_OPTION) return;
+        JTextField last = contactPhoneFields.remove(contactPhoneFields.size() - 1);
+        contactPhonePanel.remove(last.getParent());
+        contactPhonePanel.revalidate();
+        contactPhonePanel.repaint();
+        updateContactPhoneButtons();
+    }
+
+    private String getContactPhoneTexts() {
+        StringBuilder sb = new StringBuilder();
+        for (JTextField f : contactPhoneFields) {
+            String t = f.getText().trim();
+            if (!t.isEmpty()) {
+                if (sb.length() > 0) sb.append("; ");
+                sb.append(t);
+            }
+        }
+        return sb.toString();
+    }
+
+    private void setContactPhoneTexts(String concatenated) {
+        resetContactPhoneFields();
+        if (concatenated == null || concatenated.trim().isEmpty()) return;
+        String[] parts = concatenated.split("\\s*;\\s*");
+        for (int i = 0; i < parts.length; i++) {
+            if (i == 0) {
+                contactPhoneFields.get(0).setText(parts[i].trim());
+            } else if (i < MAX_PHONES) {
+                JTextField f = new TextPrompt("Opcional");
+                initContactPhoneField(f, parts[i].trim());
+                contactPhoneFields.add(f);
+                JPanel w = new JPanel(new BorderLayout());
+                w.setOpaque(false);
+                w.add(f, BorderLayout.CENTER);
+                w.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+                contactPhonePanel.add(w, contactPhonePanel.getComponentCount() - 1);
+            }
+        }
+        contactPhonePanel.revalidate();
+        contactPhonePanel.repaint();
+        updateContactPhoneButtons();
+    }
+
+    private void resetContactPhoneFields() {
+        while (contactPhoneFields.size() > 1) {
+            JTextField f = contactPhoneFields.remove(contactPhoneFields.size() - 1);
+            contactPhonePanel.remove(f.getParent());
+        }
+        if (!contactPhoneFields.isEmpty()) {
+            JTextField first = contactPhoneFields.get(0);
+            first.setText("");
+            first.setBorder(normalBorder != null ? normalBorder : defaultBorder);
+        } else {
+            JTextField first = new TextPrompt("Opcional");
+            initContactPhoneField(first, "");
+            contactPhoneFields.add(first);
+            JPanel w = new JPanel(new BorderLayout());
+            w.setOpaque(false);
+            w.add(first, BorderLayout.CENTER);
+            w.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+            contactPhonePanel.add(w, 0);
+        }
+        contactPhonePanel.revalidate();
+        contactPhonePanel.repaint();
+        updateContactPhoneButtons();
+    }
+
+    private void updateContactPhoneButtons() {
+        boolean canAdd = contactPhoneFields.size() < MAX_PHONES;
+        boolean canRemove = contactPhoneFields.size() > 1;
+        if (btnAddContactPhone != null) btnAddContactPhone.setEnabled(canAdd);
+        if (btnRemoveContactPhone != null) btnRemoveContactPhone.setEnabled(canRemove);
+    }
+
+    private void applyContactPhoneFieldTheme(JTextField field) {
+        field.setForeground(currentTheme.textPrimary);
+        field.setBackground(getFieldBg(field.isEnabled()));
+        field.setDisabledTextColor(getDisabledFg());
+    }
+
     private void updatePlaceholders() {
         boolean isParticular = rdParticular != null && rdParticular.isSelected();
         if (lblRazonSocial != null) {
@@ -864,6 +1036,10 @@ public class VentanaClientes extends javax.swing.JFrame {
         for (JTextField f : phoneFields) {
             if (f instanceof TextPrompt)
                 ((TextPrompt) f).setPlaceholder(phonePlaceholder);
+        }
+        for (JTextField f : contactPhoneFields) {
+            if (f instanceof TextPrompt)
+                ((TextPrompt) f).setPlaceholder("Opcional");
         }
     }
 
@@ -950,7 +1126,8 @@ public class VentanaClientes extends javax.swing.JFrame {
             modeloTabla.addRow(new Object[]{
                 c.getId(), tipo, c.getRazonSocial(), suc,
                 c.getTipoDocumento(), c.getNroDocumento(), c.getCondicionIva(),
-                c.getDomicilio(), c.getTelefono(), c.getEmail()
+                c.getDomicilio(), c.getTelefono(), c.getEmail(),
+                c.getTelefonoContacto()
             });
         }
         nombresClientes.add(0, "--Todos--");
@@ -980,7 +1157,8 @@ public class VentanaClientes extends javax.swing.JFrame {
                 modeloTabla.addRow(new Object[]{
                     c.getId(), tipo, c.getRazonSocial(), suc,
                     c.getTipoDocumento(), c.getNroDocumento(), c.getCondicionIva(),
-                    c.getDomicilio(), c.getTelefono(), c.getEmail()
+                    c.getDomicilio(), c.getTelefono(), c.getEmail(),
+                    c.getTelefonoContacto()
                 });
             }
         }
@@ -1648,6 +1826,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         cmbCondicionIva.setSelectedItem(modeloTabla.getValueAt(row, 6) != null ? modeloTabla.getValueAt(row, 6).toString() : "Consumidor Final");
         txtDomicilio.setText(modeloTabla.getValueAt(row, 7) != null ? modeloTabla.getValueAt(row, 7).toString() : "");
         setPhoneTexts(modeloTabla.getValueAt(row, 8) != null ? modeloTabla.getValueAt(row, 8).toString() : "");
+        setContactPhoneTexts(modeloTabla.getValueAt(row, 10) != null ? modeloTabla.getValueAt(row, 10).toString() : "");
         setEmailTexts(modeloTabla.getValueAt(row, 9) != null ? modeloTabla.getValueAt(row, 9).toString() : "");
         String sucStr = modeloTabla.getValueAt(row, 3) != null ? modeloTabla.getValueAt(row, 3).toString() : "";
         btnMostrarSucursales.setVisible(!sucStr.isEmpty());
@@ -1726,6 +1905,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         cli.setCondicionIva(condicionIva);
         cli.setDomicilio(domicilio);
         cli.setTelefono(getPhoneTexts());
+        cli.setTelefonoContacto(getContactPhoneTexts());
         cli.setEmail(getEmailTexts());
 
         int id = controlador.guardarCliente(cli);
@@ -1760,6 +1940,12 @@ public class VentanaClientes extends javax.swing.JFrame {
         }
         btnAddPhone.setEnabled(editable && phoneFields.size() < MAX_PHONES);
         btnRemovePhone.setEnabled(editable && phoneFields.size() > 1);
+        for (JTextField f : contactPhoneFields) {
+            f.setEnabled(editable);
+            f.setBackground(bg);
+        }
+        btnAddContactPhone.setEnabled(editable && contactPhoneFields.size() < MAX_PHONES);
+        btnRemoveContactPhone.setEnabled(editable && contactPhoneFields.size() > 1);
         for (JTextField f : emailFields) {
             f.setEnabled(editable);
             f.setBackground(bg);
@@ -1797,6 +1983,7 @@ public class VentanaClientes extends javax.swing.JFrame {
         cmbCondicionIva.setSelectedIndex(0);
         txtDomicilio.setText("");
         resetPhoneFields();
+        resetContactPhoneFields();
         resetEmailFields();
         modoEdicion = false;
         setFormEditable(true);
@@ -1883,6 +2070,15 @@ public class VentanaClientes extends javax.swing.JFrame {
         if (btnRemovePhone != null) {
             btnRemovePhone.setBackground(t.btnBg);
             btnRemovePhone.setForeground(t.textPrimary);
+        }
+        for (JTextField f : contactPhoneFields) applyContactPhoneFieldTheme(f);
+        if (btnAddContactPhone != null) {
+            btnAddContactPhone.setBackground(t.btnBg);
+            btnAddContactPhone.setForeground(t.textPrimary);
+        }
+        if (btnRemoveContactPhone != null) {
+            btnRemoveContactPhone.setBackground(t.btnBg);
+            btnRemoveContactPhone.setForeground(t.textPrimary);
         }
         for (JTextField f : emailFields) applyEmailFieldTheme(f);
         if (btnAddEmail != null) {

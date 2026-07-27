@@ -11,6 +11,9 @@ import com.els.facturacion.modelo.RemitoReparsoftDTO;
 import com.els.facturacion.modelo.RemitoReparsoftDTO.RemitoReparsoftItem;
 import com.els.facturacion.modelo.RespuestaCAE;
 import com.els.facturacion.pdf.GestorFacturaPDF;
+import com.els.facturacion.service.EmisionAsincronaService;
+import com.els.facturacion.vista.RetryCountdownDialog;
+import com.els.facturacion.vista.Theme;
 import com.els.facturacion.vista.VentanaFacturacion;
 import com.els.facturacion.vista.VentanaClientes;
 import com.els.facturacion.vista.VentanaImportarRemito;
@@ -30,6 +33,7 @@ import java.util.List;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
@@ -56,6 +60,7 @@ public class ControladorFacturacion {
     private ServicioWSFEv1 servicioWSFEv1;
     private ControladorClientes controladorClientes;
     private ControladorReparsoft controladorReparsoft;
+    private EmisionAsincronaService emisionService;
     private boolean modoPrueba;
     private boolean recalculando;
 
@@ -70,6 +75,7 @@ public class ControladorFacturacion {
         this.servicioWSFEv1 = new ServicioWSFEv1();
         this.controladorClientes = new ControladorClientes();
         this.controladorReparsoft = new ControladorReparsoft();
+        this.emisionService = new EmisionAsincronaService(this.servicioWSFEv1);
         this.modoPrueba = false;
         this.recalculando = false;
     }
@@ -460,67 +466,183 @@ public class ControladorFacturacion {
                 return;
             }
 
-            RespuestaCAE respuesta = emitirFactura(comprobante, items);
+            if (cuiSelected.getRutaCertificado() == null || cuiSelected.getRutaCertificado().isEmpty()) {
+                JOptionPane.showMessageDialog(view, "Certificado no configurado para este CUIT", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
-            if (respuesta.isExitosa()) {
-                Long nroComp = respuesta.getNumeroComprobante();
-                if (nroComp != null) {
-                    String tipoStr = (String) view.getCmbTipoComprobante().getSelectedItem();
-                    String abrev = "FC";
-                    if (tipoStr.startsWith("Nota de Debito")) abrev = "ND";
-                    else if (tipoStr.startsWith("Nota de Credito")) abrev = "NC";
-                    else if (tipoStr.startsWith("Recibo")) abrev = "RE";
-                    else if (tipoStr.contains("FCE")) abrev = "FCE";
-                    String numeroFactura = String.format("%05d-%08d",
-                        Integer.parseInt((String) view.getCmbPuntoVenta().getSelectedItem()), nroComp);
+            long ultimoNumero;
+            if (modoPrueba) {
+                ultimoNumero = comprobanteDAO.getUltimoNumero(
+                    comprobante.getCuitEmisor(),
+                    comprobante.getPuntoVenta(),
+                    comprobante.getTipoComprobante()
+                );
+            } else {
+                long desdeARCA = 0;
+                try {
+                    desdeARCA = servicioWSFEv1.consultarUltimoAutorizado(
+                        comprobante.getCuitEmisor(),
+                        comprobante.getPuntoVenta(),
+                        comprobante.getTipoComprobante(),
+                        cuiSelected.getRutaCertificado(),
+                        cuiSelected.getPasswordCert()
+                    );
+                } catch (Exception e) {
+                    System.err.println("No se pudo consultar ultimo autorizado en ARCA, usando contador local: " + e.getMessage());
+                }
+                if (desdeARCA > 0) {
+                    ultimoNumero = desdeARCA;
+                } else {
+                    ultimoNumero = comprobanteDAO.getUltimoNumero(
+                        comprobante.getCuitEmisor(),
+                        comprobante.getPuntoVenta(),
+                        comprobante.getTipoComprobante()
+                    );
+                }
+            }
+            comprobante.setNumero(ultimoNumero + 1);
 
-                    int elsActualizados = 0;
-                    int elsConError = 0;
-                    int elsEncontrados = 0;
-                    String baseReparsoft = UbicacionSistema.getNombreDbReparsoft();
-                    for (ItemFacturaDTO item : items) {
-                        if (item.getElsReferencia() != null) {
-                            elsEncontrados++;
-                            boolean ok = controladorReparsoft.escribirNumeroFactura(
-                                item.getElsReferencia(), numeroFactura, baseReparsoft);
-                            if (ok) elsActualizados++;
-                            else elsConError++;
-                        }
-                    }
-                    if (elsEncontrados == 0) {
-                        JOptionPane.showMessageDialog(view,
-                            "Ning\u00fan item de la factura tiene un n\u00famero de ELS.\n"
-                            + "No se actualiz\u00f3 el n\u00famero de factura en ReparSoft.",
-                            "ReparSoft", JOptionPane.WARNING_MESSAGE);
-                    } else if (elsActualizados > 0) {
-                        JOptionPane.showMessageDialog(view,
-                            "N\u00famero de factura registrado en " + elsActualizados
-                            + " ELS de " + baseReparsoft + " correctamente."
-                            + (elsConError > 0 ? "\n" + elsConError + " ELS no se pudieron actualizar." : ""),
-                            "ReparSoft", JOptionPane.INFORMATION_MESSAGE);
-                    } else {
-                        JOptionPane.showMessageDialog(view,
-                            "No se pudo actualizar ning\u00fan ELS en " + baseReparsoft + ".\n"
-                            + "Verifique que los n\u00fameros de ELS existan en la base de datos seleccionada.",
-                            "ReparSoft", JOptionPane.ERROR_MESSAGE);
+            if (comprobante.getImporteTotal() == null) {
+                BigDecimal total = comprobante.getImporteNeto();
+                if (comprobante.getImporteIva() != null) {
+                    total = total.add(comprobante.getImporteIva());
+                }
+                comprobante.setImporteTotal(total);
+            }
+
+            if (comprobante.getFechaEmision() == null) {
+                comprobante.setFechaEmision(LocalDate.now());
+            }
+
+            RetryCountdownDialog.limpiarProteccion();
+
+            final RespuestaCAE respuestaPrueba;
+            if (modoPrueba) {
+                respuestaPrueba = new RespuestaCAE(
+                    String.format("%011d", comprobante.hashCode() % 100000000000L),
+                    LocalDate.now().plusDays(15),
+                    comprobante.getNumero()
+                );
+                respuestaPrueba.setMensaje("MODO PRUEBA - CAE ficticio generado");
+                procesarEmisionExitosa(respuestaPrueba, items, comprobante, view);
+                return;
+            } else {
+                respuestaPrueba = null;
+            }
+
+            view.getBtnEmitir().setEnabled(false);
+            view.getBtnEmitir().setText("Emitiendo...");
+
+            final RetryCountdownDialog[] countdownDialog = {null};
+
+            emisionService.emitir(comprobante, cuiSelected, items, new EmisionAsincronaService.EmisionCallback() {
+                @Override
+                public void onProgress(String mensaje) {
+                    view.getBtnEmitir().setText("Emitiendo... " + mensaje);
+                    if (countdownDialog[0] != null && countdownDialog[0].isVisible()) {
+                        countdownDialog[0].setEstado(mensaje);
                     }
                 }
 
-                String modo = isModoPrueba() ? " (MODO PRUEBA)" : "";
-                String msg = "Factura emitida exitosamente!\n"
-                    + (respuesta.getCae() != null ? "CAE: " + respuesta.getCae() + "\n" : "")
-                    + (respuesta.getVencimiento() != null ? "Vto CAE: " + respuesta.getVencimiento() : "")
-                    + modo;
-                JOptionPane.showMessageDialog(view, msg, "Exito", JOptionPane.INFORMATION_MESSAGE);
-               //view.getLblEstadoPago().setText("Estado: Emitida" + modo);
-                limpiarTodo();
-            } else {
-                JOptionPane.showMessageDialog(view, "Error: " + respuesta.getMensaje(), "Error", JOptionPane.ERROR_MESSAGE);
-            }
+                @Override
+                public void onRetryScheduled(String mensaje, int intento) {
+                    view.getBtnEmitir().setText("Emitiendo... reintento " + intento + " pendiente");
+                    java.awt.Window parent = SwingUtilities.getWindowAncestor(view);
+                    Theme t = com.els.facturacion.vista.VentanaPrincipal.getCurrentTheme();
+                    countdownDialog[0] = new RetryCountdownDialog(parent, mensaje, emisionService, t);
+                    countdownDialog[0].empezar();
+                }
+
+                @Override
+                public void onRetryAttempt(int intento) {
+                    if (countdownDialog[0] != null && countdownDialog[0].isVisible()) {
+                        countdownDialog[0].setEstado("Reintentando conexion con ARCA (intento " + intento + ")...");
+                        countdownDialog[0].reiniciarCountdown();
+                    }
+                }
+
+                @Override
+                public void onSuccess(String mensaje, RespuestaCAE respuesta) {
+                    if (countdownDialog[0] != null) {
+                        countdownDialog[0].detener();
+                    }
+                    view.getBtnEmitir().setEnabled(true);
+                    view.getBtnEmitir().setText("EMITIR FACTURA");
+                    procesarEmisionExitosa(respuesta, items, comprobante, view);
+                }
+
+                @Override
+                public void onError(String mensaje) {
+                    if (countdownDialog[0] != null) {
+                        countdownDialog[0].detener();
+                    }
+                    view.getBtnEmitir().setEnabled(true);
+                    view.getBtnEmitir().setText("EMITIR FACTURA");
+                    JOptionPane.showMessageDialog(view, mensaje, "Error de emision", JOptionPane.ERROR_MESSAGE);
+                }
+            });
+
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(view, "Error inesperado: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            view.getBtnEmitir().setEnabled(true);
+            view.getBtnEmitir().setText("EMITIR FACTURA");
+            JOptionPane.showMessageDialog(view, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
         }
+    }
+
+    private void procesarEmisionExitosa(RespuestaCAE respuesta, List<ItemFacturaDTO> items,
+                                        ComprobanteDTO comprobante, VentanaFacturacion view) {
+        Long nroComp = respuesta.getNumeroComprobante();
+        if (nroComp != null) {
+            String tipoStr = (String) view.getCmbTipoComprobante().getSelectedItem();
+            String abrev = "FC";
+            if (tipoStr.startsWith("Nota de Debito")) abrev = "ND";
+            else if (tipoStr.startsWith("Nota de Credito")) abrev = "NC";
+            else if (tipoStr.startsWith("Recibo")) abrev = "RE";
+            else if (tipoStr.contains("FCE")) abrev = "FCE";
+            String numeroFactura = String.format("%05d-%08d",
+                Integer.parseInt((String) view.getCmbPuntoVenta().getSelectedItem()), nroComp);
+
+            int elsActualizados = 0;
+            int elsConError = 0;
+            int elsEncontrados = 0;
+            String baseReparsoft = UbicacionSistema.getNombreDbReparsoft();
+            for (ItemFacturaDTO item : items) {
+                if (item.getElsReferencia() != null) {
+                    elsEncontrados++;
+                    boolean ok = controladorReparsoft.escribirNumeroFactura(
+                        item.getElsReferencia(), numeroFactura, baseReparsoft);
+                    if (ok) elsActualizados++;
+                    else elsConError++;
+                }
+            }
+            if (elsEncontrados == 0) {
+                JOptionPane.showMessageDialog(view,
+                    "Ningun item de la factura tiene un numero de ELS.\n"
+                    + "No se actualizo el numero de factura en ReparSoft.",
+                    "ReparSoft", JOptionPane.WARNING_MESSAGE);
+            } else if (elsActualizados > 0) {
+                JOptionPane.showMessageDialog(view,
+                    "Numero de factura registrado en " + elsActualizados
+                    + " ELS de " + baseReparsoft + " correctamente."
+                    + (elsConError > 0 ? "\n" + elsConError + " ELS no se pudieron actualizar." : ""),
+                    "ReparSoft", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(view,
+                    "No se pudo actualizar ningun ELS en " + baseReparsoft + ".\n"
+                    + "Verifique que los numeros de ELS existan en la base de datos seleccionada.",
+                    "ReparSoft", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+
+        String modo = isModoPrueba() ? " (MODO PRUEBA)" : "";
+        String msg = "CAE recibido!\nFactura emitida exitosamente!\n"
+            + (respuesta.getCae() != null ? "CAE: " + respuesta.getCae() + "\n" : "")
+            + (respuesta.getVencimiento() != null ? "Vto CAE: " + respuesta.getVencimiento() : "")
+            + modo;
+        JOptionPane.showMessageDialog(view, msg, "CAE recibido", JOptionPane.INFORMATION_MESSAGE);
+        limpiarTodo();
     }
 
     private void visualizarFacturaAction() {

@@ -2,21 +2,39 @@ package com.els.facturacion.arca;
 
 import com.els.facturacion.modelo.ComprobanteDTO;
 import com.els.facturacion.modelo.RespuestaCAE;
+import java.io.IOException;
 import java.io.OutputStream;
+import java.io.StringReader;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Base64;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.net.ssl.HttpsURLConnection;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
 public class ServicioWSFEv1 {
 
+    private static final Logger LOG = Logger.getLogger(ServicioWSFEv1.class.getName());
     private static final String WSFE_URL_HOMO = "https://wswhomo.afip.gov.ar/wsfev1/service.asmx";
     private static final String WSFE_URL_PROD = "https://servicios1.afip.gov.ar/wsfev1/service.asmx";
+    private static final String NS_SOAP = "http://schemas.xmlsoap.org/soap/envelope/";
+    private static final String NS_FE = "http://ar.gov.afip.dif.FEV1/";
 
     private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final int TIMEOUT_CONNECT_MS = 15000;
+    private static final int TIMEOUT_READ_MS = 30000;
 
     private ServicioWSAA servicioWSAA;
     private String entorno;
@@ -38,15 +56,14 @@ public class ServicioWSFEv1 {
     public RespuestaCAE emitirComprobante(ComprobanteDTO comprobante, String rutaP12, String passwordP12)
             throws Exception {
 
-        String token = servicioWSAA.obtenerToken(comprobante.getCuitEmisor(), rutaP12, passwordP12);
-        String sign = servicioWSAA.getSign();
+        String cuitEmisor = comprobante.getCuitEmisor();
+        String token = servicioWSAA.obtenerToken(cuitEmisor, rutaP12, passwordP12);
+        String sign = servicioWSAA.getSign(cuitEmisor);
 
         String xmlRequest = construirFECAESolicitar(comprobante, token, sign);
         String xmlResponse = enviarWSFE(xmlRequest, "http://ar.gov.afip.dif.FEV1/FECAESolicitar");
 
-        System.out.println("=== FECAESolicitar RESPONSE ===");
-        System.out.println(xmlResponse);
-        System.out.println("=== END RESPONSE ===");
+        LOG.log(Level.FINE, "FECAESolicitar RESPONSE:\n{0}", xmlResponse);
 
         return parsearRespuestaFECA(xmlResponse);
     }
@@ -122,12 +139,12 @@ public class ServicioWSFEv1 {
             det.append("<CondicionIVAReceptorId>").append(condIva).append("</CondicionIVAReceptorId>");
         }
 
-        String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-                + "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" "
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                + "<soapenv:Envelope xmlns:soapenv=\"" + NS_SOAP + "\" "
                 + "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
                 + "<soapenv:Header/>"
                 + "<soapenv:Body>"
-                + "<FECAESolicitar xmlns=\"http://ar.gov.afip.dif.FEV1/\">"
+                + "<FECAESolicitar xmlns=\"" + NS_FE + "\">"
                 + "<Auth>"
                 + "<Token>" + token + "</Token>"
                 + "<Sign>" + sign + "</Sign>"
@@ -148,12 +165,6 @@ public class ServicioWSFEv1 {
                 + "</FECAESolicitar>"
                 + "</soapenv:Body>"
                 + "</soapenv:Envelope>";
-
-        System.out.println("=== FECAESolicitar REQUEST ===");
-        System.out.println(xml);
-        System.out.println("=== END REQUEST ===");
-
-        return xml;
     }
 
     private String enviarWSFE(String xmlRequest, String soapAction) throws Exception {
@@ -163,89 +174,142 @@ public class ServicioWSFEv1 {
         conn.setRequestProperty("Content-Type", "text/xml; charset=utf-8");
         conn.setRequestProperty("SOAPAction", soapAction);
         conn.setDoOutput(true);
+        conn.setConnectTimeout(TIMEOUT_CONNECT_MS);
+        conn.setReadTimeout(TIMEOUT_READ_MS);
 
-        try (OutputStream os = conn.getOutputStream()) {
-            os.write(xmlRequest.getBytes(StandardCharsets.UTF_8));
+        try {
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(xmlRequest.getBytes(StandardCharsets.UTF_8));
+            }
+
+            int responseCode = conn.getResponseCode();
+
+            if (responseCode != 200) {
+                LOG.log(Level.WARNING, "WSFEv1 HTTP {0}", responseCode);
+                throw new Exception("Error en ARCA - HTTP " + responseCode);
+            }
+
+            java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+            StringBuilder response = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                response.append(line);
+            }
+            reader.close();
+
+            return response.toString();
+        } catch (SocketTimeoutException e) {
+            LOG.log(Level.SEVERE, "Timeout de conexion a ARCA (read timeout {0}ms)", TIMEOUT_READ_MS);
+            throw new Exception("ARCA no responde (timeout). Verifique su conexion a internet.", e);
+        } catch (UnknownHostException e) {
+            LOG.log(Level.SEVERE, "Host ARCA no encontrado: {0}", getUrlWSFE());
+            throw new Exception("Sin conexion a internet. No se pudo contactar ARCA.", e);
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "Error de E/S hacia ARCA: {0}", e.getMessage());
+            throw new Exception("Error de conexion con ARCA: " + e.getMessage(), e);
         }
-
-        int responseCode = conn.getResponseCode();
-        if (responseCode != 200) {
-            throw new Exception("Error en WSFEv1 - Código: " + responseCode);
-        }
-
-        java.io.BufferedReader reader = new java.io.BufferedReader(
-                new java.io.InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
-        StringBuilder response = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            response.append(line);
-        }
-        reader.close();
-
-        return response.toString();
     }
 
     private RespuestaCAE parsearRespuestaFECA(String xmlResponse) {
         RespuestaCAE respuesta = new RespuestaCAE();
 
-        if (xmlResponse.contains("CAE")) {
-            String cae = extraerValor(xmlResponse, "<CAEFmt>", "</CAEFmt>");
-            if (cae == null) {
-                cae = extraerValor(xmlResponse, "<CAE>", "</CAE>");
-            }
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(new InputSource(new StringReader(xmlResponse)));
+            XPath xpath = XPathFactory.newInstance().newXPath();
 
-            String fechaVto = extraerValor(xmlResponse, "<CAEFchVto>", "</CAEFchVto>");
-            String numero = extraerValor(xmlResponse, "<CbteNum>", "</CbteNum>");
+            String cae = evaluarXPath(doc, xpath, "//*[local-name()='CAE']");
+            if (cae == null) {
+                cae = evaluarXPath(doc, xpath, "//*[local-name()='CAEFmt']");
+            }
 
             if (cae != null && !cae.isEmpty()) {
                 respuesta.setCae(cae);
                 respuesta.setExitosa(true);
 
+                String fechaVto = evaluarXPath(doc, xpath, "//*[local-name()='CAEFchVto']");
                 if (fechaVto != null) {
-                    respuesta.setVencimiento(LocalDate.parse(fechaVto, FORMATO_FECHA));
-                }
-                if (numero != null) {
-                    respuesta.setNumeroComprobante(Long.parseLong(numero));
+                    try {
+                        respuesta.setVencimiento(LocalDate.parse(fechaVto, FORMATO_FECHA));
+                    } catch (Exception e) {
+                        LOG.log(Level.FINE, "No se pudo parsear CAEFchVto: {0}", fechaVto);
+                    }
                 }
 
-                System.out.println("✓ Comprobante emitido con CAE: " + cae);
+                String numero = evaluarXPath(doc, xpath, "//*[local-name()='CbteNro']");
+                String numeroDesde = evaluarXPath(doc, xpath, "//*[local-name()='CbteDesde']");
+                if (numero != null) {
+                    try {
+                        respuesta.setNumeroComprobante(Long.parseLong(numero));
+                    } catch (Exception e) {
+                        LOG.log(Level.FINE, "No se pudo parsear CbteNro: {0}", numero);
+                    }
+                } else if (numeroDesde != null) {
+                    try {
+                        respuesta.setNumeroComprobante(Long.parseLong(numeroDesde));
+                    } catch (Exception e) {
+                        LOG.log(Level.FINE, "No se pudo parsear CbteDesde: {0}", numeroDesde);
+                    }
+                }
+
+                LOG.log(Level.INFO, "Comprobante emitido con CAE: {0}", cae);
                 return respuesta;
             }
-        }
 
-        String codigoError = extraerValor(xmlResponse, "<Code>", "</Code>");
-        if (codigoError != null) {
-            respuesta.setCodigoError(codigoError);
-        }
+            String codigoError = evaluarXPath(doc, xpath, "//*[local-name()='Code']");
+            if (codigoError != null) {
+                respuesta.setCodigoError(codigoError);
+            }
 
-        String mensajeError = extraerValor(xmlResponse, "<Msg>", "</Msg>");
-        if (mensajeError == null) {
-            mensajeError = extraerValor(xmlResponse, "<Errors>", "</Errors>");
+            NodeList msgNodes = (NodeList) xpath.evaluate("//*[local-name()='Msg']", doc, XPathConstants.NODESET);
+            StringBuilder mensajeError = new StringBuilder();
+            if (msgNodes != null) {
+                for (int i = 0; i < msgNodes.getLength(); i++) {
+                    if (mensajeError.length() > 0) mensajeError.append("; ");
+                    mensajeError.append(msgNodes.item(i).getTextContent().trim());
+                }
+            }
+            if (mensajeError.length() == 0) {
+                String errors = evaluarXPath(doc, xpath, "//*[local-name()='Errors']");
+                if (errors != null) {
+                    mensajeError.append(errors);
+                }
+            }
+            respuesta.setError(mensajeError.length() > 0
+                ? mensajeError.toString() : "Error desconocido en ARCA");
+            LOG.log(Level.WARNING, "Error ARCA: [{0}] {1}",
+                new Object[]{codigoError != null ? codigoError : "?", respuesta.getMensaje()});
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Error parseando respuesta ARCA", e);
+            respuesta.setError("Error interno parseando respuesta ARCA: " + e.getMessage());
         }
-        respuesta.setError(mensajeError != null ? mensajeError : "Error desconocido en ARCA");
-        System.err.println("✗ Error ARCA: [" + (codigoError != null ? codigoError : "?") + "] " + respuesta.getMensaje());
         return respuesta;
     }
 
-    private String extraerValor(String xml, String tagInicio, String tagFin) {
-        int start = xml.indexOf(tagInicio);
-        int end = xml.indexOf(tagFin);
-        if (start != -1 && end != -1 && start < end) {
-            return xml.substring(start + tagInicio.length(), end).trim();
+    private String evaluarXPath(Document doc, XPath xpath, String expression) {
+        try {
+            String val = xpath.evaluate(expression, doc);
+            if (val == null || val.trim().isEmpty()) return null;
+            return val;
+        } catch (Exception e) {
+            LOG.log(Level.FINE, "XPath evaluacion fallo: {0}", expression);
+            return null;
         }
-        return null;
     }
 
     public long consultarUltimoAutorizado(String cuitEmisor, int puntoVenta, int tipoComprobante,
                                           String rutaP12, String passwordP12) throws Exception {
         String token = servicioWSAA.obtenerToken(cuitEmisor, rutaP12, passwordP12);
-        String sign = servicioWSAA.getSign();
+        String sign = servicioWSAA.getSign(cuitEmisor);
 
         String xmlRequest = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-                + "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">"
+                + "<soapenv:Envelope xmlns:soapenv=\"" + NS_SOAP + "\">"
                 + "<soapenv:Header/>"
                 + "<soapenv:Body>"
-                + "<FECompUltimoAutorizado xmlns=\"http://ar.gov.afip.dif.FEV1/\">"
+                + "<FECompUltimoAutorizado xmlns=\"" + NS_FE + "\">"
                 + "<Auth>"
                 + "<Token>" + token + "</Token>"
                 + "<Sign>" + sign + "</Sign>"
@@ -259,30 +323,36 @@ public class ServicioWSFEv1 {
                 + "</soapenv:Body>"
                 + "</soapenv:Envelope>";
 
-        System.out.println("=== FECompUltimoAutorizado REQUEST ===");
-        System.out.println(xmlRequest);
-        System.out.println("=== END REQUEST ===");
+        LOG.log(Level.FINE, "FECompUltimoAutorizado REQUEST para CUIT {0}", cuitEmisor);
 
         String xmlResponse = enviarWSFE(xmlRequest, "http://ar.gov.afip.dif.FEV1/FECompUltimoAutorizado");
 
-        System.out.println("=== FECompUltimoAutorizado RESPONSE ===");
-        System.out.println(xmlResponse);
-        System.out.println("=== END RESPONSE ===");
+        LOG.log(Level.FINE, "FECompUltimoAutorizado RESPONSE:\n{0}", xmlResponse);
 
-        String errors = extraerValor(xmlResponse, "<Errors>", "</Errors>");
-        if (errors != null && !errors.isEmpty() && errors.contains("<Err>")) {
-            System.out.println("FECompUltimoAutorizado: ARCA devolvió errores, ignorando CbteNro");
-            return 0;
-        }
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(new InputSource(new StringReader(xmlResponse)));
+            XPath xpath = XPathFactory.newInstance().newXPath();
 
-        String nroStr = extraerValor(xmlResponse, "<CbteNro>", "</CbteNro>");
-        System.out.println("CbteNro extraído: '" + nroStr + "'");
-        if (nroStr != null) {
-            long nro = Long.parseLong(nroStr);
-            System.out.println("FECompUltimoAutorizado return: " + nro);
-            return nro;
+            String errors = evaluarXPath(doc, xpath, "//*[local-name()='Errors']");
+            if (errors != null && !errors.isEmpty()) {
+                LOG.log(Level.FINE, "FECompUltimoAutorizado: ARCA devolvio errores, ignorando CbteNro");
+                return 0;
+            }
+
+            String nroStr = evaluarXPath(doc, xpath, "//*[local-name()='CbteNro']");
+            LOG.log(Level.FINE, "CbteNro extraido: ''{0}''", nroStr);
+            if (nroStr != null) {
+                long nro = Long.parseLong(nroStr);
+                LOG.log(Level.INFO, "FECompUltimoAutorizado return: {0}", nro);
+                return nro;
+            }
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Error parseando FECompUltimoAutorizado, retornando 0", e);
         }
-        System.out.println("FECompUltimoAutorizado: no se encontró CbteNro, retornando 0");
+        LOG.info("FECompUltimoAutorizado: no se encontro CbteNro, retornando 0");
         return 0;
     }
 
@@ -290,10 +360,10 @@ public class ServicioWSFEv1 {
                                        long numero, String token, String sign) throws Exception {
 
         String xmlRequest = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-                + "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">"
+                + "<soapenv:Envelope xmlns:soapenv=\"" + NS_SOAP + "\">"
                 + "<soapenv:Header/>"
                 + "<soapenv:Body>"
-                + "<FECompConsultar xmlns=\"http://ar.gov.afip.dif.FEV1/\">"
+                + "<FECompConsultar xmlns=\"" + NS_FE + "\">"
                 + "<Auth>"
                 + "<Token>" + token + "</Token>"
                 + "<Sign>" + sign + "</Sign>"

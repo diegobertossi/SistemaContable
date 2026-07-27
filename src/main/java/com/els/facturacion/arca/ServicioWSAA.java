@@ -13,6 +13,8 @@ import java.security.PrivateKey;
 import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.bouncycastle.cms.CMSProcessableByteArray;
 import org.bouncycastle.cms.CMSSignedData;
@@ -27,6 +29,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class ServicioWSAA {
 
+    private static final Logger LOG = Logger.getLogger(ServicioWSAA.class.getName());
     private static final String WSAA_URL_HOMO =
         "https://wsaahomo.afip.gov.ar/ws/services/LoginCms";
     private static final String WSAA_URL_PROD =
@@ -56,23 +59,22 @@ public class ServicioWSAA {
     public String obtenerToken(String cuit, String rutaP12, String passwordP12) throws Exception {
 
         if (tokenCache.tieneTokenValido(cuit)) {
-            return tokenCache.getToken();
+            return tokenCache.getToken(cuit);
         }
 
         if (tokenCache.cargarDeBD(cuit)) {
-            return tokenCache.getToken();
+            return tokenCache.getToken(cuit);
         }
 
         if (tokenCache.cargarDeArchivo(cuit)) {
-            return tokenCache.getToken();
+            return tokenCache.getToken(cuit);
         }
 
         try {
             return solicitarNuevoToken(cuit, rutaP12, passwordP12);
         } catch (Exception e) {
             if (e.getMessage() != null && e.getMessage().contains("coe.alreadyAuthenticated")) {
-                System.err.println("AFIP ya tiene un token vigente pero no está en caché local.");
-                System.err.println("Espere a que expire (~12h desde la última emisión) o use el botón CONFIGURACIÓN > CUITs > BACKUP.");
+                LOG.log(Level.WARNING, "AFIP ya tiene token vigente para CUIT {0} pero no esta en cache local.", cuit);
                 throw new Exception("AFIP ya tiene un Token Activo (TA) vigente para este CUIT. "
                     + "La base de datos local fue restaurada y perdió el token anterior.\n\n"
                     + "Espere aproximadamente 12 horas desde la última emisión para que expire, "
@@ -100,9 +102,7 @@ public class ServicioWSAA {
                                                      : "CN=wsaa, O=AFIP, C=AR";
 
         String tra = tokenCache.generarLoginTicketRequest(source, destination, "wsfe");
-        System.out.println("=== TRA ===");
-        System.out.println(tra);
-        System.out.println("=== END TRA ===");
+        LOG.log(Level.FINE, "TRA generado:\n{0}", tra);
 
         String cms = firmarCMS(tra, privateKey);
 
@@ -160,25 +160,16 @@ public class ServicioWSAA {
 
         byte[] encoded = signed.getEncoded();
 
-        // DEBUG: verify CMS signer info and signature locally
-        CMSSignedData parsed = new CMSSignedData(encoded);
-        org.bouncycastle.util.Store stores = parsed.getCertificates();
-        java.util.Collection<?> certs = stores.getMatches(null);
-        System.out.println("CMS certs count: " + certs.size());
-        for (org.bouncycastle.cms.SignerInformation si : parsed.getSignerInfos().getSigners()) {
-            System.out.println("CMS signer digestAlg: " + si.getDigestAlgorithmID().getAlgorithm().getId());
-            System.out.println("CMS signer encAlg: " + si.getEncryptionAlgOID());
-            byte[] recoveredContent = (byte[]) parsed.getSignedContent().getContent();
-            System.out.println("CMS content length: " + recoveredContent.length + " bytes");
-            String recoveredStr = new String(recoveredContent, StandardCharsets.UTF_8);
-            System.out.println("CMS content matches TRA: " + tra.equals(recoveredStr));
-            // Verify signature
-            X509CertificateHolder holder = (X509CertificateHolder) certs.iterator().next();
-            org.bouncycastle.cms.SignerInformationVerifier verifier =
-                new org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder()
-                    .setProvider("BC").build(holder);
-            boolean verified = si.verify(verifier);
-            System.out.println("CMS signature VERIFIED: " + verified);
+        if (LOG.isLoggable(Level.FINE)) {
+            CMSSignedData parsed = new CMSSignedData(encoded);
+            org.bouncycastle.util.Store stores = parsed.getCertificates();
+            java.util.Collection<?> certs = stores.getMatches(null);
+            LOG.fine("CMS certs count: " + certs.size());
+            for (org.bouncycastle.cms.SignerInformation si : parsed.getSignerInfos().getSigners()) {
+                byte[] recoveredContent = (byte[]) parsed.getSignedContent().getContent();
+                String recoveredStr = new String(recoveredContent, StandardCharsets.UTF_8);
+                LOG.fine("CMS content matches TRA: " + tra.equals(recoveredStr));
+            }
         }
 
         return Base64.getEncoder().encodeToString(encoded);
@@ -262,7 +253,15 @@ public class ServicioWSAA {
         return tokenCache.getToken();
     }
 
+    public String getToken(String cuit) {
+        return tokenCache.getToken(cuit);
+    }
+
     public String getSign() {
         return tokenCache.getSign();
+    }
+
+    public String getSign(String cuit) {
+        return tokenCache.getSign(cuit);
     }
 }

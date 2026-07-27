@@ -14,10 +14,15 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class TokenCache {
 
+    private static final Logger LOG = Logger.getLogger(TokenCache.class.getName());
     private static final String LOGIN_TICKET_REQUEST = "<loginTicketRequest version=\"1.0\">"
             + "<header>"
             + "<source>%s</source>"
@@ -33,9 +38,7 @@ public class TokenCache {
     private static final Path ARCHIVO_CACHE = Paths.get(
         System.getProperty("user.home"), ".facturasoft", "token_cache.properties");
 
-    private String token;
-    private String sign;
-    private LocalDateTime expiracion;
+    private final Map<String, TokenInfo> cache = new HashMap<>();
     private String ultimoCuit;
 
     private static TokenCache instancia;
@@ -55,35 +58,43 @@ public class TokenCache {
     }
 
     public boolean tieneTokenValido(String cuit) {
-        if (token == null || sign == null || expiracion == null) {
-            return false;
-        }
-        if (!cuit.equals(ultimoCuit)) {
-            return false;
-        }
-        LocalDateTime ahora = LocalDateTime.now();
-        return expiracion.isAfter(ahora.plusMinutes(1));
+        TokenInfo info = cache.get(cuit);
+        if (info == null) return false;
+        return info.expiracion.isAfter(LocalDateTime.now().plusMinutes(1));
     }
 
     public void guardarToken(String token, String sign, LocalDateTime expiracion, String cuit) {
-        this.token = token;
-        this.sign = sign;
-        this.expiracion = expiracion;
+        cache.put(cuit, new TokenInfo(token, sign, expiracion));
         this.ultimoCuit = cuit;
         guardarEnBD(token, sign, expiracion, cuit);
         guardarEnArchivo(token, sign, expiracion, cuit);
     }
 
     public String getToken() {
-        return token;
+        return getToken(ultimoCuit);
+    }
+
+    public String getToken(String cuit) {
+        TokenInfo info = cache.get(cuit);
+        return info != null ? info.token : null;
     }
 
     public String getSign() {
-        return sign;
+        return getSign(ultimoCuit);
+    }
+
+    public String getSign(String cuit) {
+        TokenInfo info = cache.get(cuit);
+        return info != null ? info.sign : null;
     }
 
     public LocalDateTime getExpiracion() {
-        return expiracion;
+        return getExpiracion(ultimoCuit);
+    }
+
+    public LocalDateTime getExpiracion(String cuit) {
+        TokenInfo info = cache.get(cuit);
+        return info != null ? info.expiracion : null;
     }
 
     private void guardarEnBD(String token, String sign, LocalDateTime expiracion, String cuit) {
@@ -98,7 +109,7 @@ public class TokenCache {
             ps.setString(4, expiracion.format(FORMATO_FECHA));
             ps.executeUpdate();
         } catch (SQLException e) {
-            System.err.println("Error guardando token en BD: " + e.getMessage());
+            LOG.log(Level.SEVERE, "Error guardando token en BD: {0}", e.getMessage());
         }
     }
 
@@ -111,22 +122,23 @@ public class TokenCache {
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
-                token = rs.getString("token");
-                sign = rs.getString("sign");
+                String token = rs.getString("token");
+                String sign = rs.getString("sign");
                 String expStr = rs.getString("expiracion");
-                expiracion = LocalDateTime.parse(expStr.replace(" ", "T"), FORMATO_FECHA);
-                ultimoCuit = cuit;
+                LocalDateTime expiracion = LocalDateTime.parse(expStr.replace(" ", "T"), FORMATO_FECHA);
 
                 LocalDateTime ahora = LocalDateTime.now();
                 if (expiracion.isAfter(ahora.plusMinutes(1))) {
-                    System.out.println("✓ Token cargado desde BD válido hasta: " + expiracion);
+                    cache.put(cuit, new TokenInfo(token, sign, expiracion));
+                    this.ultimoCuit = cuit;
+                    LOG.log(Level.INFO, "Token cargado desde BD valido hasta: {0}", expiracion);
                     return true;
                 } else {
-                    System.out.println("Token en BD expirado, se renovará");
+                    LOG.info("Token en BD expirado, se renovara");
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Error cargando token desde BD: " + e.getMessage());
+            LOG.log(Level.SEVERE, "Error cargando token desde BD: {0}", e.getMessage());
         }
         return false;
     }
@@ -146,21 +158,22 @@ public class TokenCache {
             String expStr = props.getProperty("expiracion");
             if (expStr == null) return false;
 
-            expiracion = LocalDateTime.parse(expStr, FORMATO_FECHA);
+            LocalDateTime expiracion = LocalDateTime.parse(expStr, FORMATO_FECHA);
             LocalDateTime ahora = LocalDateTime.now();
             if (!expiracion.isAfter(ahora.plusMinutes(1))) {
-                System.out.println("Token en archivo expirado, se renovará");
+                LOG.info("Token en archivo expirado, se renovara");
                 return false;
             }
 
-            token = props.getProperty("token");
-            sign = props.getProperty("sign");
-            ultimoCuit = cuit;
+            String token = props.getProperty("token");
+            String sign = props.getProperty("sign");
+            cache.put(cuit, new TokenInfo(token, sign, expiracion));
+            this.ultimoCuit = cuit;
 
-            System.out.println("✓ Token cargado desde archivo válido hasta: " + expiracion);
+            LOG.log(Level.INFO, "Token cargado desde archivo valido hasta: {0}", expiracion);
             return true;
         } catch (Exception e) {
-            System.err.println("Error cargando token desde archivo: " + e.getMessage());
+            LOG.log(Level.SEVERE, "Error cargando token desde archivo: {0}", e.getMessage());
         }
         return false;
     }
@@ -177,7 +190,7 @@ public class TokenCache {
                 props.store(os, "FacturaSoft Token Cache - No modificar");
             }
         } catch (Exception e) {
-            System.err.println("Error guardando token en archivo: " + e.getMessage());
+            LOG.log(Level.SEVERE, "Error guardando token en archivo: {0}", e.getMessage());
         }
     }
 
@@ -196,5 +209,17 @@ public class TokenCache {
                 genTime.format(FORMATO_FECHA_ARCA),
                 expTime.format(FORMATO_FECHA_ARCA),
                 service);
+    }
+
+    private static class TokenInfo {
+        final String token;
+        final String sign;
+        final LocalDateTime expiracion;
+
+        TokenInfo(String token, String sign, LocalDateTime expiracion) {
+            this.token = token;
+            this.sign = sign;
+            this.expiracion = expiracion;
+        }
     }
 }

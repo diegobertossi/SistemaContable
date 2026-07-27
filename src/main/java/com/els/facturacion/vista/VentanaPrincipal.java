@@ -192,7 +192,7 @@ public class VentanaPrincipal extends JFrame {
         try {
             btnSalir.setIcon(new ImageIcon(getClass().getResource("/img/Icono salir.png")));
         } catch (Exception e) { }
-        btnSalir.addActionListener(e -> System.exit(0));
+        btnSalir.addActionListener(e -> RetryCountdownDialog.confirmarSalida());
         panel.add(btnSalir);
 
         // ── Image ───────────────────────────────────────────────────

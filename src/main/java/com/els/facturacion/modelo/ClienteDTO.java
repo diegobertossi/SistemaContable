@@ -8,6 +8,7 @@ public class ClienteDTO {
     private String condicionIva;
     private String domicilio;
     private String telefono;
+    private String telefonoContacto;
     private String email;
     private String origen;
     private Integer elsReferencia;
@@ -36,6 +37,8 @@ public class ClienteDTO {
     public void setDomicilio(String domicilio) { this.domicilio = domicilio; }
     public String getTelefono() { return telefono; }
     public void setTelefono(String telefono) { this.telefono = telefono; }
+    public String getTelefonoContacto() { return telefonoContacto; }
+    public void setTelefonoContacto(String telefonoContacto) { this.telefonoContacto = telefonoContacto; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
     public String getOrigen() { return origen; }

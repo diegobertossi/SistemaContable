@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS clientes (
     condicion_iva VARCHAR(60),
     domicilio VARCHAR(200),
     telefono VARCHAR(50),
+    telefono_contacto VARCHAR(50),
     email VARCHAR(500),
     origen VARCHAR(20) DEFAULT 'manual',
     els_referencia INT,
