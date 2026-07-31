@@ -9,8 +9,9 @@ import java.awt.Window;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JDialog;
-import javax.swing.JFrame;
+import java.awt.FlowLayout;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -23,13 +24,16 @@ public class RetryCountdownDialog extends JDialog {
     private static WindowAdapter FRAME_CLOSE_LISTENER;
     private static EmisionAsincronaService ACTIVE_SERVICE;
 
-    private static final Font FUENTE_COUNTDOWN = new Font("Segoe UI", Font.BOLD, 36);
+    private static final Font FUENTE_COUNTDOWN = new Font("Segoe UI", Font.BOLD, 22);
     private static final Font FUENTE_INFO = new Font("Segoe UI", Font.PLAIN, 11);
 
     private final JTextArea txtMensaje;
     private final JLabel lblCountdown;
     private final JLabel lblEstado;
+    private final JButton btnCancelar;
     private final JPanel panel;
+    private final JPanel southPanel;
+    private final JPanel btnWrapper;
     private Timer countdownTimer;
     private final EmisionAsincronaService emisionService;
     private Theme theme;
@@ -56,6 +60,7 @@ public class RetryCountdownDialog extends JDialog {
         txtMensaje.setFocusable(false);
         txtMensaje.setLineWrap(true);
         txtMensaje.setWrapStyleWord(true);
+        txtMensaje.setRows(1);
         txtMensaje.setBorder(null);
 
         lblCountdown = new JLabel(formatearTiempo(segundosRestantes), SwingConstants.CENTER);
@@ -64,11 +69,36 @@ public class RetryCountdownDialog extends JDialog {
         lblEstado = new JLabel(" ", SwingConstants.CENTER);
         lblEstado.setFont(FUENTE_INFO);
 
-        panel = new JPanel(new BorderLayout(6, 4));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 6, 10));
+        btnCancelar = new JButton("CANCELAR");
+        btnCancelar.setFont(FUENTE_INFO);
+        btnCancelar.setFocusPainted(false);
+        btnCancelar.addActionListener(e -> {
+            int r = JOptionPane.showConfirmDialog(
+                this,
+                "Si se procede se cancelara la emision de la factura.\nDesea continuar?",
+                "Cancelar factura",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.WARNING_MESSAGE
+            );
+            if (r == JOptionPane.OK_OPTION) {
+                emisionService.cancelar();
+                detener();
+            }
+        });
+
+        southPanel = new JPanel(new BorderLayout());
+        southPanel.add(lblEstado, BorderLayout.CENTER);
+
+        btnWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 2));
+        btnWrapper.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        btnWrapper.add(btnCancelar);
+        southPanel.add(btnWrapper, BorderLayout.SOUTH);
+
+        panel = new JPanel(new BorderLayout(0, 2));
+        panel.setBorder(BorderFactory.createEmptyBorder(6, 8, 4, 8));
         panel.add(txtMensaje, BorderLayout.NORTH);
         panel.add(lblCountdown, BorderLayout.CENTER);
-        panel.add(lblEstado, BorderLayout.SOUTH);
+        panel.add(southPanel, BorderLayout.SOUTH);
         add(panel);
 
         applyTheme(theme);
@@ -100,10 +130,14 @@ public class RetryCountdownDialog extends JDialog {
         Color danger = t.danger;
         setBackground(bg);
         panel.setBackground(bg);
+        southPanel.setBackground(bg);
+        btnWrapper.setBackground(bg);
         txtMensaje.setBackground(bg);
         txtMensaje.setForeground(fg);
         lblCountdown.setForeground(danger);
         lblEstado.setForeground(fgMuted);
+        btnCancelar.setBackground(bg);
+        btnCancelar.setForeground(fg);
         if (getContentPane() != null) {
             getContentPane().setBackground(bg);
         }

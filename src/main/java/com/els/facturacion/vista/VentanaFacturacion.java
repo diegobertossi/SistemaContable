@@ -170,7 +170,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     private JPanel datosWrapper;
     private JPanel panelNav;
     // Secciones con titled border
-    private JPanel secPuntoVenta;
+    private JPanel secDatosCompletar;
     private JPanel secEmision;
     private JPanel secReceptor;
     private JPanel panelChecks;
@@ -676,19 +676,19 @@ public class VentanaFacturacion extends javax.swing.JFrame {
     // ===================== SECTION BUILDERS =====================
 
     private JPanel crearSeccionPuntoVenta() {
-        secPuntoVenta = new JPanel(new GridBagLayout());
-        secPuntoVenta.setBorder(BorderFactory.createTitledBorder(
+        secDatosCompletar = new JPanel(new GridBagLayout());
+        secDatosCompletar.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(currentTheme.brand),
-            "PUNTO DE VENTA Y TIPO DE COMPROBANTE",
+            "DATOS A COMPLETAR",
             TitledBorder.LEFT, TitledBorder.TOP,
             new Font("Segoe UI", Font.BOLD, 11), currentTheme.textPrimary
         ));
-        secPuntoVenta.setBackground(currentTheme.bgSurface);
+        secDatosCompletar.setBackground(currentTheme.bgSurface);
         Insets ins = new Insets(3, 6, 3, 6);
 
         JLabel label = new JLabel("Punto de Venta:");
         label.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        secPuntoVenta.add(label, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secDatosCompletar.add(label, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
         cmbPuntoVenta = new JComboBox<>(new String[]{"", "00001"});
         installComboUI(cmbPuntoVenta);
         cmbPuntoVenta.setBackground(getFieldRequiredBg());
@@ -715,9 +715,9 @@ public class VentanaFacturacion extends javax.swing.JFrame {
                 return this;
             }
         });
-        secPuntoVenta.add(cmbPuntoVenta, new GridBagConstraints(1, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secDatosCompletar.add(cmbPuntoVenta, new GridBagConstraints(1, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
 
-        secPuntoVenta.add(new JLabel("Tipo Comprobante:"), new GridBagConstraints(2, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        secDatosCompletar.add(new JLabel("Tipo Comprobante:"), new GridBagConstraints(2, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
         cmbTipoComprobante = new JComboBox<>(new String[]{
             "", "Factura C", "Nota de D\u00e9bito C", "Nota de Cr\u00e9dito C",
             "Recibo C", "Factura de Cr\u00e9dito Electr\u00f3nica MiPymes (FCE) C",
@@ -737,8 +737,7 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             }
         });
         cmbTipoComprobante.setFont(FUENTE_INPUT_BOLD);
-        cmbTipoComprobante.setPreferredSize(new Dimension(240, 24));
-        cmbTipoComprobante.setPrototypeDisplayValue("Factura de Cr\u00e9dito Electr\u00f3nica");
+        cmbTipoComprobante.setPrototypeDisplayValue("Nota de Cr\u00e9dito Electr\u00f3nica MiPymes (FCE) C");
         cmbTipoComprobante.setRenderer(new DefaultListCellRenderer() {
             public Component getListCellRendererComponent(JList<?> list, Object value,
                   int index, boolean isSelected, boolean cellHasFocus) {
@@ -749,8 +748,36 @@ public class VentanaFacturacion extends javax.swing.JFrame {
                 return this;
             }
         });
-        secPuntoVenta.add(cmbTipoComprobante, new GridBagConstraints(3, 0, 1, 1, 1, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
-        return secPuntoVenta;
+        secDatosCompletar.add(cmbTipoComprobante, new GridBagConstraints(3, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+
+        secDatosCompletar.add(new JLabel("Concepto:"), new GridBagConstraints(4, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        cmbConcepto = new JComboBox<>(new String[]{"", "Productos", "Servicios", "Productos y Servicios"});
+        installComboUI(cmbConcepto);
+        cmbConcepto.setBackground(getFieldRequiredBg());
+        cmbConcepto.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                cmbConcepto.setBackground(getFieldRequiredHoverBg());
+            }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                cmbConcepto.setBackground(getFieldRequiredBg());
+            }
+        });
+        cmbConcepto.setFont(FUENTE_INPUT_BOLD);
+        cmbConcepto.setPrototypeDisplayValue("Productos y Servicios");
+        cmbConcepto.setRenderer(new DefaultListCellRenderer() {
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                  int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(isSelected ? getFieldRequiredSelectionBg() : getFieldRequiredBg());
+                setForeground(isSelected ? list.getSelectionForeground() :
+                    (cmbConcepto.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
+                return this;
+            }
+        });
+        secDatosCompletar.add(cmbConcepto, new GridBagConstraints(5, 0, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
+        return secDatosCompletar;
     }
 
     private JPanel crearSeccionEmision() {
@@ -805,32 +832,6 @@ public class VentanaFacturacion extends javax.swing.JFrame {
 
         dateFecha = crearDateChooser();
         themeDateField(dateFecha, currentTheme);
-        cmbConcepto = new JComboBox<>(new String[]{"", "Productos", "Servicios", "Productos y Servicios"});
-        installComboUI(cmbConcepto);
-        cmbConcepto.setBackground(getFieldRequiredBg());
-        cmbConcepto.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent e) {
-                cmbConcepto.setBackground(getFieldRequiredHoverBg());
-            }
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent e) {
-                cmbConcepto.setBackground(getFieldRequiredBg());
-            }
-        });
-        cmbConcepto.setFont(FUENTE_INPUT_BOLD);
-        cmbConcepto.setPreferredSize(new Dimension(180, 24));
-        cmbConcepto.setPrototypeDisplayValue("Productos");
-        cmbConcepto.setRenderer(new DefaultListCellRenderer() {
-            public Component getListCellRendererComponent(JList<?> list, Object value,
-                  int index, boolean isSelected, boolean cellHasFocus) {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                setBackground(isSelected ? getFieldRequiredSelectionBg() : getFieldRequiredBg());
-                setForeground(isSelected ? list.getSelectionForeground() :
-                    (cmbConcepto.isEnabled() ? currentTheme.textPrimary : getDisabledFg()));
-                return this;
-            }
-        });
 
         txtActividades = new JTextField(25);
         txtActividades.setText("331290 - Reparacion y mantenimiento de maquinaria de uso especial n.c.p.");
@@ -870,8 +871,6 @@ public class VentanaFacturacion extends javax.swing.JFrame {
         row++;
         secEmision.add(new JLabel("Fecha del comprobante:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
         secEmision.add(dateFecha, new GridBagConstraints(1, row, 1, 1, 0.5, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
-        secEmision.add(new JLabel("Concepto:"), new GridBagConstraints(2, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
-        secEmision.add(cmbConcepto, new GridBagConstraints(3, row, 1, 1, 0.5, 0, GridBagConstraints.WEST, GridBagConstraints.HORIZONTAL, ins, 0, 0));
 
         row++;
         secEmision.add(new JLabel("Actividades Asociadas:"), new GridBagConstraints(0, row, 1, 1, 0, 0, GridBagConstraints.WEST, GridBagConstraints.NONE, ins, 0, 0));
@@ -1160,11 +1159,11 @@ public class VentanaFacturacion extends javax.swing.JFrame {
             centerCol.setBorder(new CompoundBorder(new LineBorder(t.brand), new EmptyBorder(4, 10, 4, 10)));
         }
         // Section panels con titled border
-        if (secPuntoVenta != null) {
-            secPuntoVenta.setBackground(t.bgSurface);
-            secPuntoVenta.setBorder(BorderFactory.createTitledBorder(
+        if (secDatosCompletar != null) {
+            secDatosCompletar.setBackground(t.bgSurface);
+            secDatosCompletar.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(t.brand),
-                "PUNTO DE VENTA Y TIPO DE COMPROBANTE",
+                "DATOS A COMPLETAR",
                 TitledBorder.LEFT, TitledBorder.TOP, titledFont, titledFg));
         }
         if (secEmision != null) {
