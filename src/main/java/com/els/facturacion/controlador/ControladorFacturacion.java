@@ -622,16 +622,10 @@ public class ControladorFacturacion {
                     "Ningun item de la factura tiene un numero de ELS.\n"
                     + "No se actualizo el numero de factura en ReparSoft.",
                     "ReparSoft", JOptionPane.WARNING_MESSAGE);
-            } else if (elsActualizados > 0) {
+            } else if (elsConError > 0) {
                 JOptionPane.showMessageDialog(view,
-                    "Numero de factura registrado en " + elsActualizados
-                    + " ELS de " + baseReparsoft + " correctamente."
-                    + (elsConError > 0 ? "\n" + elsConError + " ELS no se pudieron actualizar." : ""),
-                    "ReparSoft", JOptionPane.INFORMATION_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(view,
-                    "No se pudo actualizar ningun ELS en " + baseReparsoft + ".\n"
-                    + "Verifique que los numeros de ELS existan en la base de datos seleccionada.",
+                    elsActualizados + " ELS se actualizaron correctamente, pero "
+                    + elsConError + " ELS no se pudieron actualizar en " + baseReparsoft + ".",
                     "ReparSoft", JOptionPane.ERROR_MESSAGE);
             }
         }

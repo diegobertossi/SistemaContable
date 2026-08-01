@@ -266,6 +266,7 @@ public class VentanaEquiposPresupuestados extends JDialog {
             @Override
             protected void done() {
                 if (allEquiposCache != null) {
+                    allEquiposCache.removeIf(item -> item.isFacturado());
                     cargandoDatos = true;
                     // Populate client combo
                     Set<String> clientes = new LinkedHashSet<>();

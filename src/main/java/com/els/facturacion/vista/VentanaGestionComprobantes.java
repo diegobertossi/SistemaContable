@@ -62,7 +62,7 @@ public class VentanaGestionComprobantes extends JFrame {
             if (tabbedPane.getSelectedComponent() == compContent) {
                 comprobantesView.cargarComprobantes();
             } else if (tabbedPane.getSelectedComponent() == panelEstadisticas) {
-                panelEstadisticas.cargarDatos();
+                panelEstadisticas.mostrarTodo();
             }
         });
 

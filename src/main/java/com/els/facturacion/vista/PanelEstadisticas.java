@@ -88,6 +88,7 @@ public class PanelEstadisticas extends JPanel {
     // Toggle buttons
     private JToggleButton btnDetalle;
     private JToggleButton btnTotales;
+    private JButton btnMostrarTodo;
     private ButtonGroup grupoToggle;
 
     // Filter components
@@ -181,7 +182,7 @@ public class PanelEstadisticas extends JPanel {
         allComprobantes = new ArrayList<>();
         initComponents();
         applyTheme(currentTheme);
-        cargarDatos();
+        mostrarTodo();
     }
 
     // ──────────────────────────────────────────────
@@ -371,12 +372,18 @@ public class PanelEstadisticas extends JPanel {
 
         dateHasta = crearDateChooser();
 
-        // ── Filter button ──
+        // ── Filter buttons ──
         JButton btnFiltrar = new JButton("FILTRAR");
         btnFiltrar.setFont(FUENTE_BOTON);
         btnFiltrar.setFocusPainted(false);
         btnFiltrar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btnFiltrar.addActionListener(e -> cargarDatos());
+
+        btnMostrarTodo = new JButton("MOSTRAR TODO");
+        btnMostrarTodo.setFont(FUENTE_BOTON);
+        btnMostrarTodo.setFocusPainted(false);
+        btnMostrarTodo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnMostrarTodo.addActionListener(e -> mostrarTodo());
 
         // ── Layout inside panelFiltroPeriodo ──
         panelFiltroPeriodo.add(radioMensual, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 4, 2, 4), 0, 0));
@@ -391,6 +398,7 @@ public class PanelEstadisticas extends JPanel {
         panelFiltroPeriodo.add(dateDesde, new GridBagConstraints(2, 1, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 4, 2, 4), 0, 0));
         panelFiltroPeriodo.add(lblHasta, new GridBagConstraints(3, 1, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 4, 2, 4), 0, 0));
         panelFiltroPeriodo.add(dateHasta, new GridBagConstraints(4, 1, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 4, 2, 4), 0, 0));
+        panelFiltroPeriodo.add(btnMostrarTodo, new GridBagConstraints(5, 1, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(2, 12, 2, 4), 0, 0));
 
         // ── Panel: FILTRO POR ESTADO ──
         panelFiltroEstado = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
@@ -653,6 +661,37 @@ public class PanelEstadisticas extends JPanel {
         poblarTablaDetalle();
     }
 
+    public void mostrarTodo() {
+        radioMensual.setSelected(true);
+        cmbAnio.setSelectedItem(String.valueOf(LocalDate.now().getYear()));
+        cmbMes.setSelectedIndex(LocalDate.now().getMonthValue() - 1);
+        setDateChooserDate(dateDesde, LocalDate.now());
+        setDateChooserDate(dateHasta, LocalDate.now());
+        cmbFiltroEstado.setSelectedIndex(0);
+        actualizarEstadoFiltros();
+        cargarDatosSinFiltro();
+    }
+
+    private void cargarDatosSinFiltro() {
+        LocalDate desde = LocalDate.of(1900, 1, 1);
+        LocalDate hasta = LocalDate.of(2100, 12, 31);
+        allComprobantes = controlador.buscarComprobantes(desde, hasta);
+        if (allComprobantes == null) allComprobantes = new ArrayList<>();
+        poblarTablaDetalle();
+    }
+
+    private void setDateChooserDate(JComponent comp, LocalDate fecha) {
+        try {
+            if (!(comp instanceof javax.swing.JTextField)) {
+                comp.getClass().getMethod("setDate", java.util.Date.class).invoke(comp,
+                    java.util.Date.from(fecha.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+            } else {
+                ((javax.swing.JTextField) comp).setText(fecha.format(FMT));
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
     private void poblarTablaDetalle() {
         modeloTabla.setRowCount(0);
 
@@ -808,6 +847,10 @@ public class PanelEstadisticas extends JPanel {
         if (btnTotales != null) {
             btnTotales.setBackground(t.btnBg);
             btnTotales.setForeground(t.textPrimary);
+        }
+        if (btnMostrarTodo != null) {
+            btnMostrarTodo.setBackground(t.btnBg);
+            btnMostrarTodo.setForeground(t.textPrimary);
         }
 
         if (panelFiltros != null) {
